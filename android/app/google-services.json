@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "593098836626",
+    "project_id": "food-connect-hfs",
+    "storage_bucket": "food-connect-hfs.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:593098836626:android:66d688f97cf695fe07b44b",
+        "android_client_info": {
+          "package_name": "at.hfs.foodconnect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAaJ2Bleg5S2Rk5YVx-41HHCgBpewo01g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
