@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/home_screen.dart';
 import 'package:foodconnect/screens/login_screen.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
+import 'package:foodconnect/screens/taste_profile_screen.dart';
+import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/utils/Palette.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +20,10 @@ void main() async {
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isDarkMode = prefs.getBool("isDarkMode") ?? true;
+
+  FirestoreService firestoreService = FirestoreService();
+  await firestoreService.fetchAndStoreRestaurants();
+
   runApp(MyApp(isDarkMode: isDarkMode));
 }
 
@@ -70,6 +77,13 @@ class AuthWrapper extends StatelessWidget {
 
   AuthWrapper({required this.onThemeChanged});
 
+  Future<bool> _hasCompletedTasteProfile(String userId) async {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(userId).get();
+    Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
+
+    return data?["tasteProfile"] != null && data!["tasteProfile"].isNotEmpty;
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -81,7 +95,22 @@ class AuthWrapper extends StatelessWidget {
           );
         }
         if(snapshot.data != null) {
-          return MainScreen(onThemeChanged: onThemeChanged);
+          String userId = snapshot.data!.uid;
+
+          return FutureBuilder<bool>(
+            future: _hasCompletedTasteProfile(userId),
+            builder: (context, tasteProfileSnapshot) {
+              if(!tasteProfileSnapshot.hasData) {
+                return Center(child: CircularProgressIndicator());
+              }
+
+              if(tasteProfileSnapshot.data == false) {
+                return TasteProfileScreen(userId: userId);
+              }
+
+              return MainScreen(onThemeChanged: onThemeChanged);
+            },
+          );
         }
         return const SignUpScreen();
       },

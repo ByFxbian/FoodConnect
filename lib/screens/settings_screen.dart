@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback onUsernameChanged;
@@ -16,11 +19,14 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool isDarkMode = true;
   final TextEditingController _userNameController = TextEditingController();
+  String? _profileImageUrl;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     _loadThemePreference();
+    _loadProfileImage();
   }
 
   Future<void> _loadThemePreference() async {
@@ -30,6 +36,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         isDarkMode = prefs.getBool("isDarkMode") ?? true;
       }
     });
+  }
+
+  Future<void> _loadProfileImage() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if(user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+      if(userDoc.exists) {
+        setState(() {
+          _profileImageUrl = userDoc["photoUrl"];
+        });
+      }
+    }
   }
 
   Future<void> _toggleTheme(bool value) async {
@@ -54,6 +72,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if(pickedFile == null) return;
+
+    File file = File(pickedFile.path);
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if(user!=null) {
+      String filePath = "profile_images/${user.uid}.jpg";
+      UploadTask uploadTask = FirebaseStorage.instance.ref().child(filePath).putFile(file);
+
+      TaskSnapshot snapshot = await uploadTask;
+      String downloadUrl = await snapshot.ref.getDownloadURL();
+
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
+        "photoUrl": downloadUrl,
+      });
+
+      setState(() {
+        _profileImageUrl = downloadUrl;
+      });
+
+      _showConfirmationPopup("Profilbild aktualisiert");
+    }
+  }
+ 
   void _showConfirmationPopup(String message) {
     showModalBottomSheet(
       context: context,
@@ -93,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _signOut() async {
     await FirebaseAuth.instance.signOut();
-    Navigator.of(context).pushReplacementNamed("/login");
+    Navigator.of(context).pushReplacementNamed("/LoginScreen");
   }
 
   void _confirmDeleteAccount() {
@@ -146,6 +190,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundImage: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                        ? NetworkImage(_profileImageUrl!)
+                        : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _pickAndUploadImage,
+                      child: CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        radius: 20,
+                        child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
             SwitchListTile(
               title: Text("Dark Mode", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
               value: isDarkMode,

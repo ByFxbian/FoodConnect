@@ -13,13 +13,15 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 //import 'package:google_maps_cluster_manager/google_maps_cluster_manager.dart' as CM;
 
 class HomeScreen extends StatefulWidget {
+  final LatLng? targetLocation;
+  final String? selectedRestaurantId;
+
+  HomeScreen({this.targetLocation, this.selectedRestaurantId});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
   // AIzaSyA6KNBT7_34B_1ibmPvArMOVfvjrbXTx6E IOS
   // AIzaSyAdoiyJg_cGgmKrrsLJeBxsqcWXf0knLqA Android
-  static route() => MaterialPageRoute(
-    builder: (context) => HomeScreen(),
-  );
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -35,6 +37,12 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadMapStyle();
     _loadMarkers();
+
+    if(widget.targetLocation != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _moveToSelectedLocation();
+      });
+    }
   }
 
   Future<void> _loadMapStyle() async {
@@ -60,6 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
         position: LatLng(geoPoint.latitude, geoPoint.longitude),
         iconPath: "assets/icons/${data['icon'] ?? 'mapicon.png'}",
         description: data['description'] ?? 'Keine Beschreibung verfügbar',
+        openingHours: data['openingHours'] ?? '00:00 - 00:00',
+        rating: data['rating'].toString(),
       );
 
       newMarkers.add(await marker.toMarker(context));
@@ -68,6 +78,55 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       markers = newMarkers;
     });
+
+    if(widget.targetLocation != null) {
+      _moveToSelectedLocation();
+    }
+  }
+
+  Future<void> _moveToSelectedLocation() async {
+    if(mapController != null && widget.targetLocation != null) {
+      await mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(widget.targetLocation!, 15),
+      );
+
+      Future.delayed(Duration(milliseconds: 500), () {
+        _showMarkerPanelForRestaurant(widget.selectedRestaurantId);
+      });
+    }
+  }
+
+  void _showMarkerPanelForRestaurant(String? restaurantId) async {
+    if(restaurantId == null) return;
+
+    DocumentSnapshot markerDoc = await FirebaseFirestore.instance
+      .collection("markers")
+      .doc(restaurantId)
+      .get();
+
+    if(!markerDoc.exists) return;
+
+    Map<String, dynamic> data = markerDoc.data() as Map<String, dynamic>;
+
+    MarkerWidget? selectedMarker;
+    for (var marker in markers) {
+      if(marker.markerId.value == restaurantId) {
+        selectedMarker = MarkerWidget(
+          id: marker.markerId.value,
+          name: data['name'] ?? "Unbekannt",
+          position: LatLng(data['location'].latitude, data['location'].longitude),
+          iconPath: "assets/icon/${data['icon'] ?? 'mapicon.png'}",
+          description: data['description'] ?? "Keine Beschreibung verfügbar",
+          openingHours: data['openingHours'] ?? '00:00 - 00:00',
+          rating: data['rating'].toString(),
+        );
+        break;
+      }
+    }
+
+    if(selectedMarker != null) {
+      selectedMarker.showMarkerPanel(context);
+    }
   }
 
   Future<void> _moveToCurrentLocation() async {
@@ -76,6 +135,11 @@ class _HomeScreenState extends State<HomeScreen> {
       LatLng(userLocation.latitude!, userLocation.longitude!),
     ));
   }
+
+  final LatLngBounds wienBounds = LatLngBounds(
+    southwest: LatLng(48.1, 16.2), // Südwestlicher Punkt Wiens
+    northeast: LatLng(48.35, 16.55), // Nordöstlicher Punkt Wiens
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -88,13 +152,24 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         markers: markers,
         mapType: MapType.normal,
-        //myLocationButtonEnabled: false,
-        //myLocationEnabled: true,
-        //compassEnabled: false,
+        onCameraIdle: _onCameraIdle,
+        cameraTargetBounds: CameraTargetBounds(wienBounds),
+        tiltGesturesEnabled: false,
+        rotateGesturesEnabled: false,
+        minMaxZoomPreference: MinMaxZoomPreference(11, 20),
+        /*onCameraMove: (CameraPosition position) {
+          if(position.zoom < 11) {
+            mapController?.animateCamera(
+              CameraUpdate.zoomTo(11)
+            );
+          }
+        },*/
         onMapCreated: (GoogleMapController controller) {
           _controller.complete(controller);
           mapController = controller;
-          //mapController!.setMapStyle(_mapStyleString);
+          if(widget.targetLocation != null) {
+            _moveToSelectedLocation();
+          }
           setState(() {});
         },
       ),
@@ -110,6 +185,36 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void _onCameraIdle() async {
+    if(mapController == null) return;
+
+    LatLngBounds? visibleRegion = await mapController?.getVisibleRegion();
+
+    if(visibleRegion != null) {
+      List<Map<String, dynamic>> filteredMarkers = await firestoreService.getMarkersInBounds(visibleRegion);
+
+      Set<Marker> newMarkers = {};
+      for(var data in filteredMarkers) {
+        GeoPoint geoPoint = data['location'];
+        MarkerWidget marker = MarkerWidget(
+          id: data['id'],
+          name: data['name'],
+          position: LatLng(geoPoint.latitude, geoPoint.longitude),
+          iconPath: "assets/icons/${data['icon'] ?? 'mapicon.png'}",
+          description: data['description'] ?? 'Keine Beschreibung verfügbar',
+          openingHours: data['openingHours'] ?? 'Nicht verfügbar',
+          rating: data['rating'].toString(),
+        );
+
+        newMarkers.add(await marker.toMarker(context));
+      }
+
+      setState(() {
+        markers = newMarkers;
+      });
+    }
   }
 
 }

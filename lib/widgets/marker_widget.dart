@@ -11,6 +11,8 @@ class MarkerWidget {
   final LatLng position;
   final String iconPath;
   final String description;
+  final String openingHours;
+  final String rating;
 
   MarkerWidget({
     required this.id,
@@ -18,6 +20,8 @@ class MarkerWidget {
     required this.position,
     required this.iconPath, 
     required this.description,
+    required this.openingHours,
+    required this.rating,
   });
 
   Future<String> getAddressFromLatLng(double lat, double lng) async {
@@ -42,55 +46,85 @@ class MarkerWidget {
       position: position,
       icon: icon,
       onTap: () {
-        _showMarkerPanel(context);
+        showMarkerPanel(context);
       },
     );
   }
 
-  void _showMarkerPanel(BuildContext context) async {
+  void showMarkerPanel(BuildContext context) async {
     String address = await getAddressFromLatLng(position.latitude, position.longitude);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return DraggableScrollableSheet(
           initialChildSize: 0.5,
-          minChildSize: 0.3,
-          maxChildSize: 0.8,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
           expand: false,
           builder: (context, scrollController) {
-            return Container(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    address, // Hier wird die Adresse angezeigt
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  SizedBox(height: 16),
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(iconPath, height: 100),
+            return SingleChildScrollView(
+              controller: scrollController,
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                     ),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    description,
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ],
+                    SizedBox(height: 8),
+                    Text(
+                      address, // Hier wird die Adresse angezeigt
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    ),
+                    SizedBox(height: 16),
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(iconPath, height: 100),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                  if (description.isNotEmpty) ...[
+                    Text(
+                      "📌 Beschreibung",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(description, style: TextStyle(fontSize: 16)),
+                    SizedBox(height: 16),
+                  ],
+                  if (address.isNotEmpty) ...[
+                    Text(
+                      "📍 Adresse",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(address, style: TextStyle(fontSize: 16)),
+                    SizedBox(height: 16),
+                  ],
+                  if (openingHours != null && openingHours!.isNotEmpty) ...[
+                    Text(
+                      "🕒 Öffnungszeiten",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text(openingHours!, style: TextStyle(fontSize: 16)),
+                    SizedBox(height: 16),
+                  ],
+                  if (rating != null) ...[
+                    Text(
+                      "⭐ Bewertung",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Text("${rating!.toString()} / 5.0", style: TextStyle(fontSize: 16)),
+                    ],
+                  ],
+                ),
               ),
             );
           },

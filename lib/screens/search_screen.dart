@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:foodconnect/screens/home_screen.dart';
+import 'package:foodconnect/screens/main_screen.dart';
+import 'package:foodconnect/screens/user_profile_screen.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class SearchScreen extends StatefulWidget {
   @override
@@ -26,6 +30,32 @@ class _SearchScreenState extends State<SearchScreen> {
         isLoading = false;
       });
     });
+  }
+
+  void _navigateToUserProfile(String userId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserProfileScreen(userId: userId),
+      ),
+    );
+  }
+
+  void _navigateToRestaurant(Map<String, dynamic> restaurant) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MainScreen(
+          onThemeChanged: (isDarkMode) {},
+          initialPage: 0,
+          targetLocation: LatLng(
+            restaurant['location'].latitude,
+            restaurant['location'].longitude,
+          ),
+          selectedRestaurantId: restaurant['id'],
+        ),
+      ),
+    );
   }
 
   @override
@@ -99,6 +129,13 @@ class _SearchScreenState extends State<SearchScreen> {
                               selectedTab == 0 ? "Restaurant" : "Nutzer",
                               style: TextStyle(color: Colors.white70),
                             ),
+                            onTap: () {
+                              if(selectedTab == 0) {
+                                _navigateToRestaurant(data);
+                              } else {
+                                _navigateToUserProfile(data['id']);
+                              }
+                            },
                           );
                         },
                       ),

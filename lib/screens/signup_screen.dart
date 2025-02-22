@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/home_screen.dart';
 import 'package:foodconnect/screens/login_screen.dart';
+import 'package:foodconnect/screens/taste_profile_screen.dart';
 import 'package:foodconnect/widgets/gradient_button.dart';
 import 'package:foodconnect/widgets/login_field.dart';
 import 'package:foodconnect/widgets/social_button.dart';
@@ -46,6 +47,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         });
 
         print("Nutzer erfolgreich erstellt & in Firestore gespeichert");
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => TasteProfileScreen(userId: userCredential.user!.uid)),
+        );
     } on FirebaseException catch (e) {
       print(e.message);
     }
