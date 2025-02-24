@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:foodconnect/screens/home_screen.dart';
@@ -21,6 +20,7 @@ class MainScreen extends StatefulWidget {
   });
 
   @override
+  // ignore: library_private_types_in_public_api
   _MainScreenState createState() => _MainScreenState();
 }
 
@@ -88,9 +88,9 @@ class _MainScreenState extends State<MainScreen> {
             child: Container(
               height: 65,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
               ),
               child: BottomNavigationBar(
                 backgroundColor: Colors.transparent,
@@ -98,7 +98,7 @@ class _MainScreenState extends State<MainScreen> {
                 currentIndex: _selectedIndex,
                 onTap: _onItemTapped,
                 selectedItemColor: Colors.deepPurple,
-                unselectedItemColor: Colors.black.withOpacity(0.7),
+                unselectedItemColor: Colors.black.withValues(alpha: 0.7),
                 showSelectedLabels: false,
                 showUnselectedLabels: false,
                 items: [

@@ -22,7 +22,7 @@ class FirestoreService {
   }
 
   Future<Map<String, dynamic>> fetchPlaceDetails(String placeId) async {
-    final String apiKey = "DEIN_API_KEY";
+    const String apiKey = "AIzaSyAdoiyJg_cGgmKrrsLJeBxsqcWXf0knLqA";
     final response = await http.get(Uri.parse(
       "https://maps.googleapis.com/maps/api/place/details/json?"
       "place_id=$placeId"
@@ -46,7 +46,6 @@ class FirestoreService {
 
   Future<void> fetchAndStoreRestaurants() async {
     const String apiKey = "AIzaSyAdoiyJg_cGgmKrrsLJeBxsqcWXf0knLqA";
-    const String baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
     const String location = "48.210033,16.363449";
     const String radius = "20000";
     const String type = "restaurant";

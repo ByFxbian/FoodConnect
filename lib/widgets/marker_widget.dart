@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+// ignore_for_file: use_build_context_synchronously, unnecessary_null_comparison
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -108,12 +108,12 @@ class MarkerWidget {
                     Text(address, style: TextStyle(fontSize: 16)),
                     SizedBox(height: 16),
                   ],
-                  if (openingHours != null && openingHours!.isNotEmpty) ...[
+                  if (openingHours != null && openingHours.isNotEmpty) ...[
                     Text(
                       "🕒 Öffnungszeiten",
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
-                    Text(openingHours!, style: TextStyle(fontSize: 16)),
+                    Text(openingHours, style: TextStyle(fontSize: 16)),
                     SizedBox(height: 16),
                   ],
                   if (rating != null) ...[
@@ -121,7 +121,7 @@ class MarkerWidget {
                       "⭐ Bewertung",
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
-                    Text("${rating!.toString()} / 5.0", style: TextStyle(fontSize: 16)),
+                    Text("${rating.toString()} / 5.0", style: TextStyle(fontSize: 16)),
                     ],
                   ],
                 ),

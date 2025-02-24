@@ -1,13 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:foodconnect/screens/home_screen.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class SearchScreen extends StatefulWidget {
   @override
+  // ignore: library_private_types_in_public_api
   _SearchScreenState createState() => _SearchScreenState();
 }
 
@@ -79,7 +78,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 hintStyle: TextStyle(color: Colors.white54),
                 prefixIcon: Icon(Icons.search, color: Colors.grey),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.1),
+                fillColor: Colors.white.withValues(alpha: 0.1),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,

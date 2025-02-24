@@ -7,6 +7,7 @@ class UserProfileScreen extends StatefulWidget{
   UserProfileScreen({ required this.userId});
 
   @override
+  // ignore: library_private_types_in_public_api
   _UserProfileScreenState createState() => _UserProfileScreenState();
 }
 
@@ -44,7 +45,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     List<String> parts = email.split("@");
     String domain = parts.last;
     String pixelated = parts.first.length > 3
-        ? parts.first.substring(0, 3) + "***"
+        ? "${parts.first.substring(0, 3)}***"
         : "***";
     return "$pixelated@$domain";
   }
@@ -112,7 +113,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.6),
+                                .withValues(alpha: 0.6),
                           ),
                         ),
                       ),
@@ -143,7 +144,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             "Keine Informationen vorhanden.",
             style: TextStyle(
                 fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
           ),
         ],
       );
@@ -162,6 +163,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         Divider(color: Theme.of(context).colorScheme.primary),
         ...tasteProfile.entries.map((entry) {
           return _buildTasteProfileRow(_mapKeyToLabel(entry.key), entry.value);
+        // ignore: unnecessary_to_list_in_spreads
         }).toList(),
       ],
     );
@@ -188,7 +190,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurface
-                      .withOpacity(0.7)),
+                      .withValues(alpha: 0.7)),
             ),
           ),
         ],

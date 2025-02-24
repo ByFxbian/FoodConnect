@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ class ProfileScreen extends StatefulWidget {
   ProfileScreen({required this.onThemeChanged});
 
   @override
+  // ignore: library_private_types_in_public_api
   _ProfileScreenState createState() => _ProfileScreenState();
 }
 
@@ -112,7 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           userData?['email'] ?? "Keine E-Mail vorhanden",
                           style: TextStyle(
                             fontSize: 16,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                         SizedBox(height: 30),
@@ -143,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             "Keine Informationen vorhanden.",
             style: TextStyle(
                 fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
           ),
         ],
       );
@@ -162,6 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Divider(color: Theme.of(context).colorScheme.primary),
         ...tasteProfile.entries.map((entry) {
           return _buildTasteProfileRow(_mapKeyToLabel(entry.key), entry.value);
+        // ignore: unnecessary_to_list_in_spreads
         }).toList(),
       ],
     );
@@ -188,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurface
-                      .withOpacity(0.7)),
+                      .withValues(alpha: 0.7)),
             ),
           ),
         ],
