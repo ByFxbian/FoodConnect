@@ -20,19 +20,6 @@ workflows:
         script: |
           xcode-project use-profiles
 
-      - name: Get Flutter packages
-        script: |
-          flutter pub get
-
-      - name: Clean iOS Build Files
-        script: |
-          rm -rf ios/Pods
-          rm -rf ios/.symlinks
-          rm -rf ios/Flutter/Flutter.podspec
-          rm -rf ios/Runner.xcworkspace
-          rm -rf ios/Runner.xcodeproj/project.xcworkspace
-          rm -rf ~/Library/Developer/Xcode/DerivedData
-
       - name: Fetch Flutter Dependencies
         script: |
           flutter clean
@@ -41,32 +28,44 @@ workflows:
           flutter gen-l10n || echo "No localization setup, skipping..."
           flutter pub run build_runner build --delete-conflicting-outputs
 
-
       - name: Ensure Runner.xcworkspace Exists
         script: |
           cd ios
           if [ ! -d "Runner.xcworkspace" ]; then
-            echo "Runner.xcworkspace fehlt! Erstelle es neu..."
+            echo "⚠️ Runner.xcworkspace fehlt! Erstelle es neu..."
             pod install --repo-update
           fi
-          ls -la
-          pod deintegrate
-          pod install --repo-update --clean-install
           cd ..
 
       - name: Ensure Podfile Changes are Applied
         script: |
           cd ios
-          rm -rf Podfile.lock
-          pod install --repo-update --clean-install
+          if [ ! -f "Podfile.lock" ] || [ "$(git status --porcelain Podfile.lock | wc -l)" -ne 0 ]; then
+            echo "⚠️ Podfile.lock fehlt oder wurde geändert, installiere Pods..."
+            pod install --repo-update --clean-install
+          fi
+          cd ..
 
       - name: Fix Podfile Configuration
         script: |
           cd ios
           echo "🔧 Fixing Xcode config..."
-          # Stelle sicher, dass die richtigen xcconfig-Dateien verwendet werden
           sed -i '' 's|Pods-Runner.release.xcconfig|Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig|' Runner.xcodeproj/project.pbxproj
           sed -i '' 's|Pods-Runner.profile.xcconfig|Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig|' Runner.xcodeproj/project.pbxproj
+          cd ..
+
+      - name: Verify cloud_firestore and GeneratedPluginRegistrant.m
+        script: |
+          if ! grep -q "cloud_firestore" ios/Podfile; then
+            echo "❌ cloud_firestore fehlt in Podfile! Bitte `flutter pub get` erneut ausführen."
+            exit 1
+          fi
+          
+          if [ ! -f "ios/Runner/GeneratedPluginRegistrant.m" ]; then
+            echo "⚠️ GeneratedPluginRegistrant.m fehlt! Versuche es zu regenerieren..."
+            flutter pub run build_runner build --delete-conflicting-outputs
+            flutter pub get
+          fi
 
       - name: Flutter analyze
         script: |
@@ -79,32 +78,10 @@ workflows:
 
       - name: Flutter build ipa and automatic versioning
         script: |
-          # Stelle sicher, dass `GeneratedPluginRegistrant.m` existiert
-          if [ ! -f "ios/Runner/GeneratedPluginRegistrant.m" ]; then
-            echo "❌ Fehler: GeneratedPluginRegistrant.m nicht gefunden! Versuche es zu regenerieren..."
-            flutter pub run build_runner build --delete-conflicting-outputs
-            flutter pub get
-          fi
-
-          # Stelle sicher, dass Pods richtig installiert sind
           cd ios
-          if [ ! -d "Pods" ]; then
-            echo "❌ Pods fehlen! Starte pod install..."
-            pod install --repo-update
-          fi
+          pod install --repo-update
           cd ..
-
-          echo "🔧 Fixing Xcode module maps..."
-          rm -rf ios/Flutter/Flutter.podspec
-          rm -rf ios/.symlinks
-          rm -rf ios/Pods
-          rm -rf ios/Runner.xcworkspace
-          rm -rf ~/Library/Developer/Xcode/DerivedData
-          flutter clean
-          flutter pub get
-          cd ios && pod install --repo-update && cd ..
-
-          # Baue die iOS-App mit Flutter
+          
           flutter build ipa --release --no-codesign
 
     artifacts:
