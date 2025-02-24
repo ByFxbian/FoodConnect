@@ -66,14 +66,16 @@ workflows:
           cd ios
           pod deintegrate
           rm -rf Pods Podfile.lock
-          pod install --repo-update --clean-install
+          pod install --repo-update --clean-install || {
+            echo "Pod install fehlgeschlagen! Versuche es erneut..."
+            pod install --repo-update
+          }
 
           if [ ! -d "Runner.xcworkspace" ]; then
             echo "Runner.xcworkspace fehlt! Erstelle es..."
             pod install
           fi
-          
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner clean
+
 
       - name: Ensure Runner.xcworkspace Exists
         script: |
@@ -93,6 +95,7 @@ workflows:
 
       - name: Fetch Flutter Dependencies
         script: |
+          flutter clean
           flutter pub get
 
       - name: Flutter analyze
