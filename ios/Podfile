@@ -26,8 +26,9 @@ project 'Runner', {
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
+    next if target.nil? || !target.respond_to?(:build_configurations) # Schutz gegen `nil`
     next if target.name.start_with?('Pods-') # Pods-Runner sicher ignorieren
-    next unless target.respond_to?(:build_configurations) # Schutz gegen `nil`
+
     target.build_configurations.each do |config|
       config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
     end

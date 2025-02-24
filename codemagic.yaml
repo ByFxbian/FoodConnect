@@ -61,6 +61,13 @@ workflows:
           flutter clean
           flutter pub get
 
+      - name: Delete Podfile.lock and Reset CocoaPods
+        script: |
+          cd ios
+          rm -rf Podfile.lock
+          rm -rf ~/Library/Caches/CocoaPods
+          pod cache clean --all
+
       - name: Reinstall Pods and Xcode Settings
         script: |
           cd ios
@@ -72,9 +79,11 @@ workflows:
           }
 
           if [ ! -d "Runner.xcworkspace" ]; then
-            echo "Runner.xcworkspace fehlt! Erstelle es..."
-            pod install
+            echo "Runner.xcworkspace fehlt! Erstelle es neu..."
+            pod install --repo-update
           fi
+
+          ls -la
 
 
       - name: Ensure Runner.xcworkspace Exists
