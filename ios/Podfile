@@ -1,5 +1,64 @@
-target 'Runner' do
-    use_frameworks!
+# Uncomment the next line to define a global platform for your project
+platform :ios, '14.0'
 
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+dev parse_KV_file(file, separator='=')
+  file_abs_path = File.expand_path(file)
+  if !File.exists? file_abs_path
+    return [];
+  end
+  generated_key_values = {}
+  skio_line_start_symbols = ["#", "/"]
+  File.foreach(file_abs_path) do |line|
+    next if skio_line_start_symbols.any? { |symbol| line =~ /^\s*#{symbol}/ }
+    plugin = line.split(pattern=separator)
+    if plugin.length == 2
+      podname = plugin[0].strip()
+      path = plugin[1].strip()
+      podpath = File.expand_path("#{path}", file_abs_path)
+      generated_key_values[podname] = podpath
+    else
+      puts "Invalid plugin specification: #{line}"
+    end
+  end
+  generated_key_values
+end
+
+target 'Runner' do
+  # Comment the next line if you don't want to use dynamic frameworks
+  use_frameworks!
+  use_modular_headers!
+
+  # Pods for Runner
+  pod 'Firebase/Firestore'
+
+  copied_flutter_dir = File.join(__dir__, 'Flutter')
+  copied_framework_path = File.join(copied_flutter_dir, 'Flutter.framework')
+  copied_podspec_path = File.join(copied_flutter_dir, 'Flutter.podspec')
+  unless File.exists?(copied_framework_path) && File.exists?(copied_podspec_path)
+    generated_xcode_build_settings_path = File.join(copied_flutter_dir, 'Generated.xcconfig')
+    unless File.exists?(generated_xcode_build_settings_path)
+      raise "Generated.xcconfig must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+    end
+    generated_xcode_build_settings = parse_KV_file(generated_xcode_build_settings_path)
+    cached_framework_dir = generated_xcode_build_settings['FLUTTER_FRAMEWORK_DIR'];
+
+    unless File.exists?(copied_framework_path)
+      FileUtils.cp_r(File.join(cached_framework_dir, 'Flutter.framework'), copied_flutter_dir)
+    end
+    unless File.exists?(copied_podspec_path)
+      FileUtils.cp(File.join(cached_framework_dir, 'Flutter.podspec'), copied_flutter_dir)
+    end
+  end
+
+  pod 'Flutter', :path => 'Flutter'
+
+  install! 'cocoapods', :disable_input_output_paths => true
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
 
 end
