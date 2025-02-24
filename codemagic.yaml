@@ -24,11 +24,6 @@ workflows:
         script: |
           flutter pub get
 
-      - name: Clean Xcode project
-        script: |
-          cd ios
-          xcodebuild clean -workspace Runner.xcworkspace -scheme Runner
-
       - name: Clean iOS Build Files
         script: |
           rm -rf ios/Pods
@@ -37,54 +32,6 @@ workflows:
           rm -rf ios/Runner.xcworkspace
           rm -rf ios/Runner.xcodeproj/project.xcworkspace
           rm -rf ~/Library/Developer/Xcode/DerivedData
-
-      - name: Update Pod Repo
-        script: |
-          cd ios
-          pod repo update
-
-      - name: Deintegrate Pods
-        script: |
-          cd ios
-          pod deintegrate
-
-      - name: Delete Pods and Podfile.lock
-        script: |
-          cd ios
-          rm -rf Pods Podfile.lock
-
-      - name: Clean Derived Data & Xcode Cache
-        script: |
-          rm -rf ~/Library/Developer/Xcode/DerivedData
-          rm -rf ~/Library/Caches/CocoaPods
-          rm -rf ~/.pub-cache
-          flutter clean
-          flutter pub get
-
-      - name: Delete Podfile.lock and Reset CocoaPods
-        script: |
-          cd ios
-          rm -rf Podfile.lock
-          rm -rf ~/Library/Caches/CocoaPods
-          pod cache clean --all
-
-      - name: Reinstall Pods and Xcode Settings
-        script: |
-          cd ios
-          pod deintegrate
-          rm -rf Pods Podfile.lock
-          pod install --repo-update --clean-install || {
-            echo "Pod install fehlgeschlagen! Versuche es erneut..."
-            pod install --repo-update
-          }
-
-          if [ ! -d "Runner.xcworkspace" ]; then
-            echo "Runner.xcworkspace fehlt! Erstelle es neu..."
-            pod install --repo-update
-          fi
-
-          ls -la
-
 
       - name: Fetch Flutter Dependencies
         script: |
@@ -106,7 +53,6 @@ workflows:
           fi
           ls -la
 
-
       - name: Ensure Podfile Changes are Applied
         script: |
           cd ios
@@ -122,25 +68,26 @@ workflows:
           flutter test
         ignore_failure: true
 
-      - name: Full Cleanup Before Xcode Build
-        script: |
-          cd ios
-          rm -rf Pods
-          rm -rf .symlinks
-          rm -rf Flutter/Flutter.podspec
-          rm -rf Runner.xcworkspace
-          rm -rf Runner.xcodeproj/project.xcworkspace
-          pod deintegrate
-          pod install --repo-update
-          flutter clean
-          flutter pub get
-
       - name: Flutter build ipa and automatic versioning
         script: |
-          # Siehe: https://docs.codemagic.io/knowledge-codemagic/build-versioning/#app-store-or-testflight-latest-build-number
+          if [ ! -f "ios/Runner/GeneratedPluginRegistrant.m" ]; then
+            echo "❌ Fehler: GeneratedPluginRegistrant.m nicht gefunden! Versuche es zu regenerieren..."
+            flutter pub run build_runner build --delete-conflicting-outputs
+            flutter pub get
+          fi
+
+          cd ios
+          if [ ! -d "Pods" ]; then
+            echo "❌ Pods fehlen! Starte pod install..."
+            pod install --repo-update
+          fi
+          cd ..
+
+          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_ID") + 1))
+
           flutter build ipa --release \
             --build-name=1.0.0 \
-            --build-number=$(($(app-store-connect get-latest-testflight-build-number "$APP_ID") + 1)) \
+            --build-number=$BUILD_NUMBER \
             --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:
