@@ -80,17 +80,17 @@ workflows:
         ignore_failure: true
 
       - name: Full Cleanup Before Xcode Build
-          script: |
-            cd ios
-            rm -rf Pods
-            rm -rf .symlinks
-            rm -rf Flutter/Flutter.podspec
-            rm -rf Runner.xcworkspace
-            rm -rf Runner.xcodeproj/project.xcworkspace
-            pod deintegrate
-            pod install --repo-update
-            flutter clean
-            flutter pub get
+        script: |
+          cd ios
+          rm -rf Pods
+          rm -rf .symlinks
+          rm -rf Flutter/Flutter.podspec
+          rm -rf Runner.xcworkspace
+          rm -rf Runner.xcodeproj/project.xcworkspace
+          pod deintegrate
+          pod install --repo-update
+          flutter clean
+          flutter pub get
 
       - name: Flutter build ipa and automatic versioning
         script: |
