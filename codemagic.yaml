@@ -10,49 +10,25 @@ workflows:
         distribution_type: development
         bundle_identifier: at.foodconnect
       vars:
-        APP_ID: 6742403694 # <-- Put your APP ID here
+        APP_ID: 6742403694 # <-- Deine App ID
       flutter: stable
-      xcode: latest # <-- set to specific version e.g. 14.3, 15.0 to avoid unexpected updates.
+      xcode: latest # Falls nötig, auf eine feste Version setzen, z.B. "15.0"
       cocoapods: default
+
     scripts:
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
+
       - name: Get Flutter packages
         script: |
-          flutter packages pub get
-      - name: Fetch Flutter Dependencies
-        script: |
           flutter pub get
+
       - name: Clean Xcode project
         script: |
           cd ios
           xcodebuild clean -workspace Runner.xcworkspace -scheme Runner
-      - name: Update Pod Repo
-        script: |
-          cd ios
-          pod repo update
-      - name: Deintegrate Pods
-        script: |
-          cd ios
-          pod deintegrate
-      - name: Delete Pods and Podfile.lock
-        script: |
-          cd ios
-          rm -rf Pods Podfile.lock
-      - name: Reinstall pods and Xcode Settings
-        script: |
-          cd ios
-          pod deintegrate
-          pod install --repo-update
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner clean
-      - name: Flutter analyze
-        script: |
-          flutter analyze
-      - name: Flutter unit tests
-        script: |
-          flutter test
-        ignore_failure: true
+
       - name: Clean iOS Build Files
         script: |
           rm -rf ios/Pods
@@ -60,20 +36,56 @@ workflows:
           rm -rf ios/Flutter/Flutter.podspec
           rm -rf ios/Runner.xcworkspace
           rm -rf ios/Runner.xcodeproj/project.xcworkspace
-      - name: Xcode Derived Data Cleanup
-        script: |
           rm -rf ~/Library/Developer/Xcode/DerivedData
+
+      - name: Update Pod Repo
+        script: |
+          cd ios
+          pod repo update
+
+      - name: Deintegrate Pods
+        script: |
+          cd ios
+          pod deintegrate
+
+      - name: Delete Pods and Podfile.lock
+        script: |
+          cd ios
+          rm -rf Pods Podfile.lock
+
+      - name: Reinstall Pods and Xcode Settings
+        script: |
+          cd ios
+          pod deintegrate
+          pod install --repo-update
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner clean
+
+      - name: Fetch Flutter Dependencies
+        script: |
+          flutter pub get
+
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+
+      - name: Flutter unit tests
+        script: |
+          flutter test
+        ignore_failure: true
+
       - name: Flutter build ipa and automatic versioning
         script: |
-          # See the following link about getting the latest App Store or TestFlight version - https://docs.codemagic.io/knowledge-codemagic/build-versioning/#app-store-or-testflight-latest-build-number
+          # Siehe: https://docs.codemagic.io/knowledge-codemagic/build-versioning/#app-store-or-testflight-latest-build-number
           flutter build ipa --release \
             --build-name=1.0.0 \
             --build-number=$(($(app-store-connect get-latest-testflight-build-number "$APP_ID") + 1)) \
             --export-options-plist=/Users/builder/export_options.plist
+
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
+
     publishing:
       app_store_connect:
           auth: integration
@@ -81,7 +93,7 @@ workflows:
           # Configuration related to TestFlight (optional)
           # Note: This action is performed during post-processing.
           submit_to_testflight: true
-          beta_groups: # Specify the names of beta tester groups that will get access to the build once it has passed beta review.
+          beta_groups: 
             - Test1
 
           # Configuration related to App Store (optional)
