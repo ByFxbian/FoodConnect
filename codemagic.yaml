@@ -67,6 +67,12 @@ workflows:
           pod deintegrate
           rm -rf Pods Podfile.lock
           pod install --repo-update --clean-install
+
+          if [ ! -d "Runner.xcworkspace" ]; then
+            echo "Runner.xcworkspace fehlt! Erstelle es..."
+            pod install
+          fi
+          
           xcodebuild -workspace Runner.xcworkspace -scheme Runner clean
 
       - name: Ensure Runner.xcworkspace Exists
