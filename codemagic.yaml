@@ -21,6 +21,22 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
+      - name: Clean Xcode project
+        script: |
+          cd ios
+          xcodebuild clean -workspace Runner.xcworkspace -scheme Runner
+      - name: Update Pod Repo
+        script: |
+          cd ios
+          pod repo update
+      - name: Deintegrate Pods
+        script: |
+          cd ios
+          pod deintegrate
+      - name: Delete Pods and Podfile.lock
+        script: |
+          cd ios
+          rm -rf Pods Podfile.lock
       - name: Install pods
         script: |
           find . -name "Podfile" -execdir pod install \;
