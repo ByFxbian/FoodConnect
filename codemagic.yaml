@@ -65,8 +65,19 @@ workflows:
         script: |
           cd ios
           pod deintegrate
-          pod install --repo-update
+          rm -rf Pods Podfile.lock
+          pod install --repo-update --clean-install
           xcodebuild -workspace Runner.xcworkspace -scheme Runner clean
+
+      - name: Ensure Runner.xcworkspace Exists
+        script: |
+          cd ios
+          if [ ! -f "Runner.xcworkspace" ]; then
+            echo "Runner.xcworkspace fehlt! Erstelle es neu..."
+            pod install
+          else
+            echo "Runner.xcworkspace existiert bereits."
+          fi
 
       - name: Ensure Podfile Changes are Applied
         script: |
