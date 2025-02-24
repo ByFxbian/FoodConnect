@@ -11,8 +11,6 @@ target 'Runner' do
   # Pods for Runner
   pod 'Firebase/Firestore'
 
-  pod 'Flutter', :path => 'Flutter'
-
   target 'RunnerTests' do
     inherit! :search_paths
     # Pods for testing
