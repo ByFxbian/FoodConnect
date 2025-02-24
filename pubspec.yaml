@@ -35,7 +35,7 @@ flutter_icons:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  cloud_firestore: ^5.6.3
+  cloud_firestore: ^5.6.4
   cupertino_icons: ^1.0.8
   firebase_auth: ^5.3.4
   firebase_core: ^3.8.1

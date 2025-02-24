@@ -53,6 +53,14 @@ workflows:
           cd ios
           rm -rf Pods Podfile.lock
 
+      - name: Clean Derived Data & Xcode Cache
+        script: |
+          rm -rf ~/Library/Developer/Xcode/DerivedData
+          rm -rf ~/Library/Caches/CocoaPods
+          rm -rf ~/.pub-cache
+          flutter clean
+          flutter pub get
+
       - name: Reinstall Pods and Xcode Settings
         script: |
           cd ios
