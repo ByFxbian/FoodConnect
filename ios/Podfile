@@ -1,15 +1,14 @@
 # Uncomment the next line to define a global platform for your project
 platform :ios, '14.0'
 
-ENV['COCOAPODS_DISABLE_STATS'] = 'true'
-
 target 'Runner' do
   # Comment the next line if you don't want to use dynamic frameworks
   use_frameworks!
-  use_modular_headers!
 
   # Pods for Runner
-  pod 'Firebase/Firestore'
+  pod 'FirebaseAuth'
+  pod 'FirebaseFirestore'
+
 
   target 'RunnerTests' do
     inherit! :search_paths
