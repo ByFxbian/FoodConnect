@@ -13,8 +13,6 @@ target 'Runner' do
 
   pod 'Flutter', :path => 'Flutter'
 
-  install! 'cocoapods', :disable_input_output_paths => true
-
   target 'RunnerTests' do
     inherit! :search_paths
     # Pods for testing
