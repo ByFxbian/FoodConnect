@@ -21,6 +21,9 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
+      - name: Fetch Flutter Dependencies
+        script: |
+          flutter pub get
       - name: Clean Xcode project
         script: |
           cd ios
@@ -37,9 +40,12 @@ workflows:
         script: |
           cd ios
           rm -rf Pods Podfile.lock
-      - name: Install pods
+      - name: Reinstall pods and Xcode Settings
         script: |
-          find . -name "Podfile" -execdir pod install \;
+          cd ios
+          pod deintegrate
+          pod install --repo-update
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner clean
       - name: Flutter analyze
         script: |
           flutter analyze
@@ -47,6 +53,13 @@ workflows:
         script: |
           flutter test
         ignore_failure: true
+      - name: Clean iOS Build Files
+        script: |
+          rm -rf ios/Pods
+          rm -rf ios/.symlinks
+          rm -rf ios/Flutter/Flutter.podspec
+          rm -rf ios/Runner.xcworkspace
+          rm -rf ios/Runner.xcodeproj/project.xcworkspace
       - name: Flutter build ipa and automatic versioning
         script: |
           # See the following link about getting the latest App Store or TestFlight version - https://docs.codemagic.io/knowledge-codemagic/build-versioning/#app-store-or-testflight-latest-build-number
