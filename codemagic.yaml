@@ -86,26 +86,30 @@ workflows:
           ls -la
 
 
+      - name: Fetch Flutter Dependencies
+        script: |
+          flutter clean
+          flutter pub get
+          flutter pub cache repair
+          flutter pub run build_runner build --delete-conflicting-outputs
+
       - name: Ensure Runner.xcworkspace Exists
         script: |
           cd ios
-          if [ ! -f "Runner.xcworkspace" ]; then
-            echo "Runner.xcworkspace fehlt! Erstelle es neu..."
-            pod install
+          if [ ! -d "Runner.xcworkspace" ]; then
+            echo "Runner.xcworkspace fehlt! Versuche ihn mit Xcode zu erstellen..."
+            xcodebuild -list || true
           else
             echo "Runner.xcworkspace existiert bereits."
           fi
+          ls -la
+
 
       - name: Ensure Podfile Changes are Applied
         script: |
           cd ios
           rm -rf Podfile.lock
           pod install --repo-update --clean-install
-
-      - name: Fetch Flutter Dependencies
-        script: |
-          flutter clean
-          flutter pub get
 
       - name: Flutter analyze
         script: |

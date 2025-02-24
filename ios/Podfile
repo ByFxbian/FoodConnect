@@ -26,7 +26,7 @@ project 'Runner', {
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    next if target.nil? || !target.respond_to?(:build_configurations) # Schutz gegen `nil`
+    next if target.nil? || !target.respond_to?(:build_configurations)  # Schutz gegen `nil`
     next if target.name.start_with?('Pods-') # Pods-Runner sicher ignorieren
 
     target.build_configurations.each do |config|
@@ -34,5 +34,3 @@ post_install do |installer|
     end
   end
 end
-
-
