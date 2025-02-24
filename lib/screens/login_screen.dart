@@ -3,13 +3,10 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:foodconnect/screens/home_screen.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
 import 'package:foodconnect/widgets/gradient_button.dart';
 import 'package:foodconnect/widgets/login_field.dart';
 import 'package:foodconnect/widgets/social_button.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
   //const LoginScreen({Key? key}) : super(key: key);

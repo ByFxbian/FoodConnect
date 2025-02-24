@@ -6,6 +6,7 @@ class SocialButton extends StatelessWidget {
   final String iconPath;
   final String label;
   final double horizontalPadding;
+  // ignore: use_super_parameters
   const SocialButton({
     Key? key,
     required this.iconPath,
@@ -20,6 +21,7 @@ class SocialButton extends StatelessWidget {
       icon: SvgPicture.asset(
         iconPath,
         width: 25,
+        // ignore: deprecated_member_use
         color: Palette.darkIconColor,
       ),
       label: Text(

@@ -1,11 +1,6 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:foodconnect/screens/home_screen.dart';
-import 'package:foodconnect/screens/login_screen.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
 import 'package:foodconnect/screens/taste_profile_screen.dart';
@@ -34,9 +29,11 @@ void main() async {
 class MyApp extends StatefulWidget {
   final bool isDarkMode;
 
+  // ignore: use_super_parameters
   const MyApp({Key? key, required this.isDarkMode}) : super(key: key);
 
   @override
+  // ignore: library_private_types_in_public_api
   _MyAppState createState() => _MyAppState();
 
 }

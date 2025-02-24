@@ -1,11 +1,9 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/widgets/marker_widget.dart';
 import 'package:location/location.dart';
@@ -19,6 +17,7 @@ class HomeScreen extends StatefulWidget {
   HomeScreen({this.targetLocation, this.selectedRestaurantId});
 
   @override
+  // ignore: library_private_types_in_public_api
   _HomeScreenState createState() => _HomeScreenState();
   // AIzaSyA6KNBT7_34B_1ibmPvArMOVfvjrbXTx6E IOS
   // AIzaSyAdoiyJg_cGgmKrrsLJeBxsqcWXf0knLqA Android

@@ -5,6 +5,7 @@ class GradientButton extends StatelessWidget {
   final Future<void> Function() pressAction;
   final String buttonLabel;
 
+  // ignore: use_super_parameters
   const GradientButton({
     Key? key,
     required this.pressAction,

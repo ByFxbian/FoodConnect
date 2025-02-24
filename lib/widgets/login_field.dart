@@ -4,6 +4,7 @@ import 'package:foodconnect/utils/Palette.dart';
 class LoginField extends StatelessWidget {
   final String hintText;
   final TextEditingController controller;
+  // ignore: use_super_parameters
   const LoginField({
     Key? key,
     required this.hintText,
