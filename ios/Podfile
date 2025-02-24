@@ -3,7 +3,7 @@ platform :ios, '14.0'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
-dev parse_KV_file(file, separator='=')
+def parse_KV_file(file, separator='=')
   file_abs_path = File.expand_path(file)
   if !File.exists? file_abs_path
     return [];
