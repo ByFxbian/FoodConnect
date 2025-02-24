@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:foodconnect/screens/home_screen.dart';
 import 'package:foodconnect/screens/login_screen.dart';
 import 'package:foodconnect/screens/main_screen.dart';
@@ -27,10 +30,6 @@ void main() async {
   runApp(MyApp(isDarkMode: isDarkMode));
 }
 
-Future<bool> _loadThemePreference() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.getBool("isDarkMode") ?? true;
-}
 
 class MyApp extends StatefulWidget {
   final bool isDarkMode;

@@ -60,11 +60,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: IconButton(
               icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.onSurface, size: 26),
               onPressed: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => SettingsScreen(onUsernameChanged: _loadUserData, onThemeChanged: (isDarkMode) {
-                    widget.onThemeChanged;
-                  })),
+                final bool? isDarkMode = await Navigator.of(context).push(
+                  MaterialPageRoute<bool>(
+                    builder: (context) => SettingsScreen(
+                      onUsernameChanged: _loadUserData,
+                      isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                    ),
+                  ),
                 );
+
+                if(isDarkMode != null) {
+                  widget.onThemeChanged(isDarkMode);
+                }
               },
             ),
           ),

@@ -8,16 +8,16 @@ import 'package:firebase_storage/firebase_storage.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback onUsernameChanged;
-  final ValueChanged<bool> onThemeChanged;
+  final bool isDarkMode;
 
-  SettingsScreen({required this.onUsernameChanged, required this.onThemeChanged});  
+  SettingsScreen({required this.onUsernameChanged, required this.isDarkMode});  
 
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool isDarkMode = true;
+  late bool isDarkMode;
   final TextEditingController _userNameController = TextEditingController();
   String? _profileImageUrl;
   final ImagePicker _picker = ImagePicker();
@@ -25,17 +25,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadThemePreference();
+    isDarkMode = widget.isDarkMode;
     _loadProfileImage();
-  }
-
-  Future<void> _loadThemePreference() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      if(mounted) {
-        isDarkMode = prefs.getBool("isDarkMode") ?? true;
-      }
-    });
   }
 
   Future<void> _loadProfileImage() async {
@@ -53,12 +44,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _toggleTheme(bool value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool("isDarkMode", value);
-    if (mounted) {
-      setState(() {
-        isDarkMode = value;
-      });
-    }
-    widget.onThemeChanged(value);
+    setState(() {
+      isDarkMode = value;
+    });
+    
+    Navigator.pop(context, value);
   }
 
   void _updateUsername() async {
