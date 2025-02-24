@@ -7,8 +7,8 @@ target 'Runner' do
   use_modular_headers!
 
   # Pods for Runner
-  pod 'FirebaseAuth'
-  pod 'FirebaseFirestore'
+  pod 'FirebaseAuth', '~> 11.8.1'
+  pod 'FirebaseFirestore', '~> 11.8.0'
 
 
   target 'RunnerTests' do

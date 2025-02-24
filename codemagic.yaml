@@ -60,6 +60,9 @@ workflows:
           rm -rf ios/Flutter/Flutter.podspec
           rm -rf ios/Runner.xcworkspace
           rm -rf ios/Runner.xcodeproj/project.xcworkspace
+      - name: Xcode Derived Data Cleanup
+        script: |
+          rm -rf ~/Library/Developer/Xcode/DerivedData
       - name: Flutter build ipa and automatic versioning
         script: |
           # See the following link about getting the latest App Store or TestFlight version - https://docs.codemagic.io/knowledge-codemagic/build-versioning/#app-store-or-testflight-latest-build-number
