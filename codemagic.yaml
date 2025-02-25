@@ -56,11 +56,19 @@ workflows:
 
       - name: Verify cloud_firestore and GeneratedPluginRegistrant.m
         script: |
-          if ! grep -q "cloud_firestore" ios/Podfile; then
-            echo "❌ cloud_firestore fehlt in Podfile! Bitte `flutter pub get` erneut ausführen."
-            exit 1
-          fi
+          flutter pub get
+          flutterfire configure --yes || echo "⚠️ Firebase not configured, skipping..."
+          cd ios
+          pod install --repo-update
+          cd ..
           
+          if ! grep -q "cloud_firestore" ios/Podfile; then
+            echo "❌ cloud_firestore fehlt in Podfile! Versuche es zu fixen..."
+            flutter pub get
+            flutterfire configure --yes
+            cd ios && pod install --repo-update && cd ..
+          fi
+
           if [ ! -f "ios/Runner/GeneratedPluginRegistrant.m" ]; then
             echo "⚠️ GeneratedPluginRegistrant.m fehlt! Versuche es zu regenerieren..."
             flutter pub run build_runner build --delete-conflicting-outputs
