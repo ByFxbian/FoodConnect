@@ -95,8 +95,12 @@ workflows:
 
       - name: Set iOS Deployment Target
         script: |
-          sed -i '' 's/platform :ios, .*/platform :ios, "13.0"/' ios/Podfile
+          perl -pi -e 's/platform :ios, .*/platform :ios, "13.0"/' ios/Podfile
 
+      - name: Print modified Podfile
+        script: |
+          echo "📜 Aktuelle Podfile nach Änderung:"
+          cat ios/Podfile
 
       - name: Flutter build ipa and automatic versioning
         script: |
