@@ -54,13 +54,17 @@ workflows:
           sed -i '' 's|Pods-Runner.profile.xcconfig|Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig|' Runner.xcodeproj/project.pbxproj
           cd ..
 
+      - name: Install Firebase CLI
+        script: |
+          npm install -g firebase-tools
+          dart pub global activate flutterfire_cli
+
       - name: Verify cloud_firestore and GeneratedPluginRegistrant.m
         script: |
           flutter pub get
-          flutterfire configure --yes || echo "⚠️ Firebase not configured, skipping..."
-          cd ios
-          pod install --repo-update
-          cd ..
+          export PATH="$PATH:$HOME/.pub-cache/bin"
+          flutterfire configure --yes
+          cd ios && pod install --repo-update && cd ..
           
           if ! grep -q "cloud_firestore" ios/Podfile; then
             echo "❌ cloud_firestore fehlt in Podfile! Versuche es zu fixen..."
@@ -86,11 +90,14 @@ workflows:
 
       - name: Flutter build ipa and automatic versioning
         script: |
-          cd ios
-          pod install --repo-update
-          cd ..
-          
-          flutter build ipa --release --no-codesign
+          flutter clean
+          flutter pub get
+          flutter pub run build_runner build --delete-conflicting-outputs || echo "No generated files needed"
+          cd ios && pod install --repo-update && cd ..
+          flutter build ipa --release \
+            --build-name=1.0.0 \
+            --build-number=$(($(app-store-connect get-latest-testflight-build-number "$APP_ID") + 1)) \
+            --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
