@@ -119,7 +119,7 @@ workflows:
           xcodebuild -project Runner.xcodeproj \
           -target Runner \
           -configuration Release \
-          CODE_SIGN_IDENTITY="Apple Distribution" \
+          CODE_SIGN_IDENTITY="Apple Development" \
           DEVELOPMENT_TEAM=DW239Z4DYF \
 
 
