@@ -108,6 +108,11 @@ workflows:
           perl -pi -e 's/PRODUCT_BUNDLE_IDENTIFIER = at\.hfs\.foodconnect/PRODUCT_BUNDLE_IDENTIFIER = at.foodconnect/g' ios/Runner.xcodeproj/project.pbxproj
           cat ios/Runner.xcodeproj/project.pbxproj | grep PRODUCT_BUNDLE_IDENTIFIER
 
+      - name: Enable Automatic Signing
+        script: |
+          echo "🔑 Enabling automatic signing..."
+          perl -pi -e 's/ProvisioningStyle = Manual;/ProvisioningStyle = Automatic;/g' ios/Runner.xcodeproj/project.pbxproj
+
       - name: Flutter build ipa and automatic versioning
         script: |
           flutter pub run build_runner build --delete-conflicting-outputs || echo "No generated files needed"
