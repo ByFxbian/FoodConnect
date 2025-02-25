@@ -121,7 +121,6 @@ workflows:
           -configuration Release \
           CODE_SIGN_IDENTITY="Apple Distribution" \
           DEVELOPMENT_TEAM=DW239Z4DYF \
-          PROVISIONING_PROFILE_SPECIFIER="App Store Connect Distribution Profile"
 
 
       - name: Flutter build ipa and automatic versioning
