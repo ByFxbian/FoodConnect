@@ -102,6 +102,12 @@ workflows:
           echo "📜 Aktuelle Podfile nach Änderung:"
           cat ios/Podfile
 
+      - name: Fix Bundle Identifier
+        script: |
+          echo "🔧 Fixing Bundle Identifier..."
+          perl -pi -e 's/PRODUCT_BUNDLE_IDENTIFIER = at\.hfs\.foodconnect/PRODUCT_BUNDLE_IDENTIFIER = at.foodconnect/g' ios/Runner.xcodeproj/project.pbxproj
+          cat ios/Runner.xcodeproj/project.pbxproj | grep PRODUCT_BUNDLE_IDENTIFIER
+
       - name: Flutter build ipa and automatic versioning
         script: |
           flutter pub run build_runner build --delete-conflicting-outputs || echo "No generated files needed"
