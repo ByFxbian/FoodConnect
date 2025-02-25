@@ -121,6 +121,7 @@ workflows:
           -configuration Release \
           CODE_SIGN_IDENTITY="Apple Development" \
           DEVELOPMENT_TEAM=DW239Z4DYF \
+          -allowProvisioningUpdates
 
 
       - name: Flutter build ipa and automatic versioning
