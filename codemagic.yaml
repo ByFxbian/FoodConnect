@@ -93,6 +93,11 @@ workflows:
           rm -rf ios
           flutter create .
 
+      - name: Set iOS Deployment Target
+        script: |
+          sed -i '' 's/platform :ios, .*/platform :ios, "13.0"/' ios/Podfile
+
+
       - name: Flutter build ipa and automatic versioning
         script: |
           flutter pub run build_runner build --delete-conflicting-outputs || echo "No generated files needed"
