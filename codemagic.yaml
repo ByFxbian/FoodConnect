@@ -113,6 +113,17 @@ workflows:
           echo "🔑 Enabling automatic signing..."
           perl -pi -e 's/ProvisioningStyle = Manual;/ProvisioningStyle = Automatic;/g' ios/Runner.xcodeproj/project.pbxproj
 
+      - name: Set Development Team ID in Xcode
+        script: |
+          cd ios
+          xcodebuild -project Runner.xcodeproj \
+          -target Runner \
+          -configuration Release \
+          CODE_SIGN_IDENTITY="Apple Distribution" \
+          DEVELOPMENT_TEAM=DW239Z4DYF \
+          PROVISIONING_PROFILE_SPECIFIER="App Store Connect Distribution Profile"
+
+
       - name: Flutter build ipa and automatic versioning
         script: |
           flutter pub run build_runner build --delete-conflicting-outputs || echo "No generated files needed"
