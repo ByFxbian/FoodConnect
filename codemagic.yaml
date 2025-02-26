@@ -20,7 +20,7 @@ workflows:
       - name: Cloud Firestore Fix
         script: |
           rm -f ios/Runner.xcodeproj/project.pbxproj
-          flutter create --project-name foodconnect --org at.foodconnect
+          flutter create --project-name foodconnect --org at.foodconnect .
       
       - name: Get Flutter packages
         script: |
