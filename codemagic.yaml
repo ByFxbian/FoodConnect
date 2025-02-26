@@ -54,7 +54,3 @@ workflows:
         earliest_release_date: 2025-02-27T14:00:00+00:00 
         copyright: 2025 Fabian APP_STORE_APPLE_ID
         phased_release: false
-
-    
-
-       
