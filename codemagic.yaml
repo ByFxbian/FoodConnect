@@ -16,6 +16,11 @@ workflows:
         script: |
           xcode-project use-profiles \
           --custom-export-options='{"testFlightInternalTestingOnly": true}'
+
+      - name: Cloud Firestore Fix
+        script: |
+          rm -f ios/Runner.xcodeproj/project.pbxproj
+          flutter create --project-name ios --org at.foodconnect
       
       - name: Get Flutter packages
         script: |
