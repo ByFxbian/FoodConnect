@@ -1,0 +1,104 @@
+workflows:
+  ios-workflow:
+    name: iOS Workflow
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+    integrations:
+      app_store_connect: AppManagerKey
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: at.foodconnect
+      vars:
+        APP_ID: 6742403694 # <-- Deine App ID
+      flutter: stable
+      xcode: latest # Falls nötig, auf eine feste Version setzen, z.B. "15.0"
+      cocoapods: default
+
+    scripts:
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+
+      - name: Fetch Flutter Dependencies
+        script: |
+          flutter clean
+          flutter pub get
+          flutter pub cache repair
+          flutter gen-l10n || echo "No localization setup, skipping..."
+          flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Ensure Runner.xcworkspace Exists
+        script: |
+          cd ios
+          if [ ! -d "Runner.xcworkspace" ]; then
+            echo "⚠️ Runner.xcworkspace fehlt! Erstelle es neu..."
+            pod install --repo-update
+          fi
+          cd ..
+
+      - name: Ensure Podfile Changes are Applied
+        script: |
+          cd ios
+          if [ ! -f "Podfile.lock" ] || [ "$(git status --porcelain Podfile.lock | wc -l)" -ne 0 ]; then
+            echo "⚠️ Podfile.lock fehlt oder wurde geändert, installiere Pods..."
+            pod install --repo-update --clean-install
+          fi
+          cd ..
+
+      - name: Fix Podfile Configuration
+        script: |
+          cd ios
+          echo "🔧 Fixing Xcode config..."
+          sed -i '' 's|Pods-Runner.release.xcconfig|Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig|' Runner.xcodeproj/project.pbxproj
+          sed -i '' 's|Pods-Runner.profile.xcconfig|Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig|' Runner.xcodeproj/project.pbxproj
+          cd ..
+
+      - name: Verify cloud_firestore and GeneratedPluginRegistrant.m
+        script: |
+          if ! grep -q "cloud_firestore" ios/Podfile; then
+            echo "❌ cloud_firestore fehlt in Podfile! Bitte `flutter pub get` erneut ausführen."
+            exit 1
+          fi
+          
+          if [ ! -f "ios/Runner/GeneratedPluginRegistrant.m" ]; then
+            echo "⚠️ GeneratedPluginRegistrant.m fehlt! Versuche es zu regenerieren..."
+            flutter pub run build_runner build --delete-conflicting-outputs
+            flutter pub get
+          fi
+
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+
+      - name: Flutter unit tests
+        script: |
+          flutter test
+        ignore_failure: true
+
+      - name: Flutter build ipa and automatic versioning
+        script: |
+          cd ios
+          pod install --repo-update
+          cd ..
+          
+          flutter build ipa --release --no-codesign
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+
+    publishing:
+      app_store_connect:
+          auth: integration
+          
+          # Configuration related to TestFlight (optional)
+          # Note: This action is performed during post-processing.
+          submit_to_testflight: true
+          beta_groups: 
+            - Test1
+
+          # Configuration related to App Store (optional)
+          # Note: This action is performed during post-processing.
+          submit_to_app_store: false  
