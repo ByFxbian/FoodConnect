@@ -12,17 +12,17 @@ workflows:
         distribution_type: app_store
         bundle_identifier: at.foodconnect
     scripts:
+      - name: Cloud Firestore Fix
+        script: |
+          rm -f ios/Runner.xcodeproj/project.pbxproj
+          flutter create --project-name foodconnect .
+          rm -rf test
+      
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles \
           --custom-export-options='{"testFlightInternalTestingOnly": true}'
 
-      - name: Cloud Firestore Fix
-        script: |
-          rm -f ios/Runner.xcodeproj/project.pbxproj
-          flutter create --project-name foodconnect --org at.foodconnect .
-          rm -rf test
-      
       - name: Get Flutter packages
         script: |
           flutter pub get
