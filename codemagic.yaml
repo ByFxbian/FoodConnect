@@ -21,6 +21,7 @@ workflows:
         script: |
           rm -f ios/Runner.xcodeproj/project.pbxproj
           flutter create --project-name foodconnect --org at.foodconnect .
+          rm -f test/
       
       - name: Get Flutter packages
         script: |
