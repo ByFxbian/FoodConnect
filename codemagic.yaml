@@ -35,6 +35,10 @@ workflows:
         script: |
           flutter analyze
         
+      - name: Print Project Files
+        script: |
+          cat ios/Runner.xcodeproj/project.pbxproj
+
       - name: Flutter build ipa
         script: |
           BUILD_NUMBER=$(($(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID") + 1))
