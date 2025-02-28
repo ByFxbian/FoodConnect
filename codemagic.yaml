@@ -16,6 +16,7 @@ workflows:
         script: |
           rm -f ios/Runner.xcodeproj/project.pbxproj
           flutter create --project-name foodconnect .
+          perl -pi -e 's/platform :ios, .*/platform :ios, "16.0"/' ios/Podfile
           rm -rf test
       
       - name: Set up code signing settings on Xcode project
