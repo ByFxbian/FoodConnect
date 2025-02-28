@@ -1,4 +1,4 @@
-package at.hfs.foodconnect
+package at.foodconnect
 
 import io.flutter.embedding.android.FlutterActivity
 
