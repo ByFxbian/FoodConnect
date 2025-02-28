@@ -43,12 +43,19 @@ workflows:
           perl -pi -e 's/# platform :ios, .*/platform :ios, "16.0"/' ios/Podfile
           cat ios/Podfile | grep platform
 
+      - name: Update Versions in AppFramework
+        script: |
+          cat ios/Flutter/AppframeworkInfo.plist
+          perl pi -e 's/\b12\.0\b16.0/g' ios/Flutter/AppframeworkInfo.plist
+          perl pi -e 's/\b1\.0\b2.0/g' ios/Flutter/AppframeworkInfo.plist 
+          cat ios/Flutter/AppframeworkInfo.plist
+
       - name: Flutter build ipa
         script: |
           BUILD_NUMBER=$(($(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID") + 1))
           flutter build ipa --release \
-            --build-name=1.0.$BUILD_NUMBER \
-            --build-number=$BUILD_NUMBER \
+            --build-name=1.0.2 \
+            --build-number=2 \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
