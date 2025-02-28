@@ -2,7 +2,8 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+//import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 
 class MarkerWidget {
@@ -141,6 +142,6 @@ class MarkerWidget {
     ui.FrameInfo fi = await codec.getNextFrame();
     ByteData? resizedData = await fi.image.toByteData(format: ui.ImageByteFormat.png);
 
-    return BitmapDescriptor.bytes(resizedData!.buffer.asUint8List());
+    return BitmapDescriptor.fromBytes(resizedData!.buffer.asUint8List());
   }
 }

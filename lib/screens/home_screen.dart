@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/widgets/marker_widget.dart';
 import 'package:location/location.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+//import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 //import 'package:google_maps_cluster_manager/google_maps_cluster_manager.dart' as CM;
 
 class HomeScreen extends StatefulWidget {
@@ -24,11 +25,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  GoogleMapController? mapController;
+  //GoogleMapController? mapController;
+  PlatformMapController? mapController;
   Set<Marker> markers = {};
   Location location = Location();
   final FirestoreService firestoreService = FirestoreService();
-  final Completer<GoogleMapController> _controller = Completer();
+  //final Completer<GoogleMapController> _controller = Completer();
+  final Completer<PlatformMapController> _controller = Completer();
   String? _mapStyleString;
 
   @override
@@ -143,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GoogleMap(
+      /*body: GoogleMap(
         style: _mapStyleString ?? "",
         initialCameraPosition: CameraPosition(
           target: LatLng(48.210033, 16.363449),
@@ -164,6 +167,33 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         },*/
         onMapCreated: (GoogleMapController controller) {
+          _controller.complete(controller);
+          mapController = controller;
+          if(widget.targetLocation != null) {
+            _moveToSelectedLocation();
+          }
+          setState(() {});
+        },
+      ),*/
+      body: PlatformMap(
+        initialCameraPosition: CameraPosition(
+          target: LatLng(48.210033, 16.363449),
+          zoom: 12,
+        ),
+        markers: markers,
+        mapType: MapType.normal,
+        onCameraIdle: _onCameraIdle,
+        tiltGesturesEnabled: false,
+        rotateGesturesEnabled: false,
+        minMaxZoomPreference: MinMaxZoomPreference(11, 20),
+        onCameraMove: (CameraPosition position) {
+          if(position.zoom < 11) {
+            mapController?.animateCamera(
+              CameraUpdate.zoomTo(11)
+            );
+          }
+        },
+        onMapCreated: (PlatformMapController controller) {
           _controller.complete(controller);
           mapController = controller;
           if(widget.targetLocation != null) {

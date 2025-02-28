@@ -25,6 +25,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.3.0"
+  apple_maps_flutter:
+    dependency: transitive
+    description:
+      name: apple_maps_flutter
+      sha256: "5874d4ce4932191d6d0ae78cae478e167e05e37efc2266cd7f91d9a95fabf1b3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
   archive:
     dependency: transitive
     description:
@@ -816,6 +824,38 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.6"
+  platform_maps_flutter:
+    dependency: "direct main"
+    description:
+      name: platform_maps_flutter
+      sha256: "9a917496288f622e0a60cb0ec62b8d826be0cfcdbdec32cc06fc024661e9c8b0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0-beta"
+  platform_maps_flutter_apple:
+    dependency: transitive
+    description:
+      name: platform_maps_flutter_apple
+      sha256: b43739011ed5f14d9aec2c4b6e88e89dafd0191c70008f1f4b9b44f20316fd6f
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0-beta"
+  platform_maps_flutter_google_android:
+    dependency: transitive
+    description:
+      name: platform_maps_flutter_google_android
+      sha256: "7583df4031d263a003be1f68cd983fe1a12a536c643a14e65552eb7795a7fc15"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0-beta"
+  platform_maps_flutter_platform_interface:
+    dependency: transitive
+    description:
+      name: platform_maps_flutter_platform_interface
+      sha256: "1ba29ee9fa78ad5e766496bb85e0ef37d1b5f0bb8d939b80e6882b7ff781392d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0-beta"
   plugin_platform_interface:
     dependency: transitive
     description:

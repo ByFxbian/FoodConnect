@@ -4,7 +4,8 @@ import 'dart:ui';
 import 'package:foodconnect/screens/home_screen.dart';
 import 'package:foodconnect/screens/search_screen.dart';
 import 'package:foodconnect/screens/profile_screen.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+//import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class MainScreen extends StatefulWidget {
   final ValueChanged<bool> onThemeChanged;
