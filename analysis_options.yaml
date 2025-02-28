@@ -12,6 +12,7 @@ analyzer:
     use_build_context_synchronously: ignore
     library_private_types_in_public_api: ignore
     file_names: ignore
+    unused_field: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

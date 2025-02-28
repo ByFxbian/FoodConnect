@@ -32,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final FirestoreService firestoreService = FirestoreService();
   //final Completer<GoogleMapController> _controller = Completer();
   final Completer<PlatformMapController> _controller = Completer();
+  // ignore: unused_field
   String? _mapStyleString;
 
   @override
