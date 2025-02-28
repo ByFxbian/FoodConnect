@@ -40,7 +40,7 @@ workflows:
           cat ios/Runner.xcodeproj/project.pbxproj | grep PRODUCT_BUNDLE_IDENTIFIER
           perl -pi -e 's/PRODUCT_BUNDLE_IDENTIFIER = at\.hfs\.foodconnect/PRODUCT_BUNDLE_IDENTIFIER = at.foodconnect/g' ios/Runner.xcodeproj/project.pbxproj
           cat ios/Runner.xcodeproj/project.pbxproj | grep PRODUCT_BUNDLE_IDENTIFIER
-          perl -pi -e 's/platform :ios, .*/platform :ios, "16.0"/' ios/Podfile
+          perl -pi -e 's/# platform :ios, .*/platform :ios, "16.0"/' ios/Podfile
           cat ios/Podfile | grep platform
 
       - name: Flutter build ipa
