@@ -15,7 +15,7 @@ workflows:
       - name: Cloud Firestore Fix
         script: |
           rm -rf ios
-          flutter create .
+          flutter create --project-name foodconnect --org .
           rm -rf test
       
       - name: Set up code signing settings on Xcode project
