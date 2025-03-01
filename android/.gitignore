@@ -6,6 +6,10 @@ gradle-wrapper.jar
 /local.properties
 GeneratedPluginRegistrant.java
 
+# Custom
+/build.gradle
+/app/src/main/kotlin/com/example/foodconnect/MainActivity.kt
+
 # Remember to never publicly share your keystore.
 # See https://flutter.dev/to/reference-keystore
 key.properties
