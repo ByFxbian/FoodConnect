@@ -7,7 +7,7 @@ gradle-wrapper.jar
 GeneratedPluginRegistrant.java
 
 # Custom
-/build.gradle
+/app/src/build.gradle
 /app/src/main/kotlin/com/example/foodconnect/MainActivity.kt
 
 # Remember to never publicly share your keystore.
