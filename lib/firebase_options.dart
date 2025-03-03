@@ -67,7 +67,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '593098836626',
     projectId: 'food-connect-hfs',
     storageBucket: 'food-connect-hfs.appspot.com',
-    iosBundleId: 'com.example.foodconnect',
+    iosBundleId: 'at.foodconnect',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

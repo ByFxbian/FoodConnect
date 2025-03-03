@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final ValueChanged<bool> onThemeChanged;
+  //final ValueChanged<bool> onThemeChanged;
 
-  ProfileScreen({required this.onThemeChanged});
+  //ProfileScreen({required this.onThemeChanged});
+  ProfileScreen();
 
   @override
   // ignore: library_private_types_in_public_api
@@ -60,18 +61,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: IconButton(
               icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.onSurface, size: 26),
               onPressed: () async {
-                final bool? isDarkMode = await Navigator.of(context).push(
+                await Navigator.of(context).push(
                   MaterialPageRoute<bool>(
                     builder: (context) => SettingsScreen(
                       onUsernameChanged: _loadUserData,
-                      isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                      //isDarkMode: Theme.of(context).brightness == Brightness.dark,
                     ),
                   ),
                 );
 
-                if(isDarkMode != null) {
+                /*if(isDarkMode != null) {
                   widget.onThemeChanged(isDarkMode);
-                }
+                }*/
               },
             ),
           ),

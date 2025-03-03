@@ -4,15 +4,16 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:foodconnect/main.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback onUsernameChanged;
-  final bool isDarkMode;
+  //final bool isDarkMode;
 
-  SettingsScreen({required this.onUsernameChanged, required this.isDarkMode});  
+  SettingsScreen({required this.onUsernameChanged /*required this.isDarkMode*/});  
 
   @override
   // ignore: library_private_types_in_public_api
@@ -28,7 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    isDarkMode = widget.isDarkMode;
+    //isDarkMode = widget.isDarkMode;
     _loadProfileImage();
   }
 
@@ -44,15 +45,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _toggleTheme(bool value) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("isDarkMode", value);
-    setState(() {
-      isDarkMode = value;
-    });
-    
-    Navigator.pop(context, value);
-  }
 
   void _updateUsername() async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -167,6 +159,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
@@ -210,8 +204,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SizedBox(height: 20),
             SwitchListTile(
               title: Text("Dark Mode", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-              value: isDarkMode,
-              onChanged: _toggleTheme,
+              value: themeProvider.themeMode == ThemeMode.dark,
+              onChanged: (_) {
+                themeProvider.toggleTheme();
+              },
               activeColor: Theme.of(context).colorScheme.primary,
             ),
             ListTile(

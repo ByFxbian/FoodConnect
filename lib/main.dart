@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
 import 'package:foodconnect/screens/taste_profile_screen.dart';
@@ -16,21 +17,25 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool isDarkMode = prefs.getBool("isDarkMode") ?? true;
-
   FirestoreService firestoreService = FirestoreService();
   await firestoreService.fetchAndStoreRestaurants();
 
-  runApp(MyApp(isDarkMode: isDarkMode));
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: MyApp(),
+    )
+  );
 }
 
 
 class MyApp extends StatefulWidget {
-  final bool isDarkMode;
+  //final bool isDarkMode;
 
   // ignore: use_super_parameters
-  const MyApp({Key? key, required this.isDarkMode}) : super(key: key);
+  //const MyApp({Key? key, required this.isDarkMode}) : super(key: key);
+
+  const MyApp({super.key});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -39,39 +44,69 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late bool isDarkMode;
+  //late bool isDarkMode;
 
   @override
   void initState() {
     super.initState();
-    isDarkMode = widget.isDarkMode;
-  }
-
-  void _toggleTheme(bool value) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("isDarkMode", value);
-    setState(() {
-      isDarkMode = value;
-    });
+    //isDarkMode = widget.isDarkMode;
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    /*return MaterialApp(
       title: 'Food Connect',
       debugShowCheckedModeBanner: false,
-      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      theme: _lightTheme(),
-      darkTheme: _darkTheme(),
+      //themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      //theme: _lightTheme(),
+      //darkTheme: _darkTheme(),
       home: AuthWrapper(onThemeChanged: _toggleTheme),
+    );*/
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          title: 'Food Connect',
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: themeProvider.themeMode,
+          home: AuthWrapper(),
+        );
+      },
     );
   }
 }
 
-class AuthWrapper extends StatelessWidget {
-  final ValueChanged<bool> onThemeChanged;
+class ThemeProvider extends ChangeNotifier {
+  ThemeMode _themeMode = ThemeMode.dark;
 
-  AuthWrapper({required this.onThemeChanged});
+  ThemeMode get themeMode => _themeMode;
+
+  void toggleTheme() {
+    _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+}
+
+class ThemePreferences {
+  // ignore: constant_identifier_names
+  static const THEME_KEY = "theme_key";
+
+  setTheme(bool value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setBool(THEME_KEY, value);
+  }
+
+  getTheme() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(THEME_KEY) ?? false;
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  //final ValueChanged<bool> onThemeChanged;
+
+  //AuthWrapper({required this.onThemeChanged});
+  AuthWrapper();
 
   Future<bool> _hasCompletedTasteProfile(String userId) async {
     DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(userId).get();
@@ -104,7 +139,7 @@ class AuthWrapper extends StatelessWidget {
                 return TasteProfileScreen(userId: userId);
               }
 
-              return MainScreen(onThemeChanged: onThemeChanged);
+              return MainScreen();
             },
           );
         }
@@ -114,7 +149,7 @@ class AuthWrapper extends StatelessWidget {
   }
 }
 
-ThemeData _darkTheme() {
+/*ThemeData _darkTheme() {
   return ThemeData(
     scaffoldBackgroundColor: Palette.darkBackground,
     useMaterial3: true,
@@ -127,9 +162,35 @@ ThemeData _darkTheme() {
       onPrimary: Palette.darkTextColor
     ),
   );
-}
+}*/
 
-ThemeData _lightTheme() {
+final darkTheme = ThemeData(
+  brightness: Brightness.dark,
+  scaffoldBackgroundColor: Palette.darkBackground,
+  useMaterial3: true,
+  colorScheme: ColorScheme.dark(
+    surface: Palette.darkBackground,
+    onSurface: Palette.darkTextColor,
+    primary: Palette.gradient1,
+    secondary: Palette.gradient2,
+    onPrimary: Palette.darkTextColor
+  ),
+);
+
+final lightTheme = ThemeData(
+  scaffoldBackgroundColor: Palette.lightBackground,
+  useMaterial3: true,
+  brightness: Brightness.light,
+  colorScheme: ColorScheme.light(
+    surface: Palette.lightBackground,
+    onSurface: Palette.lightTextColor,
+    primary: Palette.gradient1,
+    secondary: Palette.gradient2,
+    onPrimary: Palette.darkTextColor
+  )
+);
+
+/*ThemeData _lightTheme() {
   return ThemeData(
     scaffoldBackgroundColor: Palette.lightBackground,
     useMaterial3: true,
@@ -143,3 +204,4 @@ ThemeData _lightTheme() {
     )
   );
 }
+*/

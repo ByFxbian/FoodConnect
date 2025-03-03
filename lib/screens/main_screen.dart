@@ -8,13 +8,13 @@ import 'package:foodconnect/screens/profile_screen.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class MainScreen extends StatefulWidget {
-  final ValueChanged<bool> onThemeChanged;
+  //final ValueChanged<bool> onThemeChanged;
   final int initialPage;
   final LatLng? targetLocation;
   final String? selectedRestaurantId;
 
   MainScreen({
-    required this.onThemeChanged,
+    /*required this.onThemeChanged,*/
     this.initialPage = 0,
     this.targetLocation,
     this.selectedRestaurantId
@@ -40,7 +40,7 @@ class _MainScreenState extends State<MainScreen> {
         selectedRestaurantId: widget.selectedRestaurantId,
       ),
       SearchScreen(),
-      ProfileScreen(onThemeChanged: widget.onThemeChanged)
+      ProfileScreen()
     ];
   }
 
@@ -89,17 +89,17 @@ class _MainScreenState extends State<MainScreen> {
             child: Container(
               height: 65,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)),
               ),
               child: BottomNavigationBar(
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 currentIndex: _selectedIndex,
                 onTap: _onItemTapped,
-                selectedItemColor: Colors.deepPurple,
-                unselectedItemColor: Colors.black.withValues(alpha: 0.7),
+                selectedItemColor: Theme.of(context).colorScheme.primary,
+                unselectedItemColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
                 showSelectedLabels: false,
                 showUnselectedLabels: false,
                 items: [

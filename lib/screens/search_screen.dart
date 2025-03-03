@@ -46,7 +46,7 @@ class _SearchScreenState extends State<SearchScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => MainScreen(
-          onThemeChanged: (isDarkMode) {},
+          //onThemeChanged: (isDarkMode) {},
           initialPage: 0,
           targetLocation: LatLng(
             restaurant['location'].latitude,
@@ -61,7 +61,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Column(
         children: [
           SizedBox(height: 50),
@@ -76,24 +76,24 @@ class _SearchScreenState extends State<SearchScreen> {
               },
               decoration: InputDecoration(
                 hintText: "Suche nach Restaurants oder Nutzern...",
-                hintStyle: TextStyle(color: Colors.white54),
-                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.1),
+                fillColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
               ),
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
           ),
           SizedBox(height: 16),
           ToggleButtons(
             borderRadius: BorderRadius.circular(20),
-            selectedColor: Colors.white,
-            color: Colors.white70,
-            fillColor: Colors.deepPurple,
+            selectedColor: Theme.of(context).colorScheme.onSurface,
+            color: Theme.of(context).colorScheme.onSurface,
+            fillColor: Theme.of(context).colorScheme.primary,
             isSelected: [selectedTab == 0, selectedTab == 1],
             onPressed: (index) {
               setState(() {
@@ -102,15 +102,15 @@ class _SearchScreenState extends State<SearchScreen> {
               });
             },
             children: [
-              Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text("Restaurants")),
-              Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text("Nutzer")),
+              Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text("Restaurants", style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
+              Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Text("Nutzer", style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
             ],
           ),
           Expanded(
             child: isLoading
-                ? Center(child: CircularProgressIndicator(color: Colors.deepPurple))
+                ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
                 : searchResults.isEmpty && searchQuery.isNotEmpty
-                    ? Center(child: Text("Keine Ergebnisse gefunden", style: TextStyle(color: Colors.white54)))
+                    ? Center(child: Text("Keine Ergebnisse gefunden", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)))
                     : ListView.builder(
                         itemCount: searchResults.length,
                         itemBuilder: (context, index) {
@@ -123,11 +123,11 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
                             title: Text(
                               data['name'],
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                             ),
                             subtitle: Text(
                               selectedTab == 0 ? "Restaurant" : "Nutzer",
-                              style: TextStyle(color: Colors.white70),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                             ),
                             onTap: () {
                               if(selectedTab == 0) {

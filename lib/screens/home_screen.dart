@@ -1,15 +1,12 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:foodconnect/services/firestore_service.dart';
+import 'package:foodconnect/services/database_service.dart';
+import 'package:foodconnect/utils/CameraBounds.dart';
 import 'package:foodconnect/widgets/marker_widget.dart';
 import 'package:location/location.dart';
-//import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
-//import 'package:google_maps_cluster_manager/google_maps_cluster_manager.dart' as CM;
 
 class HomeScreen extends StatefulWidget {
   final LatLng? targetLocation;
@@ -25,12 +22,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  //GoogleMapController? mapController;
   PlatformMapController? mapController;
   Set<Marker> markers = {};
   Location location = Location();
-  final FirestoreService firestoreService = FirestoreService();
-  //final Completer<GoogleMapController> _controller = Completer();
+  final DatabaseService databaseService = DatabaseService();
   final Completer<PlatformMapController> _controller = Completer();
   // ignore: unused_field
   String? _mapStyleString;
@@ -59,17 +54,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadMarkers() async {
-    List<Map<String, dynamic>> markerData = await firestoreService.getMarkers();
+    List<Map<String, dynamic>> markerData = await databaseService.getAllRestaurants();
     Set<Marker> newMarkers = {};
 
     for (var data in markerData) {
-      GeoPoint geoPoint = data['location'] as GeoPoint;
+      String iconPath = data['icon'] ?? '';
+
+      bool isUrl = iconPath.startsWith('http') || iconPath.startsWith('https');
+      String finalIconPath = isUrl ? iconPath : "assets/icons/mapicon.png";
 
       MarkerWidget marker = MarkerWidget(
         id: data['id'] ?? 'unknown',
         name: data['name'] ?? 'Unbekannt',
-        position: LatLng(geoPoint.latitude, geoPoint.longitude),
-        iconPath: "assets/icons/${data['icon'] ?? 'mapicon.png'}",
+        position: LatLng(data['latitude'], data['longitude']),
+        iconPath: finalIconPath,
         description: data['description'] ?? 'Keine Beschreibung verfügbar',
         openingHours: data['openingHours'] ?? '00:00 - 00:00',
         rating: data['rating'].toString(),
@@ -102,34 +100,21 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showMarkerPanelForRestaurant(String? restaurantId) async {
     if(restaurantId == null) return;
 
-    DocumentSnapshot markerDoc = await FirebaseFirestore.instance
-      .collection("markers")
-      .doc(restaurantId)
-      .get();
+    Map<String, dynamic>? restaurantData = await databaseService.getRestaurantById(restaurantId);
 
-    if(!markerDoc.exists) return;
+    if (restaurantData == null) return;
 
-    Map<String, dynamic> data = markerDoc.data() as Map<String, dynamic>;
+    MarkerWidget selectedMarker = MarkerWidget(
+      id: restaurantId,
+      name: restaurantData['name'] ?? "Unbekannt",
+      position: LatLng(restaurantData['latitude'], restaurantData['longitude']),
+      iconPath: "assets/icons/${restaurantData['icon'] ?? 'mapicon.png'}",
+      description: restaurantData['description'] ?? "Keine Beschreibung verfügbar",
+      openingHours: restaurantData['openingHours'] ?? '00:00 - 00:00',
+      rating: restaurantData['rating'].toString(),
+    );
 
-    MarkerWidget? selectedMarker;
-    for (var marker in markers) {
-      if(marker.markerId.value == restaurantId) {
-        selectedMarker = MarkerWidget(
-          id: marker.markerId.value,
-          name: data['name'] ?? "Unbekannt",
-          position: LatLng(data['location'].latitude, data['location'].longitude),
-          iconPath: "assets/icon/${data['icon'] ?? 'mapicon.png'}",
-          description: data['description'] ?? "Keine Beschreibung verfügbar",
-          openingHours: data['openingHours'] ?? '00:00 - 00:00',
-          rating: data['rating'].toString(),
-        );
-        break;
-      }
-    }
-
-    if(selectedMarker != null) {
-      selectedMarker.showMarkerPanel(context);
-    }
+    selectedMarker.showMarkerPanel(context);
   }
 
   Future<void> _moveToCurrentLocation() async {
@@ -181,6 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
           target: LatLng(48.210033, 16.363449),
           zoom: 12,
         ),
+        cameraBounds: CameraBounds(wienBounds),
         markers: markers,
         mapType: MapType.normal,
         onCameraIdle: _onCameraIdle,
@@ -223,16 +209,26 @@ class _HomeScreenState extends State<HomeScreen> {
     LatLngBounds? visibleRegion = await mapController?.getVisibleRegion();
 
     if(visibleRegion != null) {
-      List<Map<String, dynamic>> filteredMarkers = await firestoreService.getMarkersInBounds(visibleRegion);
+      List<Map<String, dynamic>> filteredMarkers =
+          await databaseService.getRestaurantsInBounds(
+        visibleRegion.southwest.latitude,
+        visibleRegion.southwest.longitude,
+        visibleRegion.northeast.latitude,
+        visibleRegion.northeast.longitude,
+      );
 
       Set<Marker> newMarkers = {};
-      for(var data in filteredMarkers) {
-        GeoPoint geoPoint = data['location'];
+      for (var data in filteredMarkers) {
+        String iconPath = data['icon'] ?? '';
+
+        bool isUrl = iconPath.startsWith('http') || iconPath.startsWith('https');
+        String finalIconPath = isUrl ? iconPath : "assets/icons/mapicon.png";
+
         MarkerWidget marker = MarkerWidget(
           id: data['id'],
           name: data['name'],
-          position: LatLng(geoPoint.latitude, geoPoint.longitude),
-          iconPath: "assets/icons/${data['icon'] ?? 'mapicon.png'}",
+          position: LatLng(data['latitude'], data['longitude']),
+          iconPath: finalIconPath,
           description: data['description'] ?? 'Keine Beschreibung verfügbar',
           openingHours: data['openingHours'] ?? 'Nicht verfügbar',
           rating: data['rating'].toString(),
