@@ -3,7 +3,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/services/database_service.dart';
-import 'package:foodconnect/utils/CameraBounds.dart';
 import 'package:foodconnect/widgets/marker_widget.dart';
 import 'package:location/location.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
@@ -166,7 +165,6 @@ class _HomeScreenState extends State<HomeScreen> {
           target: LatLng(48.210033, 16.363449),
           zoom: 12,
         ),
-        cameraBounds: CameraBounds(wienBounds),
         markers: markers,
         mapType: MapType.normal,
         onCameraIdle: _onCameraIdle,
