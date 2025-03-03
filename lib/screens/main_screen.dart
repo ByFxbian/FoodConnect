@@ -33,6 +33,8 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    print(widget.targetLocation);
+    print(widget.selectedRestaurantId);
     _selectedIndex = widget.initialPage;
     _pages = [
       HomeScreen(

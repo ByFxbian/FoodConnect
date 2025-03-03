@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
+import 'package:foodconnect/services/database_service.dart';
 //import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
@@ -15,9 +16,10 @@ class _SearchScreenState extends State<SearchScreen> {
   String searchQuery = "";
   int selectedTab = 0;
   bool isLoading = false;
-  List<DocumentSnapshot> searchResults = [];
+  List<Map<String, dynamic>> searchResults = [];
+  final DatabaseService databaseService = DatabaseService();
 
-  void _search() {
+  /*void _search() {
     setState(() {
       isLoading = true;
     });
@@ -30,7 +32,7 @@ class _SearchScreenState extends State<SearchScreen> {
         isLoading = false;
       });
     });
-  }
+  }*/
 
   void _navigateToUserProfile(String userId) {
     Navigator.push(
@@ -42,15 +44,17 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _navigateToRestaurant(Map<String, dynamic> restaurant) {
+    print(restaurant['latitude']);
+    print(restaurant['longitude']);
+    print(restaurant['id']);
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => MainScreen(
-          //onThemeChanged: (isDarkMode) {},
           initialPage: 0,
           targetLocation: LatLng(
-            restaurant['location'].latitude,
-            restaurant['location'].longitude,
+            restaurant['latitude'],
+            restaurant['longitude'],
           ),
           selectedRestaurantId: restaurant['id'],
         ),
@@ -72,7 +76,11 @@ class _SearchScreenState extends State<SearchScreen> {
                 setState(() {
                   searchQuery = query;
                 });
-                _search();
+                if(selectedTab == 0) {
+                  _searchRestaurants(query);
+                } else {
+                  _searchUsers(query);
+                }
               },
               decoration: InputDecoration(
                 hintText: "Suche nach Restaurants oder Nutzern...",
@@ -98,7 +106,13 @@ class _SearchScreenState extends State<SearchScreen> {
             onPressed: (index) {
               setState(() {
                 selectedTab = index;
-                _search();
+                if(searchQuery.isNotEmpty) {
+                  if(selectedTab == 0) {
+                    _searchRestaurants(searchQuery);
+                  } else {
+                    _searchUsers(searchQuery);
+                  }
+                }
               });
             },
             children: [
@@ -114,7 +128,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     : ListView.builder(
                         itemCount: searchResults.length,
                         itemBuilder: (context, index) {
-                          var data = searchResults[index].data() as Map<String, dynamic>;
+                          var data = searchResults[index];
                           return ListTile(
                             leading: CircleAvatar(
                               backgroundImage: data['photoUrl'] != null && data['photoUrl'].isNotEmpty
@@ -145,18 +159,46 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Stream<QuerySnapshot> searchRestaurants() {
-    return FirebaseFirestore.instance
-      .collection("markers")
-      .where("type", isEqualTo: "Restaurant")
-      .where("name", isGreaterThanOrEqualTo: searchQuery)
-      .snapshots();
+  void _searchRestaurants(String query) async {
+    if(query.isEmpty) {
+      setState(() {
+        searchResults = [];
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final results = await databaseService.searchRestaurants(query);
+
+    setState(() {
+      searchResults = results;
+      isLoading = false;
+    });
   }
 
-  Stream<QuerySnapshot> searchUsers() {
-    return FirebaseFirestore.instance
-        .collection("users")
-        .where("name", isGreaterThanOrEqualTo: searchQuery)
-        .snapshots();
+  void _searchUsers(String query) async {
+    if(query.isEmpty) {
+      setState(() {
+        searchResults = [];
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final snapshot = await FirebaseFirestore.instance
+      .collection("users")
+      .where("name", isGreaterThanOrEqualTo: query)
+      .get();
+
+    setState(() {
+      searchResults = snapshot.docs.map((doc) => doc.data()).toList();
+      isLoading = false;
+    });
   }
 }

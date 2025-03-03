@@ -35,6 +35,16 @@ class DatabaseService {
     );
   }
 
+  Future<List<Map<String, dynamic>>> searchRestaurants(String query) async {
+    final db = await database;
+    return await db.query(
+      'restaurants',
+      where: "name LIKE ?",
+      whereArgs: ['%$query%'],
+      orderBy: "name ASC",
+    );
+  }
+
   Future<void> insertRestaurant(Map<String, dynamic> restaurant) async {
     final db = await database;
 

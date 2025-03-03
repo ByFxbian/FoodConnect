@@ -15,6 +15,7 @@ class MarkerWidget {
   final String description;
   final String openingHours;
   final String rating;
+  final BuildContext parentContext;
 
   MarkerWidget({
     required this.id,
@@ -24,6 +25,7 @@ class MarkerWidget {
     required this.description,
     required this.openingHours,
     required this.rating,
+    required this.parentContext,
   });
 
   Future<String> getAddressFromLatLng(double lat, double lng) async {
@@ -48,18 +50,21 @@ class MarkerWidget {
       position: position,
       icon: icon,
       onTap: () {
-        showMarkerPanel(context);
+        showMarkerPanel(parentContext);
       },
     );
   }
 
   void showMarkerPanel(BuildContext context) async {
+    print("🟢 Marker Panel für $name wird geöffnet!");
+
     String address = await getAddressFromLatLng(position.latitude, position.longitude);
 
+
     showModalBottomSheet(
-      context: context,
+      context: parentContext,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(parentContext).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -158,6 +163,13 @@ class MarkerWidget {
       if(parts.length == 2) {
         String day = daysMap[parts[0]] ?? parts[0];
         String time = _convertTo24HourFormat(parts[1]);
+
+        if (time.toLowerCase().contains("open 24 hours")) {
+          time = "Durchgehend geöffnet";
+        } else if (time.toLowerCase().contains("closed")) {
+          time = "Geschlossen";
+        }
+
         formattedHours.add(Text("$day: $time", style: TextStyle(fontSize: 16)));
       } else {
         formattedHours.add(Text(line, style: TextStyle(fontSize: 16)));

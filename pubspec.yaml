@@ -45,12 +45,18 @@ dependencies:
   flutter_launcher_icons: ^0.14.3
   flutter_svg: ^2.0.16
   geocoding: ^3.0.0
+  geolocator: ^13.0.2
+  google_fonts: ^6.2.1
   google_maps_flutter: ^2.10.0
   http: ^1.3.0
   image_picker: ^1.1.2
   location: ^7.0.1
   path_provider: ^2.1.5
-  platform_maps_flutter: ^2.0.0-beta
+  platform_maps_flutter:
+    git:
+      url: https://github.com/ByFxbian/platform_maps_flutter.git
+      ref: master
+      path: packages/platform_maps_flutter
   provider: ^6.1.2
   shared_preferences: ^2.5.2
   sqflite: ^2.4.2
