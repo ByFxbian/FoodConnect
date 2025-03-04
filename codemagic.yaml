@@ -14,9 +14,15 @@ workflows:
     scripts:
       - name: Cloud Firestore Fix
         script: |
-          rm -rf ios
+          rm -rf ios 
           flutter create .
           rm -rf test
+
+      - name: Restore App Icon from ZIP
+        script: |
+          mkdir -p ios/Runner/Assets.xcassets/AppIcon.appiconset
+          unzip assets/app_icons.zip -d ios/Runner/Assets.xcassets/AppIcon.appiconset
+          ls -la ios/Runner/Assets.xcassets/AppIcon.appiconset
       
       - name: Set up code signing settings on Xcode project
         script: |
@@ -26,6 +32,7 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter pub get
+
 
       - name: Install Pods
         script: |
@@ -57,7 +64,7 @@ workflows:
           BUILD_NUMBER=$(($(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID") + 1))
           flutter build ipa --release \
             --build-name=1.0.2 \
-            --build-number=5 \
+            --build-number=6 \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
