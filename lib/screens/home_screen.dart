@@ -7,6 +7,7 @@ import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/widgets/marker_widget.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+// ignore: depend_on_referenced_packages, implementation_imports
 import 'package:geolocator_platform_interface/src/enums/location_accuracy.dart' as LA;
 
 class HomeScreen extends StatefulWidget {
@@ -92,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // ignore: unused_element
   Future<void> _moveToSelectedLocation() async {
     print("📌 _moveToSelectedLocation() aufgerufen!");
     if (widget.targetLocation == null) {

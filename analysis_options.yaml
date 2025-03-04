@@ -13,7 +13,10 @@ analyzer:
     library_private_types_in_public_api: ignore
     file_names: ignore
     unused_field: ignore
-    depend_on_referenced_packages: ignore
+    depend_on_referenced_packages: ignore ignore
+    implementation_imports: ignore
+    library_prefixes: ignore
+    unused_element: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:
