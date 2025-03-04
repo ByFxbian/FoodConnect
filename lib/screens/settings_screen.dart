@@ -200,7 +200,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             SizedBox(height: 20),
-            SwitchListTile(
+            SwitchListTile.adaptive(
               title: Text("Dark Mode", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
               value: themeProvider.themeMode == ThemeMode.dark,
               onChanged: (_) {
