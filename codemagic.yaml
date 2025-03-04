@@ -20,6 +20,7 @@ workflows:
 
       - name: Restore App Icon from ZIP
         script: |
+          rm -rf ios/Runner/Assets.xcassets/AppIcon.appiconset
           mkdir -p ios/Runner/Assets.xcassets/AppIcon.appiconset
           unzip assets/app_icons.zip -d ios/Runner/Assets.xcassets/AppIcon.appiconset
           ls -la ios/Runner/Assets.xcassets/AppIcon.appiconset
