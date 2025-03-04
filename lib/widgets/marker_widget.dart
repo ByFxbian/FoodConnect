@@ -2,6 +2,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:foodconnect/screens/home_screen.dart';
 //import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
@@ -50,19 +51,19 @@ class MarkerWidget {
       position: position,
       icon: icon,
       onTap: () {
-        showMarkerPanel(parentContext);
+        showMarkerPanel();
       },
     );
   }
 
-  void showMarkerPanel(BuildContext context) async {
+  void showMarkerPanel() async {
     print("🟢 Marker Panel für $name wird geöffnet!");
 
     String address = await getAddressFromLatLng(position.latitude, position.longitude);
 
 
     showModalBottomSheet(
-      context: parentContext,
+      context: _HomeScreenState.parentContext,
       isScrollControlled: true,
       backgroundColor: Theme.of(parentContext).colorScheme.surface,
       shape: RoundedRectangleBorder(

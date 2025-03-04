@@ -31,6 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = false;
   static bool isFirstLoad = true;
 
+  static late BuildContext parentContext;
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +44,12 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadMarkers();
       });
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    parentContext = context;
   }
 
   Future<void> _loadMapStyle() async {
@@ -113,7 +121,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showMarkerPanelForRestaurant(String? restaurantId) async {
-    print(restaurantId);
     if(restaurantId == null) return;
 
     Map<String, dynamic>? restaurantData = await databaseService.getRestaurantById(restaurantId);
@@ -131,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
       parentContext: context
     );
 
-    selectedMarker.showMarkerPanel(context);
+    selectedMarker.showMarkerPanel();
   }
 
   Future<void> _moveToCurrentLocation() async {
