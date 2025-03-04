@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:foodconnect/main.dart';
@@ -11,12 +12,10 @@ import 'package:firebase_storage/firebase_storage.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback onUsernameChanged;
-  //final bool isDarkMode;
 
-  SettingsScreen({required this.onUsernameChanged /*required this.isDarkMode*/});  
+  SettingsScreen({required this.onUsernameChanged});  
 
   @override
-  // ignore: library_private_types_in_public_api
   _SettingsScreenState createState() => _SettingsScreenState();
 }
 
@@ -29,7 +28,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    //isDarkMode = widget.isDarkMode;
     _loadProfileImage();
   }
 
@@ -96,7 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 40),
+              Icon(Platform.isIOS ? CupertinoIcons.check_mark_circled : Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 40),
               SizedBox(height: 10),
               Text(
                 message,
@@ -167,7 +165,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+          icon: Icon(Icons.adaptive.arrow_back, color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text("Einstellungen", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
@@ -194,7 +192,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: CircleAvatar(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         radius: 20,
-                        child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                        child: Icon(Platform.isIOS ? CupertinoIcons.camera : Icons.camera_alt, color: Colors.white, size: 20),
                       ),
                     ),
                   ),
@@ -212,7 +210,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             ListTile(
               title: Text("Benutzernamen ändern", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-              trailing: Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface),
+              trailing: Icon(Platform.isIOS ? CupertinoIcons.pencil : Icons.edit, color: Theme.of(context).colorScheme.onSurface),
               onTap: () {
                 showDialog(
                   context: context,

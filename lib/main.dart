@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:foodconnect/screens/loading_screen.dart';
+import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
@@ -11,14 +13,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  FirestoreService firestoreService = FirestoreService();
-  await firestoreService.fetchAndStoreRestaurants();
 
   runApp(
     ChangeNotifierProvider(
@@ -30,10 +31,6 @@ void main() async {
 
 
 class MyApp extends StatefulWidget {
-  //final bool isDarkMode;
-
-  // ignore: use_super_parameters
-  //const MyApp({Key? key, required this.isDarkMode}) : super(key: key);
 
   const MyApp({super.key});
 
@@ -44,27 +41,18 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  //late bool isDarkMode;
 
   @override
   void initState() {
     super.initState();
-    //isDarkMode = widget.isDarkMode;
   }
 
   @override
   Widget build(BuildContext context) {
-    /*return MaterialApp(
-      title: 'Food Connect',
-      debugShowCheckedModeBanner: false,
-      //themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      //theme: _lightTheme(),
-      //darkTheme: _darkTheme(),
-      home: AuthWrapper(onThemeChanged: _toggleTheme),
-    );*/
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
+          navigatorKey: navigatorKey,
           title: 'Food Connect',
           theme: lightTheme,
           darkTheme: darkTheme,
@@ -103,9 +91,6 @@ class ThemePreferences {
 }
 
 class AuthWrapper extends StatelessWidget {
-  //final ValueChanged<bool> onThemeChanged;
-
-  //AuthWrapper({required this.onThemeChanged});
   AuthWrapper();
 
   Future<bool> _hasCompletedTasteProfile(String userId) async {
@@ -139,7 +124,15 @@ class AuthWrapper extends StatelessWidget {
                 return TasteProfileScreen(userId: userId);
               }
 
-              return MainScreen();
+              return FutureBuilder(
+                future: _initializeData(),
+                builder: (context, snapshot) {
+                  if(snapshot.connectionState == ConnectionState.waiting) {
+                    return LoadingScreen();
+                  }
+                  return MainScreen();
+                },
+              );
             },
           );
         }
@@ -149,20 +142,11 @@ class AuthWrapper extends StatelessWidget {
   }
 }
 
-/*ThemeData _darkTheme() {
-  return ThemeData(
-    scaffoldBackgroundColor: Palette.darkBackground,
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    colorScheme: ColorScheme.dark(
-      surface: Palette.darkBackground,
-      onSurface: Palette.darkTextColor,
-      primary: Palette.gradient1,
-      secondary: Palette.gradient2,
-      onPrimary: Palette.darkTextColor
-    ),
-  );
-}*/
+Future<void> _initializeData() async {
+  FirestoreService firestoreService = FirestoreService();
+  await firestoreService.fetchAndStoreRestaurants();
+  await MarkerManager().loadMarkers();
+}
 
 final darkTheme = ThemeData(
   brightness: Brightness.dark,
@@ -175,6 +159,9 @@ final darkTheme = ThemeData(
     secondary: Palette.gradient2,
     onPrimary: Palette.darkTextColor
   ),
+  splashColor: Colors.transparent,
+  highlightColor: Colors.transparent,
+  splashFactory: NoSplash.splashFactory
 );
 
 final lightTheme = ThemeData(
@@ -187,21 +174,8 @@ final lightTheme = ThemeData(
     primary: Palette.gradient1,
     secondary: Palette.gradient2,
     onPrimary: Palette.darkTextColor
-  )
+  ),
+  splashColor: Colors.transparent,
+  highlightColor: Colors.transparent,
+  splashFactory: NoSplash.splashFactory
 );
-
-/*ThemeData _lightTheme() {
-  return ThemeData(
-    scaffoldBackgroundColor: Palette.lightBackground,
-    useMaterial3: true,
-    brightness: Brightness.light,
-    colorScheme: ColorScheme.light(
-      surface: Palette.lightBackground,
-      onSurface: Palette.lightTextColor,
-      primary: Palette.gradient1,
-      secondary: Palette.gradient2,
-      onPrimary: Palette.darkTextColor
-    )
-  );
-}
-*/

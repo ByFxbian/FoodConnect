@@ -35,9 +35,8 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
             SizedBox(
               height: 100,
               width: 100,
-              child: CircularProgressIndicator(
+              child: CircularProgressIndicator.adaptive(
                 strokeWidth: 6,
-                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             SizedBox(height: 20),

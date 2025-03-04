@@ -1,16 +1,16 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  //final ValueChanged<bool> onThemeChanged;
 
-  //ProfileScreen({required this.onThemeChanged});
   ProfileScreen();
 
   @override
-  // ignore: library_private_types_in_public_api
   _ProfileScreenState createState() => _ProfileScreenState();
 }
 
@@ -53,50 +53,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text("Profil", style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 22, fontWeight: FontWeight.bold)),
+        title: Text(
+          "Profil",
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton(
-              icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.onSurface, size: 26),
+              icon: Icon(Platform.isIOS ? CupertinoIcons.settings : Icons.settings,
+                  color: Theme.of(context).colorScheme.onSurface, size: 26),
               onPressed: () async {
                 await Navigator.of(context).push(
                   MaterialPageRoute<bool>(
                     builder: (context) => SettingsScreen(
                       onUsernameChanged: _loadUserData,
-                      //isDarkMode: Theme.of(context).brightness == Brightness.dark,
                     ),
                   ),
                 );
-
-                /*if(isDarkMode != null) {
-                  widget.onThemeChanged(isDarkMode);
-                }*/
               },
             ),
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: RefreshIndicator.adaptive(
         onRefresh: _loadUserData,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        color: Colors.white,
         child: SingleChildScrollView(
           physics: AlwaysScrollableScrollPhysics(),
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: CircularProgressIndicator.adaptive(),
+                    )
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         CircleAvatar(
                           radius: 60,
-                          backgroundImage: userData?['photoUrl'] != null && userData?['photoUrl'] != ""
+                          backgroundImage: userData?['photoUrl'] != null &&
+                                  userData?['photoUrl'] != ""
                               ? NetworkImage(userData?['photoUrl'])
-                              : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
+                              : AssetImage("assets/icons/default_avatar.png")
+                                  as ImageProvider,
                         ),
                         SizedBox(height: 20),
                         Text(
@@ -113,7 +118,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           userData?['email'] ?? "Keine E-Mail vorhanden",
                           style: TextStyle(
                             fontSize: 16,
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.6),
                           ),
                         ),
                         SizedBox(height: 30),
@@ -128,6 +136,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildTasteProfileSection(Map<String, dynamic>? tasteProfile) {
+    bool isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+
     if(tasteProfile == null || tasteProfile.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.primary),
         ),
-        Divider(color: Theme.of(context).colorScheme.primary),
+        isIOS ? Divider() : Divider(color: Theme.of(context).colorScheme.primary),
         ...tasteProfile.entries.map((entry) {
           return _buildTasteProfileRow(_mapKeyToLabel(entry.key), entry.value);
         // ignore: unnecessary_to_list_in_spreads

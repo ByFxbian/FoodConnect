@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
@@ -44,9 +47,6 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _navigateToRestaurant(Map<String, dynamic> restaurant) {
-    print(restaurant['latitude']);
-    print(restaurant['longitude']);
-    print(restaurant['id']);
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -85,7 +85,7 @@ class _SearchScreenState extends State<SearchScreen> {
               decoration: InputDecoration(
                 hintText: "Suche nach Restaurants oder Nutzern...",
                 hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface),
+                prefixIcon: Icon(Platform.isIOS ? CupertinoIcons.search: Icons.search, color: Theme.of(context).colorScheme.onSurface),
                 filled: true,
                 fillColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                 border: OutlineInputBorder(

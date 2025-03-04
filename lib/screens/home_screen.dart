@@ -1,10 +1,12 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, unnecessary_breaks
 
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:foodconnect/screens/loading_screen.dart';
+import 'package:foodconnect/main.dart';
 import 'package:foodconnect/services/database_service.dart';
-import 'package:foodconnect/widgets/marker_widget.dart';
+import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 // ignore: depend_on_referenced_packages, implementation_imports
@@ -28,10 +30,21 @@ class _HomeScreenState extends State<HomeScreen> {
   final DatabaseService databaseService = DatabaseService();
   final Completer<PlatformMapController> _controller = Completer();
   String? _mapStyleString;
-  bool isLoading = false;
   static bool isFirstLoad = true;
 
-  static late BuildContext parentContext;
+  String selectedFilter = "highestRated";
+  Position position = Position(
+      longitude: 16.363449,
+      latitude: 48.210033,
+      timestamp: DateTime(2024),
+      accuracy: 0,
+      altitude: 0,
+      heading: 0,
+      speed: 0,
+      speedAccuracy: 0,
+      altitudeAccuracy: 0,
+      headingAccuracy: 0);
+
 
   @override
   void initState() {
@@ -41,15 +54,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (isFirstLoad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadMarkers();
+        //_loadMarkers();
+        _updateFilteredMarkers();
       });
     }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    parentContext = context;
   }
 
   Future<void> _loadMapStyle() async {
@@ -62,46 +70,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadMarkers({bool forceRefresh = false}) async {
+    print("Lade Marker aus MarkerManager...");
+
     if (!mounted || (!isFirstLoad && !forceRefresh)) return;
 
-    setState(() {
-      isLoading = true;
-    });
-
-    List<Map<String, dynamic>> markerData = await databaseService.getAllRestaurants();
-    Set<Marker> newMarkers = {};
-
-    for (var data in markerData) {
-      if (!mounted) return;
-
-      String iconPath = data['icon'] ?? '';
-      bool isUrl = iconPath.startsWith('http') || iconPath.startsWith('https');
-      String finalIconPath = isUrl ? iconPath : "assets/icons/mapicon.png";
-
-      MarkerWidget marker = MarkerWidget(
-        id: data['id'] ?? 'unknown',
-        name: data['name'] ?? 'Unbekannt',
-        position: LatLng(data['latitude'], data['longitude']),
-        iconPath: finalIconPath,
-        description: data['description'] ?? 'Keine Beschreibung verfügbar',
-        openingHours: data['openingHours'] ?? '00:00 - 00:00',
-        rating: data['rating'].toString(),
-        parentContext: context,
-      );
-
-      newMarkers.add(await marker.toMarker(context));
-    }
+    Set<Marker> newMarkers = MarkerManager().markers;
 
     if (!mounted) return;
 
     setState(() {
       markers = newMarkers;
-      isLoading = false;
       isFirstLoad = false;
     });
   }
 
-  // ignore: unused_element
   Future<void> _moveToSelectedLocation() async {
     print("📌 _moveToSelectedLocation() aufgerufen!");
     if (widget.targetLocation == null) {
@@ -111,9 +93,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     Future.delayed(Duration(milliseconds: 500), () {
         if (!mounted) {
-            print("❌ Widget ist nicht mehr gemounted.");
             return;
         }
+
+        mapController?.animateCamera(CameraUpdate.newLatLngZoom(
+            widget.targetLocation!,
+            14.0,
+        ));
 
         print("✅ Marker gefunden! Öffne Panel...");
         _showMarkerPanelForRestaurant(widget.selectedRestaurantId);
@@ -127,18 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (restaurantData == null) return;
 
-    MarkerWidget selectedMarker = MarkerWidget(
-      id: restaurantId,
-      name: restaurantData['name'] ?? "Unbekannt",
-      position: LatLng(restaurantData['latitude'], restaurantData['longitude']),
-      iconPath: "assets/icons/${restaurantData['icon'] ?? 'mapicon.png'}",
-      description: restaurantData['description'] ?? "Keine Beschreibung verfügbar",
-      openingHours: restaurantData['openingHours'] ?? '00:00 - 00:00',
-      rating: restaurantData['rating'].toString(),
-      parentContext: context
-    );
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return;
 
-    selectedMarker.showMarkerPanel();
+    MarkerManager().showMarkerPanel(ctx, restaurantData);
   }
 
   Future<void> _moveToCurrentLocation() async {
@@ -165,6 +143,92 @@ class _HomeScreenState extends State<HomeScreen> {
       LatLng(position.latitude, position.longitude),
       14.0,
     ));
+  }
+
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
+    }
+    if (permission == LocationPermission.deniedForever) return;
+
+    LocationSettings locationSettings = LocationSettings(
+      accuracy: LA.LocationAccuracy.high,
+      distanceFilter: 10,
+    );
+
+    position = await Geolocator.getCurrentPosition(locationSettings: locationSettings);
+  }
+
+  Future<void> _updateFilteredMarkers() async {
+    if (!mounted) return;
+
+    LatLngBounds? visibleRegion = await mapController?.getVisibleRegion();
+    if (visibleRegion == null) return;
+
+    List<Map<String, dynamic>> filteredMarkers;
+
+    await _getCurrentLocation();
+
+    if (selectedFilter == "highestRated") {
+      filteredMarkers = await databaseService.getHighestRatedInBounds(
+        visibleRegion.southwest.latitude,
+        visibleRegion.southwest.longitude,
+        visibleRegion.northeast.latitude,
+        visibleRegion.northeast.longitude,
+        100,
+      );
+    } else if (selectedFilter == "nearest") {
+      filteredMarkers = await databaseService.getNearestRestaurantsInBounds(
+        position.latitude,
+        position.longitude,
+        visibleRegion.southwest.latitude,
+        visibleRegion.southwest.longitude,
+        visibleRegion.northeast.latitude,
+        visibleRegion.northeast.longitude,
+        100,
+      );
+    } else if (selectedFilter == "openNow") {
+      filteredMarkers = await databaseService.getOpenRestaurantsInBounds(
+        visibleRegion.southwest.latitude,
+        visibleRegion.southwest.longitude,
+        visibleRegion.northeast.latitude,
+        visibleRegion.northeast.longitude,
+        100,
+      );
+    } else {
+      filteredMarkers = await databaseService.getRestaurantsInBounds(
+        visibleRegion.southwest.latitude,
+        visibleRegion.southwest.longitude,
+        visibleRegion.northeast.latitude,
+        visibleRegion.northeast.longitude,
+      );
+    }
+
+    Set<Marker> updatedMarkers = filteredMarkers.map((data) {
+      return Marker(
+        markerId: MarkerId(data['id']),
+        position: LatLng(data['latitude'], data['longitude']),
+        icon: MarkerManager().customIcon,
+        onTap: () {
+          final ctx = navigatorKey.currentContext;
+          if (ctx == null) return;
+          MarkerManager().showMarkerPanel(ctx, data);
+        },
+      );
+    }).toSet();
+
+    setState(() {
+      markers = updatedMarkers;
+      MarkerManager().markers = updatedMarkers;
+    });
   }
 
   @override
@@ -199,9 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {});
         },
       ),*/
-      body: isLoading
-         ? LoadingScreen()
-        : PlatformMap(
+      body: PlatformMap(
             initialCameraPosition: CameraPosition(
               target: LatLng(48.210033, 16.363449),
               zoom: 12,
@@ -211,21 +273,83 @@ class _HomeScreenState extends State<HomeScreen> {
             tiltGesturesEnabled: false,
             rotateGesturesEnabled: false,
             minMaxZoomPreference: MinMaxZoomPreference(11, 20),
+            onCameraIdle: () {
+              _updateInvisibleMarkers();
+            },
+            googleMapsStyle: _mapStyleString,
             onMapCreated: (controller) {
               if (!mounted) return;
               setState(() {
                 mapController = controller;
               });
               _controller.complete(controller);
-              _moveToCurrentLocation();
+              if(isFirstLoad) {
+                isFirstLoad = false;
+                _moveToCurrentLocation();
+              }
+              if(widget.targetLocation != null) {
+                _moveToSelectedLocation();
+              }
             },
           ),
-          floatingActionButton: isLoading 
-          ? null
-          : Align(
+          floatingActionButton: Stack(
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 50, right: 10),
+                  child: PopupMenuButton<String>(
+                    icon: Icon(Platform.isIOS ? CupertinoIcons.list_dash : Icons.filter_list, color: Theme.of(context).colorScheme.surface, size: 30),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)
+                    ),
+                    color: Theme.of(context).colorScheme.surface,
+                    onSelected: (value) {
+                      setState(() {
+                        selectedFilter = value;
+                      });
+                      _updateFilteredMarkers();
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: "highestRated",
+                        child: Row(
+                          children: [
+                            if (selectedFilter == "highestRated") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
+                            SizedBox(width: 8),
+                            Text("Beste Bewertung"),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: "nearest",
+                        child: Row(
+                          children: [
+                            if (selectedFilter == "nearest") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
+                            SizedBox(width: 8),
+                            Text("Kürzeste Entfernung"),
+                          ],
+                        ),
+                      ),
+                      PopupMenuDivider(),
+                      PopupMenuItem(
+                        value: "openNow",
+                        child: Row(
+                          children: [
+                            if (selectedFilter == "openNow") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
+                            SizedBox(width: 8),
+                            Text("Jetzt geöffnet"),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Align(
               alignment: Alignment.bottomRight,
               child: Padding(
-                padding: EdgeInsets.only(bottom: 75, right: 10),
+                padding: EdgeInsets.only(bottom: 90, right: 10),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -233,20 +357,59 @@ class _HomeScreenState extends State<HomeScreen> {
                       heroTag: "reload_button",
                       onPressed: () => _loadMarkers(forceRefresh: true),
                       backgroundColor: Theme.of(context).colorScheme.secondary,
-                      child: Icon(Icons.refresh, color: Theme.of(context).colorScheme.onPrimary),
+                      child: Icon(Platform.isIOS ? CupertinoIcons.refresh : Icons.refresh, color: Theme.of(context).colorScheme.onPrimary),
                     ),
                     SizedBox(height: 10),
                     FloatingActionButton(
                       heroTag: "location_button",
                       onPressed: _moveToCurrentLocation,
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: Icon(Icons.my_location, color: Theme.of(context).colorScheme.onPrimary),
+                      child: Icon(Platform.isIOS ? CupertinoIcons.location : Icons.my_location, color: Theme.of(context).colorScheme.onPrimary),
                     ),
                   ],
                 )
               ),
             ),
+            ],
+          ) 
     );
+  }
+
+  Future<void> _updateInvisibleMarkers() async {
+    if(mapController == null) return;
+
+    LatLngBounds? visibleRegion = await mapController?.getVisibleRegion();
+    if(visibleRegion == null) return;
+
+    List<Map<String, dynamic>> filteredMarkers = 
+      await databaseService.getHighestRatedInBounds(
+        visibleRegion.southwest.latitude,
+        visibleRegion.southwest.longitude,
+        visibleRegion.northeast.latitude,
+        visibleRegion.northeast.longitude,
+        100
+      );
+
+      Set<Marker> updatedMarkers = {};
+      for (var data in filteredMarkers.take(100)) {
+        Marker marker = Marker(
+          markerId: MarkerId(data['id']),
+          position: LatLng(data['latitude'], data['longitude']),
+          icon: MarkerManager().customIcon,
+          onTap: () {
+            final ctx = navigatorKey.currentContext;
+            if (ctx == null) return;
+            MarkerManager().showMarkerPanel(ctx, data);
+          },
+        );
+        updatedMarkers.add(marker);
+      }
+
+      setState(() {
+        markers = updatedMarkers;
+        MarkerManager().markers = updatedMarkers;
+        markers = MarkerManager().markers;
+      });
   }
 
 }
