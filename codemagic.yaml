@@ -82,7 +82,12 @@ workflows:
 
       - name: Force Xcode to compile assets
         script: |
-          xcrun actool --compile ios/Runner/Assets.xcassets --platform iphoneos --minimum-deployment-target 16.0
+          xcrun actool ios/Runner/Assets.xcassets \
+            --compile /tmp/Assets \
+            --platform iphoneos \ 
+            --minimum-deployment-target 16.0 \
+            --app-icon AppIcon \
+            --output-partial-info-plist /tmp/Info.plist
 
       - name: Flutter build ipa
         script: |
