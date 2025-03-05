@@ -20,10 +20,12 @@ workflows:
 
       - name: Restore App Icon from ZIP
         script: |
+          ls -la ios/Runner/Assets.xcassets/AppIcon.appiconset
           rm -rf ios/Runner/Assets.xcassets/AppIcon.appiconset
           mkdir -p ios/Runner/Assets.xcassets/AppIcon.appiconset
           unzip assets/app_icons.zip -d ios/Runner/Assets.xcassets/AppIcon.appiconset
           ls -la ios/Runner/Assets.xcassets/AppIcon.appiconset
+          cat ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json
       
       - name: Set up code signing settings on Xcode project
         script: |
@@ -60,6 +62,10 @@ workflows:
           perl -pi -e 's#(</dict>)#    <key>NSLocationWhenInUseUsageDescription</key>\n    <string>Diese App benötigt Zugriff auf deinen Standort, um Restaurants in deiner Nähe zu zeigen.</string>\n    <key>NSLocationAlwaysUsageDescription</key>\n    <string>Diese App benötigt Zugriff auf deinen Standort für eine verbesserte Kartenfunktionalität.</string>\n    <key>NSLocationWhenInUseUsageDescription</key>\n    <string>Wir verwenden deine Standortdaten nur, um Restaurants in deiner Umgebung anzuzeigen.</string>\n    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>\n    <string>Diese App benötigt den Standortzugriff, um dir Restaurants in deiner Umgebung zu zeigen.</string>\n\n$1#' ios/Runner/Info.plist
           cat ios/Runner/Info.plist
 
+      - name: Ensure Xcode includes Assets.xcassets
+      script: |
+        xcrun actool --print-asset-tag-combinations ios/Runner/Assets.xcassets
+
       - name: Flutter build ipa
         script: |
           BUILD_NUMBER=$(($(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID") + 1))
@@ -67,6 +73,12 @@ workflows:
             --build-name=1.0.2 \
             --build-number=6 \
             --export-options-plist=/Users/builder/export_options.plist
+
+      - name: Check IPA for App Icons
+        script: |
+          unzip -l build/ios/ipa/foodconnect.ipa | grep "AppIcon"
+
+      
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
