@@ -78,4 +78,6 @@ workflows:
         expire_build_submitted_for_review: false
         beta_groups:
           - Test1
+          - InteralTesting
+          - Tester
         submit_to_app_store: false
