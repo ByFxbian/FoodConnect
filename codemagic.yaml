@@ -63,8 +63,8 @@ workflows:
           cat ios/Runner/Info.plist
 
       - name: Ensure Xcode includes Assets.xcassets
-      script: |
-        xcrun actool --print-asset-tag-combinations ios/Runner/Assets.xcassets
+        script: |
+          xcrun actool --print-asset-tag-combinations ios/Runner/Assets.xcassets
 
       - name: Flutter build ipa
         script: |
