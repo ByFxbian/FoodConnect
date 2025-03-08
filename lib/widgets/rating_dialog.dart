@@ -58,7 +58,7 @@ class _RatingDialogState extends State<RatingDialog> {
               hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10.0),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
               ),
             ),
           ),
