@@ -113,11 +113,14 @@ class FirestoreService {
     print("✅ Firestore-Daten wurden in SQLite gespeichert!");
   }
 
-  Future<void> addReview(String restaurantId, double rating, String comment) async {
+  Future<void> addReview(String restaurantId, double rating, String comment, String userId, String userName, String userProfileUrl) async {
     await _db.collection('restaurantReviews').add({
       'restaurantId': restaurantId,
       'rating': rating,
       'comment': comment,
+      'userId': userId,
+      'userName': userName,
+      'userProfileUrl': userProfileUrl,
     });
   }
 

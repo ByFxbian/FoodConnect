@@ -2,6 +2,7 @@
 
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import hinzugefügt
 import 'package:flutter/services.dart';
 import 'package:foodconnect/main.dart';
 import 'package:foodconnect/services/database_service.dart';
@@ -96,11 +97,19 @@ class MarkerManager {
   void showMarkerPanel(BuildContext context, Map<String, dynamic> restaurantData) async {
     String address = await getAddressFromLatLng(restaurantData['latitude'], restaurantData['longitude']);
 
+        // Vorhandenes Rating aus Firestore holen
+        Map<String, dynamic>? markerDetails = await firestoreService.fetchPlaceDetails(restaurantData['id']);
+        double firestoreRating = markerDetails?['rating'] ?? 0.0;
+    
     //Reviews holen
     List<Map<String, dynamic>> reviews = await firestoreService.getReviewsForRestaurant(restaurantData['id']);
-    // Durchschnitt berechnen
-    double averageRating = await firestoreService.calculateAverageRating(restaurantData['id']);
-
+        
+        // Durchschnitt berechnen
+        double averageRating = await firestoreService.calculateAverageRating(restaurantData['id']);
+        
+        // Das zusammengezählte Rating berechnen
+        double finalRating = reviews.isNotEmpty ? (firestoreRating*0.7 + averageRating*0.3) : firestoreRating;
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -163,16 +172,20 @@ class MarkerManager {
                         "⭐ Bewertung",
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                      Text("${averageRating.toString()} / 5.0", style: TextStyle(fontSize: 16)),
+                      Text("${finalRating.toStringAsFixed(1)} / 5.0", style: TextStyle(fontSize: 16)),
                       ElevatedButton( // Hinzugefügter Button
                         onPressed: () {
+                          
                           showDialog(
                             context: context,
                             builder: (BuildContext context) {
                               return RatingDialog(
                                 restaurantId: restaurantData['id'],
                                 onRatingSubmitted: (rating, comment) async { // Callback angepasst
-                                  await firestoreService.addReview(restaurantData['id'], rating, comment);
+                                  final String userId = FirebaseAuth.instance.currentUser!.uid;
+                                  final String userName = FirebaseAuth.instance.currentUser!.displayName ?? "Unbekannter Nutzer";
+                                  final String userProfileUrl = FirebaseAuth.instance.currentUser!.photoURL ?? "";
+                                  await firestoreService.addReview(restaurantData['id'], rating, comment, userId, userName, userProfileUrl);
                                   double newAverageRating = await firestoreService.calculateAverageRating(restaurantData['id']);
                                   await firestoreService.setRestaurantRating(restaurantData['id'], newAverageRating);
                                   
@@ -192,7 +205,20 @@ class MarkerManager {
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: reviews.map((review) => Text("- ${review['rating']} ⭐: ${review['comment']}")).toList(),
+                          children: reviews.map((review) => 
+                            ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage: review['userProfileUrl'] != null && review['userProfileUrl'].isNotEmpty 
+                                  ? NetworkImage(review['userProfileUrl']) 
+                                  : null,
+                                child: review['userProfileUrl'] == null || review['userProfileUrl'].isEmpty 
+                                  ? Icon(Icons.person) 
+                                  : null,
+                              ),
+                                title: Text(review['userName'] ?? 'Unbekannt'),
+                              subtitle: Text("- ${review['rating']} ⭐: ${review['comment']}"),
+                            )
+                          ).toList(),
                         ),
                       ],
                     ],

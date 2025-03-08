@@ -45,9 +45,15 @@ class _StarRatingState extends State<StarRating> {
     }
     return GestureDetector(
       onTap: () {
+        final RenderBox box = context.findRenderObject() as RenderBox;
+        final localOffset = box.globalToLocal(Offset(box.size.width / 10, box.size.height/2));
+        double starWidth = box.size.width / 5;
+        double newRating = (localOffset.dx + (index*starWidth)) / starWidth;
+
+        newRating = (newRating * 2).round() / 2;
         setState(() {
-          _currentRating = index + 1.0;
-          widget.onRatingChanged?.call(_currentRating);
+            _currentRating = newRating.clamp(index.toDouble(), index + 1.0);
+            widget.onRatingChanged?.call(_currentRating);
         });
       },
       onHorizontalDragUpdate: (details) {
