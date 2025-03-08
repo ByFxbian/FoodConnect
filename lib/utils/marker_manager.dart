@@ -99,7 +99,9 @@ class MarkerManager {
 
         // Vorhandenes Rating aus Firestore holen
         Map<String, dynamic>? markerDetails = await firestoreService.fetchPlaceDetails(restaurantData['id']);
-        double firestoreRating = markerDetails?['rating'] ?? 0.0;
+        String markerRating = markerDetails?['rating'];
+        double dRating = double.parse(markerRating);
+        double firestoreRating = dRating ?? 0.0;
     
     //Reviews holen
     List<Map<String, dynamic>> reviews = await firestoreService.getReviewsForRestaurant(restaurantData['id']);
