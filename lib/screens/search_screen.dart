@@ -24,13 +24,15 @@ class _SearchScreenState extends State<SearchScreen> {
   final DatabaseService databaseService = DatabaseService();
   final FirestoreService firestoreService = FirestoreService();
 
-  void _navigateToUserProfile(String userId) {
-    Navigator.push(
+  void _navigateToUserProfile(String userId) async {
+     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => UserProfileScreen(userId: userId),
+        builder: (context) => UserProfileScreen(userId: userId)
       ),
-    );
+    ).then((_) {
+      setState(() {});
+    });
   }
 
   void _navigateToRestaurant(Map<String, dynamic> restaurant) {
@@ -130,8 +132,16 @@ class _SearchScreenState extends State<SearchScreen> {
                               selectedTab == 0 ? "Restaurant" : "Nutzer",
                               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                             ),
-                            trailing: selectedTab == 1 ? FollowButton(targetUserId: data['id']) : null, 
-                            onTap: () {
+                            trailing: selectedTab == 1 ? StatefulBuilder(
+                              builder: (BuildContext context, StateSetter setState) {
+                                  return FollowButton(
+                                    targetUserId: data['id'],
+                                    key: ValueKey('follow_button_${data['id']}'),
+                                  );
+                                
+                              },
+                            ) : null,
+                            onTap: ()  {
                               if(selectedTab == 0) {
                                 _navigateToRestaurant(data);
                               } else {

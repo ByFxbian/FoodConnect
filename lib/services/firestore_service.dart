@@ -116,7 +116,8 @@ class FirestoreService {
 class FollowButton extends StatefulWidget {
   final String targetUserId;
 
-  FollowButton({required this.targetUserId});
+  // ignore: use_super_parameters
+  FollowButton({required this.targetUserId, Key? key}) : super(key: key);
 
   @override
   _FollowButtonState createState() => _FollowButtonState();
