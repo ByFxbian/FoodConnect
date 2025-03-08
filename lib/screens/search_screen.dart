@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
+import 'package:foodconnect/services/firestore_service.dart';
 //import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
@@ -21,21 +22,7 @@ class _SearchScreenState extends State<SearchScreen> {
   bool isLoading = false;
   List<Map<String, dynamic>> searchResults = [];
   final DatabaseService databaseService = DatabaseService();
-
-  /*void _search() {
-    setState(() {
-      isLoading = true;
-    });
-
-    Stream<QuerySnapshot> stream = selectedTab == 0 ? searchRestaurants() : searchUsers();
-
-    stream.listen((snapshot) {
-      setState(() {
-        searchResults = snapshot.docs;
-        isLoading = false;
-      });
-    });
-  }*/
+  final FirestoreService firestoreService = FirestoreService();
 
   void _navigateToUserProfile(String userId) {
     Navigator.push(
@@ -143,6 +130,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               selectedTab == 0 ? "Restaurant" : "Nutzer",
                               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                             ),
+                            trailing: selectedTab == 1 ? FollowButton(targetUserId: data['id']) : null, 
                             onTap: () {
                               if(selectedTab == 0) {
                                 _navigateToRestaurant(data);
