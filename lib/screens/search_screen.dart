@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +6,6 @@ import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
-//import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -25,13 +23,13 @@ class _SearchScreenState extends State<SearchScreen> {
   final FirestoreService firestoreService = FirestoreService();
 
   void _navigateToUserProfile(String userId) async {
-     await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => UserProfileScreen(userId: userId)
+        builder: (context) => UserProfileScreen(userId: userId),
       ),
     ).then((_) {
-      setState(() {});
+      setState(() {}); // Refresh the list on return from UserProfileScreen
     });
   }
 
@@ -64,12 +62,14 @@ class _SearchScreenState extends State<SearchScreen> {
               onChanged: (query) {
                 setState(() {
                   searchQuery = query;
-                });
-                if(selectedTab == 0) {
+                });               
+                 if (selectedTab == 0) {
                   _searchRestaurants(query);
                 } else {
                   _searchUsers(query);
                 }
+
+                
               },
               decoration: InputDecoration(
                 hintText: "Suche nach Restaurants oder Nutzern...",
@@ -95,11 +95,11 @@ class _SearchScreenState extends State<SearchScreen> {
             onPressed: (index) {
               setState(() {
                 selectedTab = index;
-                if(searchQuery.isNotEmpty) {
-                  if(selectedTab == 0) {
+                if (searchQuery.isNotEmpty) {
+                  if (selectedTab == 0) {
                     _searchRestaurants(searchQuery);
                   } else {
-                    _searchUsers(searchQuery);
+                     _searchUsers(searchQuery);
                   }
                 }
               });
@@ -132,15 +132,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               selectedTab == 0 ? "Restaurant" : "Nutzer",
                               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                             ),
-                            trailing: selectedTab == 1 ? StatefulBuilder(
-                              builder: (BuildContext context, StateSetter setState) {
-                                  return FollowButton(
-                                    targetUserId: data['id'],
-                                    key: ValueKey('follow_button_${data['id']}'),
-                                  );
-                                
-                              },
-                            ) : null,
+                            trailing: null,
                             onTap: ()  {
                               if(selectedTab == 0) {
                                 _navigateToRestaurant(data);
@@ -158,7 +150,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _searchRestaurants(String query) async {
-    if(query.isEmpty) {
+    if (query.isEmpty) {
       setState(() {
         searchResults = [];
       });
@@ -178,7 +170,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _searchUsers(String query) async {
-    if(query.isEmpty) {
+    if (query.isEmpty) {
       setState(() {
         searchResults = [];
       });
@@ -199,4 +191,5 @@ class _SearchScreenState extends State<SearchScreen> {
       isLoading = false;
     });
   }
+
 }

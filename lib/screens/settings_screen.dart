@@ -120,7 +120,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _signOut() async {
     await FirebaseAuth.instance.signOut();
-    Navigator.of(context).pushReplacementNamed("/LoginScreen");
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      '/LoginScreen',
+      (Route<dynamic> route) => false,
+    );
   }
 
   void _confirmDeleteAccount() {
@@ -149,7 +152,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _deleteAccount() async {
     try {
       await FirebaseAuth.instance.currentUser?.delete();
-      Navigator.of(context).pushReplacementNamed("/login");
+       Navigator.of(context).pushNamedAndRemoveUntil(
+        '/LoginScreen',
+        (Route<dynamic> route) => false,
+      );
     } catch (e) {
       print("Fehler beim Löschen des Accounts: $e");
     }
