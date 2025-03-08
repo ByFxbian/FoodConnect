@@ -88,6 +88,27 @@ class FirestoreService {
     return null;
   }
 
+  Future<List<Map<String, dynamic>>> getUserReviews(String userId) async {
+    QuerySnapshot querySnapshot = await _db
+        .collection('restaurantReviews')
+        .where('userId', isEqualTo: userId)
+        .get();
+    
+    List<Map<String, dynamic>> reviews = [];
+
+    for (var doc in querySnapshot.docs) {
+      Map<String, dynamic> reviewData = doc.data() as Map<String, dynamic>;
+      DocumentSnapshot restaurantDoc = await _db.collection('markers').doc(reviewData['restaurantId']).get();
+      if (restaurantDoc.exists) {
+        reviewData['restaurantName'] = restaurantDoc['name'] ?? "Unbekanntes Restaurant";
+      } else {
+        reviewData['restaurantName'] = "Unbekanntes Restaurant";
+      }
+      reviews.add(reviewData);
+    }
+    return reviews;
+  }
+
   Future<void> fetchAndStoreRestaurants() async {
     print("⚡ Lade Daten aus Firestore und speichere sie in SQLite...");
     QuerySnapshot querySnapshot = await _db.collection('markers').get();

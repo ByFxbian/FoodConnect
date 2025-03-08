@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class UserProfileScreen extends StatefulWidget{
   final String userId;
@@ -18,6 +20,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool isFollowing = false;
   int followerCount = 0;
   int followingCount = 0;
+  List<Map<String, dynamic>> userReviews = [];
   final FirestoreService _firestoreService = FirestoreService();
   User? currentUser = FirebaseAuth.instance.currentUser;
 
@@ -27,6 +30,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     _loadUserData();
     _checkFollowingStatus();
     _loadFollowCounts();
+    _loadUserReviews();
   }
 
   Future<void> _loadUserData() async {
@@ -61,6 +65,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     bool following = await _firestoreService.isFollowingUser(widget.userId);
     setState(() {
       isFollowing = following;
+    });
+  }
+
+  Future<void> _loadUserReviews() async {
+    List<Map<String, dynamic>> reviews = await _firestoreService.getUserReviews(widget.userId);
+    setState(() {
+      userReviews = reviews;
     });
   }
 
@@ -116,122 +127,102 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundImage: userData?['photoUrl'] != null &&
-                                    userData?['photoUrl'] != ""
-                                ? NetworkImage(userData?['photoUrl'])
-                                : AssetImage("assets/icons/default_avatar.png")
-                                    as ImageProvider,
-                          ),
-                          SizedBox(width: 15),
-                          ElevatedButton(
-                            onPressed: _toggleFollow,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isFollowing
-                                ? Theme.of(context).colorScheme.secondary
-                                : Theme.of(context).colorScheme.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: Text(
-                              isFollowing ? "Entfolgen" : "Folgen",
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      Center(
-                        child: Text(
-                          userData?['name'] ?? "Unbekannter Nutzer",
-                          key: ValueKey(userData?["name"]),
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Center(
-                        child: Text(
-                          userData?['email'] != null
-                              ? _pixelateEmail(userData?['email'])
-                              : "Keine E-Mail vorhanden",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Column(
-                            children: [
-                              Text(
-                                followerCount.toString(),
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                              Text(
-                                "Follower",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.7),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(width: 20),
-                          Column(
-                            children: [
-                              Text(
-                                followingCount.toString(),
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                              Text(
-                                "Folgt",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.7),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                      ..._buildProfileInfo(),
                       SizedBox(height: 30),
                       _buildTasteProfileSection(userData?['tasteProfile']),
+                      SizedBox(height: 30),
+                      _buildUserReviewsSection(),
                     ],
                   ),
           ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildProfileInfo() {
+    return [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 60,
+            backgroundImage: userData?['photoUrl'] != null &&
+                    userData?['photoUrl'] != ""
+                ? NetworkImage(userData?['photoUrl'])
+                : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
+          ),
+          SizedBox(width: 15),
+          ElevatedButton(
+            onPressed: _toggleFollow,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isFollowing
+                ? Theme.of(context).colorScheme.secondary
+                : Theme.of(context).colorScheme.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+            child: Text(
+              isFollowing ? "Entfolgen" : "Folgen",
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  Widget _buildUserReviewsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "⭐ Nutzerbewertungen",
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary),
+        ),
+        Divider(color: Theme.of(context).colorScheme.primary),
+        if (userReviews.isEmpty)
+          Text(
+            "Keine Bewertungen vorhanden.",
+            style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+          ),
+        ...userReviews.map((review) => ListTile(
+              leading: CircleAvatar(
+                backgroundImage: NetworkImage(review['userProfileUrl'] ?? ""),
+                child: review['userProfileUrl'] == null || review['userProfileUrl'].isEmpty
+                    ? Icon(Icons.person)
+                    : null,
+              ),
+              title: Text(review['restaurantName'] ?? 'Unbekanntes Restaurant'),
+              subtitle: Text("${review['rating']} ⭐: ${review['comment']}",
+                  style: TextStyle(fontSize: 14)),
+              onTap: () => _navigateToRestaurant(review['restaurantId']),
+            ))
+      ],
+    );
+  }
+
+  void _navigateToRestaurant(Map<String, dynamic> restaurant) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MainScreen(
+          initialPage: 0,
+          targetLocation: LatLng(
+            restaurant['latitude'],
+            restaurant['longitude'],
+          ),
+          selectedRestaurantId: restaurant['id'],
         ),
       ),
     );

@@ -269,6 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
               zoom: 12,
             ),
             markers: markers,
+            myLocationEnabled: true,
             mapType: MapType.normal,
             tiltGesturesEnabled: false,
             rotateGesturesEnabled: false,

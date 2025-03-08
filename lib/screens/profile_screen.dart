@@ -4,8 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/settings_screen.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
 
@@ -21,6 +23,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool isLoading = true;
   int followerCount = 0;
   int followingCount = 0;
+  List<Map<String, dynamic>> userReviews = [];
+  bool showAllReviews = false;
   final FirestoreService _firestoreService = FirestoreService();
 
   @override
@@ -28,6 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _loadUserData();
     _loadFollowCounts();
+    _loadUserReviews();
   }
 
   Future<void> _loadFollowCounts() async {
@@ -58,6 +63,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     }
+  }
+
+  Future<void> _loadUserReviews() async {
+    List<Map<String, dynamic>> reviews =
+        await _firestoreService.getUserReviews(user!.uid);
+    setState(() {
+      userReviews = reviews;
+    });
+  }
+
+  void _navigateToRestaurant(Map<String, dynamic> restaurant) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MainScreen(
+          initialPage: 0,
+          targetLocation: LatLng(
+            restaurant['latitude'],
+            restaurant['longitude'],
+          ),
+          selectedRestaurantId: restaurant['id'],
+        ),
+      ),
+    );
   }
 
   @override
@@ -191,12 +220,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         SizedBox(height: 30),
                         _buildTasteProfileSection(userData?['tasteProfile']),
+                        SizedBox(height: 20),
+                        _buildUserReviewsSection(),
+                        SizedBox(height: 100),
                       ],
                     ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUserReviewsSection() {
+    List<Map<String, dynamic>> displayedReviews =
+        showAllReviews ? userReviews : userReviews.take(5).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "⭐ Bewertungen",
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary),
+        ),
+        Divider(color: Theme.of(context).colorScheme.primary),
+        if (displayedReviews.isEmpty)
+          Text(
+            "Keine Bewertungen vorhanden.",
+            style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+          ),
+        ...displayedReviews.map((review) => ListTile(
+              title: Text(review['restaurantName'] ?? 'Unbekanntes Restaurant'),
+              subtitle: Text("${review['rating']} ⭐: ${review['comment']}",
+                  style: TextStyle(fontSize: 14)),
+              onTap: () => _navigateToRestaurant(review['restaurantId']),
+            )),
+            if (userReviews.length > 5)
+              TextButton(
+                onPressed: () => setState(() => showAllReviews = !showAllReviews),
+                child: Text(showAllReviews ? "Weniger anzeigen" : "Mehr anzeigen"),
+              ),
+      ],
     );
   }
 

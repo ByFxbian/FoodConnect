@@ -118,9 +118,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
         return ScaleTransition(
         scale: _scaleAnimation,
         child: Image.asset(
-          'assets/app_icon.png',
-          width: 150,
-          height: 150,
+          'assets/app_icon_vertical_text.png',
+          width: 300,
           fit: BoxFit.contain,
         ),
       );
