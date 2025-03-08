@@ -26,6 +26,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     super.initState();
     _loadUserData();
     _checkFollowingStatus();
+    _loadFollowCounts();
   }
 
   Future<void> _loadUserData() async {
@@ -68,12 +69,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       await _firestoreService.unfollowUser(widget.userId);
     } else {
       await _firestoreService.followUser(widget.userId);
-    }
+    }   
+     await _loadFollowCounts();
     setState(() {
       isFollowing = !isFollowing;
-      followerCount += isFollowing ? 1 : -1;
     });
-  }
+  }  
 
   String _pixelateEmail(String email) {
     if (!email.contains("@")) return email;
