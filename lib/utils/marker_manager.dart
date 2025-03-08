@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import hinzugefügt
 import 'package:flutter/services.dart';
 import 'package:foodconnect/main.dart';
+import 'package:foodconnect/screens/profile_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:geocoding/geocoding.dart';
@@ -202,15 +203,18 @@ class MarkerManager {
                                 restaurantId: restaurantData['id'],
                                 onRatingSubmitted: (rating, comment) async { // Callback angepasst
                                   final String userId = FirebaseAuth.instance.currentUser!.uid;
-                                  //final String userName = FirebaseAuth.instance.currentUser!.displayName ?? "Unbekannter Nutzer";
-                                  //final String userProfileUrl = FirebaseAuth.instance.currentUser!.photoURL ?? "";
                                   await _loadUserData(userId);
                                   final String userName = userData?['name'] ?? "Unbekannter Nutzer";
                                   final String userProfileUrl = userData?['photoUrl'] ?? "";
                                   await firestoreService.addReview(restaurantData['id'], rating, comment, userId, userName, userProfileUrl);
                                   double newAverageRating = await firestoreService.calculateAverageRating(restaurantData['id']);
                                   await firestoreService.setRestaurantRating(restaurantData['id'], newAverageRating);
-                                  
+
+                                  if (navigatorKey.currentState?.canPop() ?? false) {
+                                    navigatorKey.currentState?.pop();
+                                  }
+                                  await Future.delayed(Duration(milliseconds: 300));
+                                  showMarkerPanel(navigatorKey.currentContext!, restaurantData);
                                 },
                               );
                             },
@@ -261,12 +265,20 @@ class MarkerManager {
   }
 
   void _navigateToUserProfile(String userId, BuildContext context) async {
-    await Navigator.push(
+    if(userId == FirebaseAuth.instance.currentUser!.uid) {
+      await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => UserProfileScreen(userId: userId),
-      ),
-    );
+        builder: (context) => ProfileScreen(),
+      ));
+    } else {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UserProfileScreen(userId: userId),
+        ),
+      );
+    }
   }
 
   static List<Widget> _formatOpeningHours(String openingHours) {

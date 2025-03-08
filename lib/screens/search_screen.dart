@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/main_screen.dart';
+import 'package:foodconnect/screens/profile_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
@@ -23,14 +25,22 @@ class _SearchScreenState extends State<SearchScreen> {
   final FirestoreService firestoreService = FirestoreService();
 
   void _navigateToUserProfile(String userId) async {
-    await Navigator.push(
+    if(userId == FirebaseAuth.instance.currentUser!.uid) {
+      await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => UserProfileScreen(userId: userId),
-      ),
-    ).then((_) {
-      setState(() {}); // Refresh the list on return from UserProfileScreen
-    });
+        builder: (context) => ProfileScreen(),
+      ));
+    } else {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UserProfileScreen(userId: userId),
+        ),
+      ).then((_) {
+        setState(() {}); // Refresh the list on return from UserProfileScreen
+      });
+    }
   }
 
   void _navigateToRestaurant(Map<String, dynamic> restaurant) {

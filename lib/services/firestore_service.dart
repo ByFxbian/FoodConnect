@@ -108,12 +108,27 @@ class FirestoreService {
         "openingHours": data["openingHours"] ?? "Keine Öffnungszeiten",
         "reviews": []
       });
+
+      await dbService.setRestaurantRating(data["id"], double.tryParse(data["rating"].toString()) ?? 0.0);
     }
 
     print("✅ Firestore-Daten wurden in SQLite gespeichert!");
   }
 
+  Future<bool> hasUserReviewed(String restaurantId, String userId) async {
+    QuerySnapshot querySnapshot = await _db
+        .collection('restaurantReviews')
+        .where('restaurantId', isEqualTo: restaurantId)
+        .where('userId', isEqualTo: userId)
+        .get();
+    return querySnapshot.docs.isNotEmpty;
+  }
+
   Future<void> addReview(String restaurantId, double rating, String comment, String userId, String userName, String userProfileUrl) async {
+    if (await hasUserReviewed(restaurantId, userId)) {
+      print("⚠️ Nutzer hat dieses Restaurant bereits bewertet.");
+      return;
+    }
     await _db.collection('restaurantReviews').add({
       'restaurantId': restaurantId,
       'rating': rating,
@@ -187,12 +202,21 @@ class _FollowButtonState extends State<FollowButton> {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: _toggleFollow,
-      child: Text(isFollowing ? "Entfolgen" : "Folgen"),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isFollowing ? Colors.grey : Colors.blue,
-        foregroundColor: Colors.white
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: isFollowing ? Colors.grey[300] : Colors.blue,
+      ),
+      child: TextButton(
+        onPressed: _toggleFollow,
+        child: Text(
+          isFollowing ? "Entfolgt" : "Folgen",
+          style: TextStyle(
+            color: isFollowing ? Colors.black : Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
