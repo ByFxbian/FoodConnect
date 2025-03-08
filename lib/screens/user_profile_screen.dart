@@ -317,7 +317,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       case "spiceLevel":
         return "🌶️ Schärfe-Level:";
       case "allergies":
-        return "⚠️ Allergien:";
+        return "🚫 Allergien:";
       case "favoriteTaste":
         return "😋 Lieblingsgeschmack:";
       case "dislikedFoods":

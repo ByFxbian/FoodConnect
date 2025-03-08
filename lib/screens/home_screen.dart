@@ -353,12 +353,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    FloatingActionButton.small(
+                    /*FloatingActionButton.small(
                       heroTag: "reload_button",
                       onPressed: () => _loadMarkers(forceRefresh: true),
                       backgroundColor: Theme.of(context).colorScheme.secondary,
                       child: Icon(Platform.isIOS ? CupertinoIcons.refresh : Icons.refresh, color: Theme.of(context).colorScheme.onPrimary),
-                    ),
+                    ),*/
                     SizedBox(height: 10),
                     FloatingActionButton(
                       heroTag: "location_button",

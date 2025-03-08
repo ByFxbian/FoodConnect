@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/settings_screen.dart';
+import 'package:foodconnect/services/firestore_service.dart';
 
 class ProfileScreen extends StatefulWidget {
 
@@ -18,11 +19,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   User? user = FirebaseAuth.instance.currentUser;
   Map<String, dynamic>? userData;
   bool isLoading = true;
+  int followerCount = 0;
+  int followingCount = 0;
+  final FirestoreService _firestoreService = FirestoreService();
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadFollowCounts();
+  }
+
+  Future<void> _loadFollowCounts() async {
+    int followers = await _firestoreService.getFollowerCount(user!.uid);
+    int following = await _firestoreService.getFollowingCount(user!.uid);
+    setState(() {
+      followerCount = followers;
+      followingCount = following;
+    });
   }
 
   Future<void> _loadUserData() async {
@@ -124,6 +138,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 .withValues(alpha: 0.6),
                           ),
                         ),
+                        SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Column(
+                              children: [
+                                Text(
+                                  followerCount.toString(),
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                Text(
+                                  "Follower",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(width: 20),
+                            Column(
+                              children: [
+                                Text(
+                                  followingCount.toString(),
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                Text(
+                                  "Folgt",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                         SizedBox(height: 30),
                         _buildTasteProfileSection(userData?['tasteProfile']),
                       ],
@@ -217,7 +282,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case "spiceLevel":
         return "🌶️ Schärfe-Level:";
       case "allergies":
-        return "⚠️ Allergien:";
+        return "🚫 Allergien:";
       case "favoriteTaste":
         return "😋 Lieblingsgeschmack:";
       case "dislikedFoods":

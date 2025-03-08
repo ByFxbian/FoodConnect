@@ -1,10 +1,12 @@
 
 
 import 'dart:ui' as ui;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import hinzugefügt
 import 'package:flutter/services.dart';
 import 'package:foodconnect/main.dart';
+import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:foodconnect/services/firestore_service.dart'; // Import hinzugefügt
@@ -22,6 +24,7 @@ class MarkerManager {
   BitmapDescriptor? customIcon;
   BitmapDescriptor? highlightedIcon;
   String? selectedMarkerId;
+  Map<String, dynamic>? userData;
 
   Future<void> _loadCustomIcon() async {
     final ByteData data = await rootBundle.load('assets/icons/mapicon.png');
@@ -94,14 +97,28 @@ class MarkerManager {
     }
   }
 
+  Future<void> _loadUserData(String userId) async {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .get();
+
+    if (userDoc.exists) {
+      userData = userDoc.data() as Map<String, dynamic>;
+    } else {
+      userData = {};
+    }
+  }
+
   void showMarkerPanel(BuildContext context, Map<String, dynamic> restaurantData) async {
     String address = await getAddressFromLatLng(restaurantData['latitude'], restaurantData['longitude']);
 
         // Vorhandenes Rating aus Firestore holen
         Map<String, dynamic>? markerDetails = await firestoreService.fetchPlaceDetails(restaurantData['id']);
-        String markerRating = markerDetails?['rating'];
-        double dRating = double.parse(markerRating);
-        double firestoreRating = dRating ?? 0.0;
+        String markerRating = markerDetails?['rating'].toString() ?? "0.0";
+        double dmarkerRating = double.parse(markerRating);
+        //double dRating = double.parse(markerRating);
+        double firestoreRating = dmarkerRating;
     
     //Reviews holen
     List<Map<String, dynamic>> reviews = await firestoreService.getReviewsForRestaurant(restaurantData['id']);
@@ -185,8 +202,11 @@ class MarkerManager {
                                 restaurantId: restaurantData['id'],
                                 onRatingSubmitted: (rating, comment) async { // Callback angepasst
                                   final String userId = FirebaseAuth.instance.currentUser!.uid;
-                                  final String userName = FirebaseAuth.instance.currentUser!.displayName ?? "Unbekannter Nutzer";
-                                  final String userProfileUrl = FirebaseAuth.instance.currentUser!.photoURL ?? "";
+                                  //final String userName = FirebaseAuth.instance.currentUser!.displayName ?? "Unbekannter Nutzer";
+                                  //final String userProfileUrl = FirebaseAuth.instance.currentUser!.photoURL ?? "";
+                                  await _loadUserData(userId);
+                                  final String userName = userData?['name'] ?? "Unbekannter Nutzer";
+                                  final String userProfileUrl = userData?['photoUrl'] ?? "";
                                   await firestoreService.addReview(restaurantData['id'], rating, comment, userId, userName, userProfileUrl);
                                   double newAverageRating = await firestoreService.calculateAverageRating(restaurantData['id']);
                                   await firestoreService.setRestaurantRating(restaurantData['id'], newAverageRating);
@@ -219,6 +239,9 @@ class MarkerManager {
                               ),
                                 title: Text(review['userName'] ?? 'Unbekannt'),
                               subtitle: Text("- ${review['rating']} ⭐: ${review['comment']}"),
+                              onTap: () {
+                                _navigateToUserProfile(review['userId'], context);
+                              },
                             )
                           ).toList(),
                         ),
@@ -235,6 +258,15 @@ class MarkerManager {
       selectedMarkerId = null;
       loadMarkers();
     });
+  }
+
+  void _navigateToUserProfile(String userId, BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserProfileScreen(userId: userId),
+      ),
+    );
   }
 
   static List<Widget> _formatOpeningHours(String openingHours) {
