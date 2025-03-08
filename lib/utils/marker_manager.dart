@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:foodconnect/main.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:foodconnect/services/firestore_service.dart'; // Import hinzugefügt
+import 'package:foodconnect/widgets/rating_dialog.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class MarkerManager {
@@ -14,6 +16,7 @@ class MarkerManager {
   MarkerManager._internal();
 
   final DatabaseService databaseService = DatabaseService();
+  final FirestoreService firestoreService = FirestoreService(); // Instanz hinzugefügt
   Set<Marker> markers = {};
   BitmapDescriptor? customIcon;
   BitmapDescriptor? highlightedIcon;
@@ -93,6 +96,11 @@ class MarkerManager {
   void showMarkerPanel(BuildContext context, Map<String, dynamic> restaurantData) async {
     String address = await getAddressFromLatLng(restaurantData['latitude'], restaurantData['longitude']);
 
+    //Reviews holen
+    List<Map<String, dynamic>> reviews = await firestoreService.getReviewsForRestaurant(restaurantData['id']);
+    // Durchschnitt berechnen
+    double averageRating = await firestoreService.calculateAverageRating(restaurantData['id']);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -155,9 +163,40 @@ class MarkerManager {
                         "⭐ Bewertung",
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
-                      Text("${restaurantData['rating'].toString()} / 5.0", style: TextStyle(fontSize: 16)),
+                      Text("${averageRating.toString()} / 5.0", style: TextStyle(fontSize: 16)),
+                      ElevatedButton( // Hinzugefügter Button
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return RatingDialog(
+                                restaurantId: restaurantData['id'],
+                                onRatingSubmitted: (rating, comment) async { // Callback angepasst
+                                  await firestoreService.addReview(restaurantData['id'], rating, comment);
+                                  double newAverageRating = await firestoreService.calculateAverageRating(restaurantData['id']);
+                                  await firestoreService.setRestaurantRating(restaurantData['id'], newAverageRating);
+                                  
+                                },
+                              );
+                            },
+                          );
+                        },
+                        child: Text("Bewerten"),
+                      ),
+                       SizedBox(height: 16),
+                      // Hier die Reviews anzeigen
+                      if (reviews.isNotEmpty) ...[
+                        Text(
+                          "Reviews:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: reviews.map((review) => Text("- ${review['rating']} ⭐: ${review['comment']}")).toList(),
+                        ),
+                      ],
                     ],
-                  ],
+                  ]
                 ),
               ),
             );

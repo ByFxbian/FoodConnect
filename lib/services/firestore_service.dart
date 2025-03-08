@@ -18,7 +18,7 @@ class FirestoreService {
         .collection("users")
         .doc(currentUserId)
         .collection("following")
-        .doc(targetUserId)
+        .doc(targetUserId) 
         .set({});
     
     // Add to target user's followers list
@@ -106,10 +106,41 @@ class FirestoreService {
         "icon": data["icon"] ?? "",
         "rating": double.tryParse(data["rating"].toString()) ?? 0.0,
         "openingHours": data["openingHours"] ?? "Keine Öffnungszeiten",
+        "reviews": []
       });
     }
 
     print("✅ Firestore-Daten wurden in SQLite gespeichert!");
+  }
+
+  Future<void> addReview(String restaurantId, double rating, String comment) async {
+    await _db.collection('restaurantReviews').add({
+      'restaurantId': restaurantId,
+      'rating': rating,
+      'comment': comment,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getReviewsForRestaurant(String restaurantId) async {
+    QuerySnapshot querySnapshot = await _db
+        .collection('restaurantReviews')
+        .where('restaurantId', isEqualTo: restaurantId)
+        .get();
+    return querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+  }
+
+  Future<double> calculateAverageRating(String restaurantId) async {
+    List<Map<String, dynamic>> reviews = await getReviewsForRestaurant(restaurantId);
+    if (reviews.isEmpty) return 0.0;
+    double sum = 0;
+    for (var review in reviews) {
+      sum += review['rating'];
+    }
+    return sum / reviews.length;
+  }
+
+  Future<void> setRestaurantRating(String restaurantId, double rating) async {
+    await dbService.setRestaurantRating(restaurantId, rating);
   }
 }
 

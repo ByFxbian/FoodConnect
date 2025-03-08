@@ -278,6 +278,16 @@ class DatabaseService {
     return results.isNotEmpty ? results.first : null;
   }
 
+  Future<void> setRestaurantRating(String restaurantId, double rating) async {
+    final db = await database;
+    await db.update(
+      'restaurants',
+      {'rating': rating},
+      where: 'id = ?',
+      whereArgs: [restaurantId],
+    );
+  }
+  
   Future<void> clearDatabase() async {
     final db = await database;
     await db.delete('restaurants');

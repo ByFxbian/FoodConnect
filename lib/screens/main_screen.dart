@@ -68,6 +68,7 @@ class _MainScreenState extends State<MainScreen> {
         padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(30),
+          clipBehavior: Clip.antiAlias,
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
