@@ -13,59 +13,57 @@ class FirestoreService {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
     if(currentUserId == targetUserId) return;
 
-    DocumentReference currentUserRef = _db.collection("users").doc(currentUserId);
-    DocumentReference targetUserRef = _db.collection("users").doc(targetUserId);
-
-    await currentUserRef.update({
-      "following": FieldValue.arrayUnion([targetUserId])
-    });
-    await targetUserRef.update({
-      "followers": FieldValue.arrayUnion([currentUserId])
-    });
+    // Add to current user's following list
+    await _db
+        .collection("users")
+        .doc(currentUserId)
+        .collection("following")
+        .doc(targetUserId)
+        .set({});
+    
+    // Add to target user's followers list
+    await _db
+        .collection("users")
+        .doc(targetUserId)
+        .collection("followers")
+        .doc(currentUserId)
+        .set({});
   }
 
   Future<void> unfollowUser(String targetUserId) async {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
     if (currentUserId == targetUserId) return;
 
-    DocumentReference currentUserRef = _db.collection("users").doc(currentUserId);
-    DocumentReference targetUserRef = _db.collection("users").doc(targetUserId);
-
-    await currentUserRef.update({
-      "following": FieldValue.arrayRemove([targetUserId])
-    });
-    await targetUserRef.update({
-      "followers": FieldValue.arrayRemove([currentUserId])
-    });
+    // Remove from current user's following list
+    await _db.collection("users").doc(currentUserId).collection("following").doc(targetUserId).delete();
+    
+    // Remove from target user's followers list
+    await _db.collection("users").doc(targetUserId).collection("followers").doc(currentUserId).delete();
   }
 
   Future<bool> isFollowingUser(String targetUserId) async {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    DocumentSnapshot userDoc = await _db.collection("users").doc(currentUserId).get();
-    List<dynamic> following = (userDoc.data() as Map<String, dynamic>)?["following"] ?? [];
-    return following.contains(targetUserId);
+    
+    // Check if the current user is following the target user by checking for a document in the following subcollection.
+    final followingDoc = await 
+    _db
+        .collection("users")
+        .doc(currentUserId)
+        .collection("following")
+        .doc(targetUserId)
+        .get();
+
+    return followingDoc.exists;
   }
 
   Future<int> getFollowerCount(String userId) async {
-    DocumentSnapshot userDoc = await _db.collection("users").doc(userId).get();
-    List<dynamic> followers = (userDoc.data() as Map<String, dynamic>)?["followers"] ?? [];
-    return followers.length;
+    final followersQuery = await _db.collection("users").doc(userId).collection("followers").get();
+    return followersQuery.docs.length;
   }
 
   Future<int> getFollowingCount(String userId) async {
-    DocumentSnapshot userDoc = await _db.collection("users").doc(userId).get();
-    List<dynamic> following = (userDoc.data() as Map<String, dynamic>)?["following"] ?? [];
-    return following.length;
-  }
-
-  Future<List<String>> getFollowers(String userId) async {
-    DocumentSnapshot userDoc = await _db.collection("users").doc(userId).get();
-    return (userDoc.data() as Map<String, dynamic>)?["followers"]?.cast<String>() ?? [];
-  }
-
-  Future<List<String>> getFollowing(String userId) async {
-    DocumentSnapshot userDoc = await _db.collection("users").doc(userId).get();
-    return (userDoc.data() as Map<String, dynamic>)?["following"]?.cast<String>() ?? [];
+    final followingQuery = await _db.collection("users").doc(userId).collection("following").get();
+    return followingQuery.docs.length;
   }
 
   Future<List<Map<String, dynamic>>> getMarkers() async {
