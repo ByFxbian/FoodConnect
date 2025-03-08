@@ -7,8 +7,7 @@ class LoadingScreen extends StatefulWidget {
   _LoadingScreenState createState() => _LoadingScreenState();
 }
 
-class _LoadingScreenState extends State<LoadingScreen>
-    with SingleTickerProviderStateMixin {
+class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateMixin {
   late AnimationController _logoAnimationController;
   late AnimationController _dotsAnimationController;
   late Animation<double> _scaleAnimation;
