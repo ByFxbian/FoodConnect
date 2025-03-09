@@ -234,35 +234,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /*body: GoogleMap(
-        style: _mapStyleString ?? "",
-        initialCameraPosition: CameraPosition(
-          target: LatLng(48.210033, 16.363449),
-          zoom: 12,
-        ),
-        markers: markers,
-        mapType: MapType.normal,
-        onCameraIdle: _onCameraIdle,
-        cameraTargetBounds: CameraTargetBounds(wienBounds),
-        tiltGesturesEnabled: false,
-        rotateGesturesEnabled: false,
-        minMaxZoomPreference: MinMaxZoomPreference(11, 20),
-        /*onCameraMove: (CameraPosition position) {
-          if(position.zoom < 11) {
-            mapController?.animateCamera(
-              CameraUpdate.zoomTo(11)
-            );
-          }
-        },*/
-        onMapCreated: (GoogleMapController controller) {
-          _controller.complete(controller);
-          mapController = controller;
-          if(widget.targetLocation != null) {
-            _moveToSelectedLocation();
-          }
-          setState(() {});
-        },
-      ),*/
       body: PlatformMap(
             initialCameraPosition: CameraPosition(
               target: LatLng(48.210033, 16.363449),
@@ -354,12 +325,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    /*FloatingActionButton.small(
-                      heroTag: "reload_button",
-                      onPressed: () => _loadMarkers(forceRefresh: true),
-                      backgroundColor: Theme.of(context).colorScheme.secondary,
-                      child: Icon(Platform.isIOS ? CupertinoIcons.refresh : Icons.refresh, color: Theme.of(context).colorScheme.onPrimary),
-                    ),*/
                     SizedBox(height: 10),
                     FloatingActionButton(
                       heroTag: "location_button",
