@@ -47,7 +47,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         print("Nutzer erfolgreich erstellt & in Firestore gespeichert");
 
         Navigator.pushReplacement(
-          // ignore: use_build_context_synchronously
           context,
           MaterialPageRoute(builder: (context) => TasteProfileScreen(userId: userCredential.user!.uid)),
         );

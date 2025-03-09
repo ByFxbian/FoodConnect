@@ -106,7 +106,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
     opacity: _opacityAnimation.value,
     duration: Duration(milliseconds: 500),
     child: Text(
-      "Einen Moment bitte$dots",
+      "Restaurants werden geladen$dots",
       style: GoogleFonts.poppins(
           fontSize: 18,
           fontWeight: FontWeight.bold,

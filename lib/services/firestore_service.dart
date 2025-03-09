@@ -117,23 +117,28 @@ class FirestoreService {
 
     for (var doc in querySnapshot.docs) {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-
       await dbService.insertRestaurant({
         "id": data["id"],
         "name": data["name"],
-        "description": data["description"] ?? "Keine Beschreibung verfügbar",
         "latitude": data["location"].latitude,
         "longitude": data["location"].longitude,
         "icon": data["icon"] ?? "",
         "rating": double.tryParse(data["rating"].toString()) ?? 0.0,
-        "openingHours": data["openingHours"] ?? "Keine Öffnungszeiten",
-        "reviews": []
       });
 
       await dbService.setRestaurantRating(data["id"], double.tryParse(data["rating"].toString()) ?? 0.0);
     }
 
     print("✅ Firestore-Daten wurden in SQLite gespeichert!");
+  }
+
+  Future<Map<String, dynamic>?> fetchRestaurantDetails(String restaurantId) async {
+    DocumentSnapshot doc = await _db.collection("restaurantDetails").doc(restaurantId).get();
+
+    if (doc.exists) {
+      return doc.data() as Map<String, dynamic>;
+    }
+    return null;
   }
 
   Future<bool> hasUserReviewed(String restaurantId, String userId) async {

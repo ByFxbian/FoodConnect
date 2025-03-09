@@ -120,10 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _signOut() async {
     await FirebaseAuth.instance.signOut();
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/LoginScreen',
-      (Route<dynamic> route) => false,
-    );
+    Navigator.pop(context);
   }
 
   void _confirmDeleteAccount() {

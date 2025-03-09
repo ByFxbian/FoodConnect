@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:foodconnect/main.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
 import 'package:foodconnect/widgets/gradient_button.dart';
 import 'package:foodconnect/widgets/login_field.dart';
@@ -46,6 +47,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if(userDoc.exists) {
           print("Nutzer geladen: ${userDoc["name"]}");
+
+          if(mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => AuthWrapper()),
+            );
+          }
         } else {
           print("Fehler: Nutzer nicht in Firestore gefunden.");
         }
