@@ -128,6 +128,57 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ..._buildProfileInfo(),
+                      SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                followerCount.toString(),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              Text(
+                                "Follower",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(width: 20),
+                          Column(
+                            children: [
+                              Text(
+                                followingCount.toString(),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              Text(
+                                "Folgt",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                       SizedBox(height: 30),
                       _buildTasteProfileSection(userData?['tasteProfile']),
                       SizedBox(height: 30),
@@ -206,7 +257,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               title: Text(review['restaurantName'] ?? 'Unbekanntes Restaurant'),
               subtitle: Text("${review['rating']} ⭐: ${review['comment']}",
                   style: TextStyle(fontSize: 14)),
-              onTap: () => _navigateToRestaurant(review['restaurantId']),
+              onTap: () => _navigateToRestaurant(review),
             ))
       ],
     );

@@ -191,6 +191,13 @@ class _SearchScreenState extends State<SearchScreen> {
       isLoading = true;
     });
 
+    if(query.isEmpty) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+
     final snapshot = await FirebaseFirestore.instance
       .collection("users")
       .where("name", isGreaterThanOrEqualTo: query)

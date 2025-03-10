@@ -258,7 +258,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: Text(review['restaurantName'] ?? 'Unbekanntes Restaurant'),
               subtitle: Text("${review['rating']} ⭐: ${review['comment']}",
                   style: TextStyle(fontSize: 14)),
-              onTap: () => _navigateToRestaurant(review['restaurantId']),
+              onTap: () => _navigateToRestaurant(review),
             )),
             if (userReviews.length > 5)
               TextButton(
