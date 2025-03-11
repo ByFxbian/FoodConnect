@@ -1,1 +1,40 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"food-connect-hfs","appId":"1:593098836626:android:66d688f97cf695fe07b44b","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"food-connect-hfs","configurations":{"android":"1:593098836626:android:66d688f97cf695fe07b44b","ios":"1:593098836626:ios:9a18af84a28e31f607b44b","web":"1:593098836626:web:4d377fb1d6f9504e07b44b","windows":"1:593098836626:web:25c7c1a4809e012907b44b"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "food-connect-hfs",
+          "appId": "1:593098836626:android:66d688f97cf695fe07b44b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "food-connect-hfs",
+          "configurations": {
+            "android": "1:593098836626:android:66d688f97cf695fe07b44b",
+            "ios": "1:593098836626:ios:9a18af84a28e31f607b44b",
+            "web": "1:593098836626:web:4d377fb1d6f9504e07b44b",
+            "windows": "1:593098836626:web:25c7c1a4809e012907b44b"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ]
+}

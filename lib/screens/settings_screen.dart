@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,11 +25,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _userNameController = TextEditingController();
   String? _profileImageUrl;
   final ImagePicker _picker = ImagePicker();
+  bool notificationsEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _loadProfileImage();
+    _loadNotificationPreference();
   }
 
   Future<void> _loadProfileImage() async {
@@ -43,6 +46,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _loadNotificationPreference() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if(user!=null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+      if(userDoc.exists && userDoc.data() != null) {
+        var data = userDoc.data() as Map<String, dynamic>;
+
+        setState(() {
+          notificationsEnabled = data.containsKey("notificationToken") && data["notificationToken"] != "";
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if(user==null) return;
+
+    if(value) {
+      NotificationSettings settings = await FirebaseMessaging.instance.requestPermission();
+      if(settings.authorizationStatus == AuthorizationStatus.authorized) {
+        String? token = await FirebaseMessaging.instance.getToken();
+        if(token!=null) {
+          await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
+            "notificationToken": token,
+          });
+        } 
+      }
+    } else {
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
+        "notificationToken": FieldValue.delete(),
+      });
+    }
+
+    setState(() {
+      notificationsEnabled = value;
+    });
+  }
 
   void _updateUsername() async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -246,6 +287,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 themeProvider.toggleTheme();
               },
               activeColor: Theme.of(context).colorScheme.primary,
+            ),
+            SwitchListTile.adaptive(
+              title: Text("Push-Benachrichtigungen", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              value: notificationsEnabled,
+              onChanged: _toggleNotifications,
             ),
             ListTile(
               title: Text("Benutzernamen ändern", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
