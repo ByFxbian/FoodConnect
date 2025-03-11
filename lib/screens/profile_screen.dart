@@ -113,7 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: Icon(Platform.isIOS ? CupertinoIcons.bell : Icons.notifications),
             onPressed: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => NotificationsScreen()),
               );
@@ -408,7 +408,13 @@ class NotificationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     String userId = FirebaseAuth.instance.currentUser!.uid;
     return Scaffold(
-      appBar: AppBar(title: Text("Benachrichtigungen")),
+      appBar: AppBar(
+        title: Text("Benachrichtigungen"),
+        leading: IconButton(
+          icon: Icon(Icons.adaptive.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: StreamBuilder(
         stream: FirebaseFirestore.instance
           .collection("notifications")

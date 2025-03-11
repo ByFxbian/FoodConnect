@@ -22,8 +22,6 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await NotificationService.init();
-
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
@@ -132,6 +130,7 @@ class AuthWrapper extends StatelessWidget {
                   if(snapshot.connectionState == ConnectionState.waiting) {
                     return LoadingScreen();
                   }
+                  NotificationService.init();
                   return MainScreen();
                 },
               );
