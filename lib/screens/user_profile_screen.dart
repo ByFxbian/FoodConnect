@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:foodconnect/screens/follower_list_screen.dart';
 import 'package:foodconnect/screens/main_screen.dart';
+import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
@@ -22,6 +24,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   int followingCount = 0;
   List<Map<String, dynamic>> userReviews = [];
   final FirestoreService _firestoreService = FirestoreService();
+  final DatabaseService _databaseService = DatabaseService();
   User? currentUser = FirebaseAuth.instance.currentUser;
 
   @override
@@ -134,47 +137,67 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         children: [
                           Column(
                             children: [
-                              Text(
-                                followerCount.toString(),
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(context, 
+                                  MaterialPageRoute(builder: (context) => FollowerListScreen(userId: widget.userId, isFollowing: false)));
+                                },
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      followerCount.toString(),
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    Text(
+                                      "Follower",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              Text(
-                                "Follower",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.7),
-                                ),
-                              ),
+                              )
                             ],
                           ),
                           SizedBox(width: 20),
                           Column(
                             children: [
-                              Text(
-                                followingCount.toString(),
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(context, 
+                                  MaterialPageRoute(builder: (context) => FollowerListScreen(userId: widget.userId, isFollowing: true)));
+                                },
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      followingCount.toString(),
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    Text(
+                                      "Folgt",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              Text(
-                                "Folgt",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.7),
-                                ),
-                              ),
+                              )
                             ],
                           ),
                         ],
@@ -257,23 +280,24 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               title: Text(review['restaurantName'] ?? 'Unbekanntes Restaurant'),
               subtitle: Text("${review['rating']} ⭐: ${review['comment']}",
                   style: TextStyle(fontSize: 14)),
-              onTap: () => _navigateToRestaurant(review),
+              onTap: () => _navigateToRestaurant(review["restaurantId"]),
             ))
       ],
     );
   }
 
-  void _navigateToRestaurant(Map<String, dynamic> restaurant) {
+  void _navigateToRestaurant(String restaurant) async {
+    Map<String, dynamic>? restaurantData = await _databaseService.getRestaurantById(restaurant);
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => MainScreen(
           initialPage: 0,
           targetLocation: LatLng(
-            restaurant['latitude'],
-            restaurant['longitude'],
+            restaurantData?['latitude'],
+            restaurantData?['longitude'],
           ),
-          selectedRestaurantId: restaurant['id'],
+          selectedRestaurantId: restaurant,
         ),
       ),
     );

@@ -59,6 +59,78 @@ class DatabaseService {
     return mutableResults.take(limit).toList();
   }
 
+  Future<List<Map<String, dynamic>>> searchRestaurantsWithFilters({
+    required String query,
+    bool openNow = false,
+    String? priceLevel,
+    List<String>? cuisines,
+  }) async {
+    final db = await database;
+
+    List<String> whereConditions = [];
+    List<dynamic> whereArgs = [];
+
+    if (query.isNotEmpty) {
+      whereConditions.add("name LIKE ?");
+      whereArgs.add('%$query%');
+    }
+
+    if (priceLevel != null && priceLevel.isNotEmpty) {
+      whereConditions.add("priceLevel = ?");
+      whereArgs.add(priceLevel);
+    }
+
+    String whereClause = whereConditions.isNotEmpty ? whereConditions.join(" AND ") : "";
+
+    List<Map<String, dynamic>> results = await db.query(
+      'restaurants',
+      where: whereClause.isNotEmpty ? whereClause : null,
+      whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
+      orderBy: "name ASC",
+    );
+
+    if (openNow) {
+      String today = DateFormat('EEEE').format(DateTime.now());
+      results = results.where((restaurant) {
+        if (restaurant['openingHours'] == null) return false;
+        List<String> openingHoursList = restaurant['openingHours'].split(" | ");
+        for (String entry in openingHoursList) {
+          if (entry.startsWith(today)) {
+            String hours = entry.split(': ')[1];
+            if (_isWithinOpeningHours(hours)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }).toList();
+    }
+
+    if (cuisines != null && cuisines.isNotEmpty) {
+      results = results.where((restaurant) {
+        return cuisines.any((cuisine) => (restaurant['cuisine'] ?? "").contains(cuisine));
+      }).toList();
+    }
+
+    // Falls keine Treffer → Vorschläge mit "ODER"-Logik suchen
+    if (results.isEmpty) {
+      List<Map<String, dynamic>> alternativeResults = await db.query(
+        'restaurants',
+        orderBy: "rating DESC",
+        limit: 10,
+      );
+
+      return alternativeResults.map((restaurant) {
+        return {
+          ...restaurant,
+          "suggested": true, // Flag für "ODER"-Vorschläge
+        };
+      }).toList();
+    }
+
+    return results;
+  }
+
   Future<List<Map<String, dynamic>>> getOpenRestaurantsInBounds(
       double minLat, double minLng, double maxLat, double maxLng, int limit) async {
     final db = await database;

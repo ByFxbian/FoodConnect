@@ -29,6 +29,7 @@ class GradientButton extends StatelessWidget {
       ),
       child: ElevatedButton(
         onPressed: () async {
+          if(!context.mounted) return;
           await pressAction();
         },
         style: ElevatedButton.styleFrom(

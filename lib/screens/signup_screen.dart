@@ -7,7 +7,6 @@ import 'package:foodconnect/widgets/gradient_button.dart';
 import 'package:foodconnect/widgets/login_field.dart';
 
 class SignUpScreen extends StatefulWidget {
-  //const LoginScreen({Key? key}) : super(key: key);
   static route() => MaterialPageRoute(
     builder: (context) => const SignUpScreen(),
   );
@@ -21,16 +20,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
+  final usernameController = TextEditingController();
+  String? errorMessage;
 
   @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
+    usernameController.dispose();
     super.dispose();
   }
 
   Future<void> createUserWithEmailAndPassword() async {
     try {
+      if(usernameController.text.trim().isEmpty) {
+        setState(() {
+          errorMessage = "Bitte gib einen Nutzernamen ein.";
+        });
+        return;
+      }
+
+      bool userNameExists = await checkIfUsernameExists(usernameController.text.trim());
+      if(userNameExists) {
+        setState(() {
+          errorMessage = "Dieser Nutzername ist bereits vergeben.";
+        });
+        return;
+      }
+
       final userCredential = 
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: emailController.text.trim(),
@@ -39,7 +56,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
         await FirebaseFirestore.instance.collection("users").doc(userCredential.user?.uid).set({
           "id": userCredential.user?.uid,
-          "name": emailController.text.split("@")[0],
+          "name": usernameController.text.trim(),
           "email": emailController.text.trim(),
           "photoUrl": "",
         });
@@ -53,6 +70,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } on FirebaseException catch (e) {
       print(e.message);
     }
+  }
+
+  Future<bool> checkIfUsernameExists(String username) async {
+    final querySnapshot = await FirebaseFirestore.instance
+      .collection("users")
+      .where("name", isEqualTo: username)
+      .get();
+    return querySnapshot.docs.isNotEmpty;
   }
 
   @override
@@ -71,11 +96,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 30),
+              LoginField(hintText: 'Nutzername', controller: usernameController),
+              const SizedBox(height: 15),
               LoginField(hintText: 'Email', controller: emailController),
               const SizedBox(height: 15),
               LoginField(hintText: 'Passwort', controller: passwordController),
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
+              if(errorMessage != null) 
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(
+                    errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                  ),
+                ),
               GradientButton(pressAction: createUserWithEmailAndPassword, buttonLabel: "Registrieren"),
               const SizedBox(height: 15),
               const Text(
@@ -88,7 +123,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 15),
               GestureDetector(
                 onTap: () {
-                  Navigator.push(context, LoginScreen.route());
+                  Navigator.pushReplacement(context, LoginScreen.route());
                 },
                 child: RichText(
                   text: TextSpan(

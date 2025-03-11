@@ -141,9 +141,11 @@ class AuthWrapper extends StatelessWidget {
 }
 
 Future<void> _initializeData() async {
+  print("⚡ Lade Restaurants...");
   FirestoreService firestoreService = FirestoreService();
   await firestoreService.fetchAndStoreRestaurants();
   await MarkerManager().loadMarkers();
+  print("✅ Marker geladen!");
 }
 
 final darkTheme = ThemeData(

@@ -10,7 +10,6 @@ import 'package:foodconnect/widgets/login_field.dart';
 import 'package:foodconnect/widgets/social_button.dart';
 
 class LoginScreen extends StatefulWidget {
-  //const LoginScreen({Key? key}) : super(key: key);
   static route() => MaterialPageRoute(
     builder: (context) => const LoginScreen(),
   );
@@ -81,12 +80,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 50),
               const SocialButton(iconPath: 'assets/svgs/g_logo.svg', label: 'Weiter mit Google'),
-              const SizedBox(height: 20),
-              const SocialButton(
-                iconPath: 'assets/svgs/f_logo.svg',
-                label: 'Weiter mit Facebook',
-                horizontalPadding: 90,
-              ),
               const SizedBox(height: 15),
               const Text(
                 'oder',
@@ -112,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 15),
               GestureDetector(
                 onTap: () {
-                  Navigator.push(context, SignUpScreen.route());
+                  Navigator.pushReplacement(context, SignUpScreen.route());
                 },
                 child: RichText(
                   text: TextSpan(

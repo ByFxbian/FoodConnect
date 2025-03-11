@@ -55,8 +55,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _pickAndUploadImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(source: source);
     if(pickedFile == null) return;
 
     File file = File(pickedFile.path);
@@ -79,6 +79,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       _showConfirmationPopup("Profilbild aktualisiert");
     }
+  }
+
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Platform.isIOS ? CupertinoIcons.camera : Icons.camera_alt, color: Theme.of(context).colorScheme.primary),
+                title: Text("Kamera verwenden"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(Platform.isIOS ? CupertinoIcons.collections : Icons.photo_library),
+                title: Text("Galerie öffnen"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.gallery);
+                },
+              )
+            ],
+          ),
+        );
+      }
+    );
   }
  
   void _showConfirmationPopup(String message) {
@@ -191,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     bottom: 0,
                     right: 0,
                     child: GestureDetector(
-                      onTap: _pickAndUploadImage,
+                      onTap: _showImageSourceDialog,
                       child: CircleAvatar(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         radius: 20,

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import hinzugefügt
 import 'package:flutter/services.dart';
 import 'package:foodconnect/main.dart';
-import 'package:foodconnect/screens/profile_screen.dart';
+import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:geocoding/geocoding.dart';
@@ -17,7 +17,9 @@ import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 class MarkerManager {
   static final MarkerManager _instance = MarkerManager._internal();
   factory MarkerManager() => _instance;
-  MarkerManager._internal();
+  MarkerManager._internal() {
+    _loadCustomIcon();
+  }
 
   final DatabaseService databaseService = DatabaseService();
   final FirestoreService firestoreService = FirestoreService(); // Instanz hinzugefügt
@@ -26,8 +28,11 @@ class MarkerManager {
   BitmapDescriptor? highlightedIcon;
   String? selectedMarkerId;
   Map<String, dynamic>? userData;
+  bool isPanelOpen = false;
 
   Future<void> _loadCustomIcon() async {
+    if(customIcon != null && highlightedIcon != null) return;
+
     final ByteData data = await rootBundle.load('assets/icons/mapicon.png');
     final Uint8List bytes = data.buffer.asUint8List();
     final ui.Codec codec = await ui.instantiateImageCodec(bytes, targetWidth: 115);
@@ -112,6 +117,13 @@ class MarkerManager {
   }
 
   void showMarkerPanel(BuildContext context, Map<String, dynamic> restaurantData) async {
+    if(isPanelOpen) return;
+    if(selectedMarkerId == restaurantData['id']) return;
+
+    isPanelOpen = true;
+
+    selectedMarkerId = restaurantData['id'];
+
     Map<String, dynamic>? details = await firestoreService.fetchRestaurantDetails(restaurantData['id']);
     String address = await getAddressFromLatLng(restaurantData['latitude'], restaurantData['longitude']);
     Map<String, dynamic>? markerDetails = await firestoreService.fetchPlaceDetails(restaurantData['id']);
@@ -121,7 +133,12 @@ class MarkerManager {
     if (reviews.isNotEmpty) {
       finalRating = (finalRating * 0.7 + averageRating * 0.3);
     }
-    
+
+    if(navigatorKey.currentContext == null) {
+      isPanelOpen = false;
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -257,16 +274,19 @@ class MarkerManager {
       },
     ).whenComplete(() {
       selectedMarkerId = null;
+      isPanelOpen = false;
       loadMarkers();
     });
   }
 
   void _navigateToUserProfile(String userId, BuildContext context) async {
     if(userId == FirebaseAuth.instance.currentUser!.uid) {
-      await Navigator.push(
+      await Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => ProfileScreen(),
+        builder: (context) => MainScreen(
+          initialPage: 2,
+        ),
       ));
     } else {
       await Navigator.push(
