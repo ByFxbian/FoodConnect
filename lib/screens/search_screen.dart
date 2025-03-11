@@ -29,6 +29,13 @@ class _SearchScreenState extends State<SearchScreen> {
   String? filterPriceLevel;
   List<String> filterCuisines = [];
 
+  Map<String, List<String>> priceLevelMapping = {
+    "€": ["Günstig", "Günstig - Mittelpreisig"],
+    "€€": ["Mittelpreisig", "Günstig - Mittelpreisig", "Mittelpreisig - Gehobene Preisklasse"],
+    "€€€": ["Gehoben", "Mittelpreisig - Gehobene Preisklasse", "Gehoben - Luxus"],
+    "€€€€": ["Luxus", "Gehoben - Luxus"]
+  };
+
   void _navigateToUserProfile(String userId) async {
     if(userId == FirebaseAuth.instance.currentUser!.uid) {
       if(navigatorKey.currentContext != null) {
@@ -216,9 +223,9 @@ class _SearchScreenState extends State<SearchScreen> {
                         itemBuilder: (context, index) {
                           var data = searchResults[index];
                           return ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: NetworkImage(data['photoUrl'] ?? ""),
-                            ),
+                            leading: selectedTab == 1 ? CircleAvatar(
+                              backgroundImage: selectedTab == 0 ? NetworkImage(data['photoUrl'] ?? "") : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
+                            ) : null,
                             title: Text(data['name']),
                             subtitle: Text(selectedTab == 0 ? "Restaurant" : "Nutzer"),
                             onTap: () {
@@ -237,7 +244,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  void _searchRestaurants(String query) async {
+  /*void _searchRestaurants(String query) async {
     if (query.isEmpty) {
       setState(() {
         searchResults = [];
@@ -249,13 +256,101 @@ class _SearchScreenState extends State<SearchScreen> {
       isLoading = true;
     });
 
-    //final results = await databaseService.searchRestaurants(query);
-    final results = await databaseService.searchRestaurantsWithFilters(
+    /*final results = await databaseService.searchRestaurantsWithFilters(
       query: query,
       openNow: filterOpenNow,
       priceLevel: filterPriceLevel,
       cuisines: filterCuisines,
-    );
+    );*/
+    final rawResults = await databaseService.searchRestaurants(query);
+    print(rawResults.toList());
+    List<Map<String, dynamic>> filteredResults = [];
+
+    for (var restaurant in rawResults) {
+      if(filteredResults.length >= 5) break;
+
+      var details = await firestoreService.fetchRestaurantDetails(restaurant['id']);
+      if(details != null) {
+        bool matchesFilters = true;
+
+        print(details['priceLevel']);
+        if(filterPriceLevel != null) {
+          print("FILTERPRICELEVEL NOT NULL");
+          List<String> allowedPriceLevels = priceLevelMapping[filterPriceLevel!] ?? [];
+          if(!allowedPriceLevels.contains(details['priceLevel'])) {
+            matchesFilters = false;
+          }
+        }
+
+        if(filterCuisines.isNotEmpty) {
+          print("FILTERCUISINES NOT EMPTY");
+          bool cuisinesMatch = filterCuisines.any((cuisines) => details['cuisines'].contains(cuisines));
+          if(!cuisinesMatch) {
+            matchesFilters = false;
+          }
+        }
+
+        if(matchesFilters) {
+          Map<String, dynamic> mutableRestaurant = Map<String, dynamic>.from(restaurant);
+          mutableRestaurant.addAll(details);
+          filteredResults.add(mutableRestaurant);
+        }
+      }
+    }
+
+    if(filterCuisines.isEmpty && filterPriceLevel == null && filterOpenNow == false) {
+      print("RESTAURANTS SHOWN BY NAME!");
+      setState(() {
+        searchResults = rawResults;
+        isLoading = false;
+      });
+    } else {
+      print("FILTERED RESTAURANTS SHOWN");
+      setState(() {
+        searchResults = filteredResults.toList();
+        isLoading = false;
+      });
+    }
+
+  }*/
+
+  void _searchRestaurants(String query) async {
+    if(query.isEmpty) {
+      setState(() {
+        searchResults = [];
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    Query firestoreQuery = FirebaseFirestore.instance.collection("restaurantDetails");
+
+    if(filterCuisines.isEmpty && filterPriceLevel == null && filterOpenNow == false) {
+      firestoreQuery = firestoreQuery.where("nameLowerCase", isGreaterThanOrEqualTo: query.toLowerCase());
+    } else {
+      firestoreQuery = firestoreQuery.where("nameLowerCase", isGreaterThanOrEqualTo: query.toLowerCase());
+
+      if(filterPriceLevel != null) {
+        List<String> allowedPriceLevels = priceLevelMapping[filterPriceLevel!] ?? [];
+        firestoreQuery = firestoreQuery.where("priceLevel", whereIn: allowedPriceLevels);
+      }
+
+      if(filterCuisines.isNotEmpty) {
+        firestoreQuery = firestoreQuery.where("cuisines", arrayContainsAny: filterCuisines);
+      }
+
+      if(filterOpenNow) {
+        firestoreQuery = firestoreQuery.where("isOpenNow", isEqualTo: true);
+      }
+    }
+
+    firestoreQuery.orderBy("nameLowerCase", descending: false);
+
+    QuerySnapshot querySnapshot = await firestoreQuery.limit(10).get();
+    List<Map<String, dynamic>> results = querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
 
     setState(() {
       searchResults = results;

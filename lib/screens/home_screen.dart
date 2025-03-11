@@ -287,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Align(
                 alignment: Alignment.topRight,
                 child: Container(
-                  margin: EdgeInsets.only(top: 50, right: 10),
+                  margin: EdgeInsets.only(top: 60, right: 10),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(25),

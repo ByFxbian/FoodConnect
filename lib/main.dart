@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/loading_screen.dart';
+import 'package:foodconnect/services/notification_service.dart';
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:foodconnect/screens/main_screen.dart';
@@ -20,6 +21,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await NotificationService.init();
 
   runApp(
     ChangeNotifierProvider(
@@ -58,6 +61,7 @@ class _MyAppState extends State<MyApp> {
           darkTheme: darkTheme,
           themeMode: themeProvider.themeMode,
           home: AuthWrapper(),
+          debugShowCheckedModeBanner: false,
         );
       },
     );

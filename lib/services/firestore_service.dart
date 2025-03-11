@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/services/database_service.dart';
+import 'package:foodconnect/services/notification_service.dart';
 //import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
@@ -28,6 +29,15 @@ class FirestoreService {
         .collection("followers")
         .doc(currentUserId)
         .set({});
+
+    DocumentSnapshot userDoc = await _db.collection("users").doc(currentUserId).get();
+    String currentUserName = userDoc["name"] ?? "Ein Nutzer";
+
+    NotificationService.sendNotification(
+      recipientUserId: targetUserId,
+      title: "$currentUserName folgt dir jetzt!",
+      body: "Tippe, um sein/ihr Profil zu besuchen.",
+    );
   }
 
   Future<void> unfollowUser(String targetUserId) async {
@@ -155,6 +165,7 @@ class FirestoreService {
       print("⚠️ Nutzer hat dieses Restaurant bereits bewertet.");
       return;
     }
+
     await _db.collection('restaurantReviews').add({
       'restaurantId': restaurantId,
       'rating': rating,
@@ -163,6 +174,17 @@ class FirestoreService {
       'userName': userName,
       'userProfileUrl': userProfileUrl,
     });
+
+    QuerySnapshot followerSnapshot = await _db.collection("users").doc(userId).collection("followers").get();
+    for (var doc in followerSnapshot.docs) {
+      String followerId = doc.id;
+      NotificationService.sendNotification(
+        recipientUserId: followerId,
+        title: "$userName hat ein Restaurant bewertet!",
+        body: "Es wurde mit $rating Sternen bewertet.",
+      );
+    }
+
   }
 
   Future<List<Map<String, dynamic>>> getReviewsForRestaurant(String restaurantId) async {

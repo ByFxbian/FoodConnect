@@ -110,6 +110,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(Platform.isIOS ? CupertinoIcons.bell : Icons.notifications),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => NotificationsScreen()),
+              );
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton(
@@ -391,5 +400,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return key;
     }
+  }
+}
+
+class NotificationsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+    return Scaffold(
+      appBar: AppBar(title: Text("Benachrichtigungen")),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance
+          .collection("notifications")
+          .where("to", isEqualTo: userId)
+          .orderBy("timestamp", descending: true)
+          .snapshots(),
+        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if(!snapshot.hasData) {
+            return Center(child: CircularProgressIndicator.adaptive());
+          } 
+          var notifications = snapshot.data!.docs;
+          return ListView.builder(
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              var notification = notifications[index].data() as Map<String, dynamic>;
+              return ListTile(
+                title: Text(notification['title'] ?? "Benachrichtigung"),
+                subtitle: Text(notification['body'] ?? ""),
+                trailing: Text(notification['timestamp']?.toDate().toString() ?? ""),
+              );
+            },
+          );
+        },
+      ),
+    );
   }
 }
