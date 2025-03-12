@@ -6,11 +6,13 @@ class SocialButton extends StatelessWidget {
   final String iconPath;
   final String label;
   final double horizontalPadding;
+  final Future<void> Function() onTap;
   // ignore: use_super_parameters
   const SocialButton({
     Key? key,
     required this.iconPath,
     required this.label,
+    required this.onTap,
     this.horizontalPadding = 100,
   }) : super(key: key);
 

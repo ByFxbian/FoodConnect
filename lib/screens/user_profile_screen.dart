@@ -112,7 +112,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "Profil",
+          userData?['name'] ?? "Unbekannter Nutzer",
+          key: ValueKey(userData?['name']),
           style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface,
               fontSize: 22,
@@ -272,10 +273,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         ...userReviews.map((review) => ListTile(
               leading: CircleAvatar(
-                backgroundImage: NetworkImage(review['userProfileUrl'] ?? ""),
-                child: review['userProfileUrl'] == null || review['userProfileUrl'].isEmpty
-                    ? Icon(Icons.person)
-                    : null,
+                backgroundImage: userData?['photoUrl'] != null &&
+                    userData?['photoUrl'] != ""
+                  ? NetworkImage(userData?['photoUrl'])
+                  : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
               ),
               title: Text(review['restaurantName'] ?? 'Unbekanntes Restaurant'),
               subtitle: Text("${review['rating']} ⭐: ${review['comment']}",

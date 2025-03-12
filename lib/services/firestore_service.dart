@@ -14,6 +14,16 @@ class FirestoreService {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
     if(currentUserId == targetUserId) return;
 
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(currentUserId).get();
+
+    bool emailVerified = userDoc["emailVerified"] ?? false;
+    if (!emailVerified) {
+      throw FirebaseException(
+        plugin: "Firestore",
+        message: "Bitte bestätige zuerst deine E-Mail-Adresse, bevor du Nutzern folgen kannst!",
+      );
+    }
+
     // Add to current user's following list
     await _db
         .collection("users")
@@ -30,7 +40,6 @@ class FirestoreService {
         .doc(currentUserId)
         .set({});
 
-    DocumentSnapshot userDoc = await _db.collection("users").doc(currentUserId).get();
     String currentUserName = userDoc["name"] ?? "Ein Nutzer";
 
     NotificationService.sendNotification(
@@ -49,6 +58,18 @@ class FirestoreService {
     
     // Remove from target user's followers list
     await _db.collection("users").doc(targetUserId).collection("followers").doc(currentUserId).delete();
+  }
+
+  Future<void> updateEmailVerificationStatus() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await user.reload();
+      bool emailVerified = user.emailVerified;
+
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
+        "emailVerified": emailVerified,
+      });
+    }
   }
 
   Future<bool> isFollowingUser(String targetUserId) async {
@@ -164,6 +185,16 @@ class FirestoreService {
     if (await hasUserReviewed(restaurantId, userId)) {
       print("⚠️ Nutzer hat dieses Restaurant bereits bewertet.");
       return;
+    }
+
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(userId).get();
+
+    bool emailVerified = userDoc["emailVerified"] ?? false;
+    if (!emailVerified) {
+      throw FirebaseException(
+        plugin: "Firestore",
+        message: "Bitte bestätige zuerst deine E-Mail-Adresse bevor du bewerten kannst!",
+      );
     }
 
     await _db.collection('restaurantReviews').add({

@@ -5,9 +5,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/main.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
+import 'package:foodconnect/screens/username_selection_screen.dart';
 import 'package:foodconnect/widgets/gradient_button.dart';
 import 'package:foodconnect/widgets/login_field.dart';
 import 'package:foodconnect/widgets/social_button.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginScreen extends StatefulWidget {
   static route() => MaterialPageRoute(
@@ -62,6 +64,96 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> loginWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if(googleUser == null) return;
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      if(user!=null) {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+
+        if(!userDoc.exists) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UsernameSelectionScreen(user: user),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AuthWrapper()), 
+          );
+        }
+      }
+    } catch (e) {
+      print("Fehler beim Google-Login: $e");
+    }
+  }
+
+  void _showPasswordResetDialog() {
+    TextEditingController resetEmailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog.adaptive(
+          title: Text("Passwort zurücksetzen"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Gib deine E-MailAdresse ein, um dein Passwort zurückzusetzen."),
+              SizedBox(height: 10),
+              TextField(
+                controller: resetEmailController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: "E-Mail Adresse"
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Abbrechen"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await FirebaseAuth.instance.sendPasswordResetEmail(
+                    email: resetEmailController.text.trim(),
+                  );
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Passwort-Reset E-Mail gesendet!"), backgroundColor: Colors.green),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Fehler: Überprüfe die E-Mail-Adresse."),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: Text("E-Mail senden"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 50),
-              const SocialButton(iconPath: 'assets/svgs/g_logo.svg', label: 'Weiter mit Google'),
+              SocialButton(iconPath: 'assets/svgs/g_logo.svg', label: 'Weiter mit Google', onTap: loginWithGoogle),
               const SizedBox(height: 15),
               const Text(
                 'oder',
@@ -92,6 +184,13 @@ class _LoginScreenState extends State<LoginScreen> {
               LoginField(hintText: 'Email', controller: emailController),
               const SizedBox(height: 15),
               LoginField(hintText: 'Passwort', controller: passwordController),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _showPasswordResetDialog,
+                  child: Text("Passwort vergessen?"),
+                ),
+              ),
               const SizedBox(height: 20),
               GradientButton(pressAction: loginWithEmailAndPassword, buttonLabel: "Anmelden"),
               const SizedBox(height: 15),

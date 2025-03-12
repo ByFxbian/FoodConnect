@@ -36,6 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
     _loadFollowCounts();
     _loadUserReviews();
+    FirestoreService().updateEmailVerificationStatus();
   }
 
   Future<void> _loadFollowCounts() async {
@@ -49,6 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserData() async {
     if(user != null) {
+      await FirestoreService().updateEmailVerificationStatus();
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
         .collection("users")
         .doc(user!.uid)
@@ -74,6 +76,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       userReviews = reviews;
     });
+  }
+
+  Future<void> _sendVerificationEmail() async {
+    try {
+      await user?.sendEmailVerification();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("E-Mail-Bestätigung erneut gesendet!")),
+      );
+      //Future.delayed(Duration(seconds: 10));
+      await FirestoreService().updateEmailVerificationStatus();
+    } catch (e) {
+      print("Fehler beim Senden: $e");
+    }
   }
 
   void _navigateToRestaurant(String restaurant) async {
@@ -151,6 +166,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
+                        if(userData?["emailVerified"] == false)
+                          Container(
+                            color: Colors.orangeAccent,
+                            padding: EdgeInsets.all(10),
+                            margin: EdgeInsets.all(10),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    "Bitte bestätige deine E-Mail-Adresse!",
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _sendVerificationEmail,
+                                  child: Text("Erneut senden", style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          ),
                         CircleAvatar(
                           radius: 60,
                           backgroundImage: userData?['photoUrl'] != null &&

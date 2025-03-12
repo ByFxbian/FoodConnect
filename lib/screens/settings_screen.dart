@@ -85,14 +85,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  Future<bool> checkIfUsernameExists(String username) async {
+    final querySnapshot = await FirebaseFirestore.instance
+      .collection("users")
+      .where("name", isEqualTo: username)
+      .get();
+    return querySnapshot.docs.isNotEmpty;
+  }
+
   void _updateUsername() async {
     User? user = FirebaseAuth.instance.currentUser;
     if(user != null && _userNameController.text.isNotEmpty) {
+      bool userNameExists = await checkIfUsernameExists(_userNameController.text.trim());
+      if (userNameExists) {
+        _showConfirmationPopup("Benutzername ist vergeben", false);
+        return;
+      }
       await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
         "name": _userNameController.text.trim(),
       });
+
+     // QuerySnapshot reviewsDoc = await FirebaseFirestore.instance.collection("restaurantReviews").where("userId", isEqualTo: user.uid).get();
+
       widget.onUsernameChanged();
-      _showConfirmationPopup("Benutzername aktualisiert");
+      _showConfirmationPopup("Benutzername aktualisiert", true);
     }
   }
 
@@ -118,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _profileImageUrl = downloadUrl;
       });
 
-      _showConfirmationPopup("Profilbild aktualisiert");
+      _showConfirmationPopup("Profilbild aktualisiert", true);
     }
   }
 
@@ -158,7 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
  
-  void _showConfirmationPopup(String message) {
+  void _showConfirmationPopup(String message, bool passed) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black87,
@@ -171,7 +187,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Platform.isIOS ? CupertinoIcons.check_mark_circled : Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 40),
+              passed ? Icon(Platform.isIOS ? CupertinoIcons.check_mark_circled : Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 40) :
+                Icon(Platform.isIOS ? CupertinoIcons.xmark_circle : Icons.close_outlined, color: Theme.of(context).colorScheme.primary, size: 40),
               SizedBox(height: 10),
               Text(
                 message,

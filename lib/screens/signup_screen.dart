@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/login_screen.dart';
 import 'package:foodconnect/screens/taste_profile_screen.dart';
@@ -22,6 +25,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final formKey = GlobalKey<FormState>();
   final usernameController = TextEditingController();
   String? errorMessage;
+  bool isPasswordVisible = false;
+  bool isPasswordValid = false;
+
+  final RegExp passwordRegex = RegExp(
+    r'^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()])[A-Za-z\d!@#$%^&*()]{8,}$');
+
+  Map<String, bool> passwordCriteria = {
+    "Mindestens 8 Zeichen": false,
+    "Mindestens 1 Großbuchstabe": false,
+    "Mindestens 1 Zahl": false,
+    "Mindestens 1 Sonderzeichen": false,
+  };
 
   @override
   void dispose() {
@@ -31,7 +46,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  void validatePassword(String password) {
+    setState(() {
+      passwordCriteria["Mindestens 8 Zeichen"] = password.length >= 8;
+      passwordCriteria["Mindestens 1 Großbuchstabe"] =
+          password.contains(RegExp(r'[A-Z]'));
+      passwordCriteria["Mindestens 1 Zahl"] = password.contains(RegExp(r'\d'));
+      passwordCriteria["Mindestens 1 Sonderzeichen"] =
+          password.contains(RegExp(r'[!@#$%^&*()]'));
+
+      isPasswordValid = passwordRegex.hasMatch(password);
+    });
+  }
+
   Future<void> createUserWithEmailAndPassword() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     try {
       if(usernameController.text.trim().isEmpty) {
         setState(() {
@@ -107,7 +136,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 15),
               LoginField(hintText: 'Email', controller: emailController),
               const SizedBox(height: 15),
-              LoginField(hintText: 'Passwort', controller: passwordController),
+              //LoginField(hintText: 'Passwort', controller: passwordController),
+              _buildPasswordField(),
+              _buildPasswordCriteria(),
               const SizedBox(height: 15),
               if(errorMessage != null) 
                 Padding(
@@ -144,6 +175,72 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: 400,
+      ),
+      child: TextFormField(
+        style: TextStyle(color: Colors.white),
+        cursorColor: Colors.deepPurple,
+        controller: passwordController,
+        obscureText: !isPasswordVisible,
+        onChanged: validatePassword,
+        decoration: InputDecoration(
+          contentPadding: EdgeInsets.all(27),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: isPasswordValid ? Colors.green : Colors.red),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          hintText: "Passwort",
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: isPasswordValid ? Colors.green : Colors.red),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          suffixIcon: IconButton(
+            icon: Icon(Platform.isIOS ? (isPasswordVisible ? CupertinoIcons.eye : CupertinoIcons.eye_slash) :
+              (isPasswordVisible ? Icons.visibility : Icons.visibility_off)
+            ),
+            onPressed: () {
+              setState(() {
+                isPasswordVisible = !isPasswordVisible;
+              });
+            },
+          )
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordCriteria() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        children: passwordCriteria.entries.map((entry) {
+          return Row(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(3),
+              ),
+              Icon(
+                Platform.isIOS ? (entry.value ? CupertinoIcons.check_mark_circled : CupertinoIcons.xmark_circle) : (entry.value ? Icons.check_circle : Icons.cancel),
+                color: entry.value ? Colors.green : Colors.red,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                entry.key,
+                style: TextStyle(
+                  color: entry.value ? Colors.green : Colors.red,
+                ),
+              ),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
