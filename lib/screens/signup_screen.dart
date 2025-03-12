@@ -54,11 +54,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
           password: passwordController.text.trim(),
         );
 
+        await userCredential.user?.sendEmailVerification();
+
         await FirebaseFirestore.instance.collection("users").doc(userCredential.user?.uid).set({
           "id": userCredential.user?.uid,
           "name": usernameController.text.trim(),
           "email": emailController.text.trim(),
           "photoUrl": "",
+          "emailVerified": false,
         });
 
         print("Nutzer erfolgreich erstellt & in Firestore gespeichert");
@@ -69,6 +72,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
     } on FirebaseException catch (e) {
       print(e.message);
+      setState(() {
+        errorMessage = e.message;
+      });
     }
   }
 

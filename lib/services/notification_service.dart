@@ -9,12 +9,23 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   static Future<void> init() async {
-    await _firebaseMessaging.requestPermission();
+   // await _firebaseMessaging.requestPermission();
+    NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
 
-    String? token = await _firebaseMessaging.getToken();
-    print("FCM-Token: $token");
-    if(token != null) {
-      await _saveTokenToFirestore(token);
+    if(settings.authorizationStatus == AuthorizationStatus.authorized) {
+      _logPermissionStatus("authorized");
+      String? token = await _firebaseMessaging.getToken();
+      print("FCM-Token: $token");
+      if(token != null) {
+        await _saveTokenToFirestore(token);
+      }
+    } else {
+      print("Benachrichtigungen abgelehnt.");
+      _logPermissionStatus("denied");
     }
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -26,6 +37,16 @@ class NotificationService {
       print("Benutzer hat Benachrichtigung geöffnet");
     });
   }
+
+  static Future<void> _logPermissionStatus(String status) async {
+    String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
+    if(userId.isNotEmpty) {
+      await FirebaseFirestore.instance.collection("debug_logs").doc(userId).set({
+        'notification_status': status,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    }
+  } 
 
   static Future<void> _saveTokenToFirestore(String token) async {
     String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
