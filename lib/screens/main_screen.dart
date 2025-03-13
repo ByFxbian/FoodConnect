@@ -77,50 +77,8 @@ class _MainScreenState extends State<MainScreen> {
                 borderRadius: BorderRadius.circular(30),
                 border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)),
               ),
-              child: Platform.isIOS ? 
-                CupertinoTabBar(
-                  backgroundColor: Colors.transparent,
-                  currentIndex: _selectedIndex,
-                  onTap: _onItemTapped,
-                  activeColor: Theme.of(context).colorScheme.primary,
-                  inactiveColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
-                  iconSize: 25,
-                  items: [
-                    BottomNavigationBarItem(
-                      icon: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          padding: EdgeInsets.only(top: 8),
-                          child: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
-                        ),
-                      ),
-                      label: 'Home',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        //onTap: () => _onItemTapped(1),
-                        child: Container(
-                          padding: EdgeInsets.only(top: 8),
-                          child: Icon(Platform.isIOS ? CupertinoIcons.search : Icons.search, size: 25),
-                        ),
-                      ),
-                      label: 'Suche',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        //onTap: () => _onItemTapped(2),
-                        child: Container(
-                          padding: EdgeInsets.only(top: 8),
-                          child: Icon(Platform.isIOS ? CupertinoIcons.person : Icons.person, size: 25),
-                        ),
-                      ),
-                      label: 'Profil',
-                    ),
-                  ],
-                )
-              : BottomNavigationBar(
+              child:
+                BottomNavigationBar(
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 currentIndex: _selectedIndex,
