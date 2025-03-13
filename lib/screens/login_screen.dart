@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -78,6 +79,35 @@ class _LoginScreenState extends State<LoginScreen> {
         isLoading = false;
       });
       print(e.message);
+    }
+  }
+
+  Future<void> loginWithApple() async {
+    try {
+      final appleProvider = AppleAuthProvider();
+
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithProvider(appleProvider);
+      final User? user = userCredential.user;
+
+      if(user!=null) {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+
+        if(!userDoc.exists) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UsernameSelectionScreen(user: user),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AuthWrapper()), 
+          );
+        }
+      }
+    } catch (e) {
+      print("Fehler beim Google-Login: $e");
     }
   }
 
@@ -189,6 +219,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 50),
               SocialButton(iconPath: 'assets/svgs/g_logo.svg', label: 'Weiter mit Google', onTap: loginWithGoogle),
+              if(Platform.isIOS) 
+                SocialButton(iconPath: 'assets/svgs/a_logo.svg', label: 'Weiter mit Apple', onTap: loginWithApple),
               const SizedBox(height: 15),
               const Text(
                 'oder',
