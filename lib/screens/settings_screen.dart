@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:foodconnect/main.dart';
+import 'package:foodconnect/services/firestore_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -103,9 +104,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
         "name": _userNameController.text.trim(),
+        "lowercaseName": _userNameController.text.trim().toLowerCase(),
       });
 
-     // QuerySnapshot reviewsDoc = await FirebaseFirestore.instance.collection("restaurantReviews").where("userId", isEqualTo: user.uid).get();
+
+      await FirestoreService().updateUsernameInReviews(user.uid, _userNameController.text.trim());
 
       widget.onUsernameChanged();
       _showConfirmationPopup("Benutzername aktualisiert", true);

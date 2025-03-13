@@ -28,7 +28,6 @@ class _MainScreenState extends State<MainScreen> {
   LatLng? targetLocation;
   String? selectedRestaurantId;
   
-
   @override
   void initState() {
     super.initState();
@@ -91,24 +90,40 @@ class _MainScreenState extends State<MainScreen> {
                 enableFeedback: true,
                 items: [
                   BottomNavigationBarItem(
-                    icon: Padding(
+                    icon: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      //onTap: () => _onItemTapped(0),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
+                      ),
+                    ),
+                    /*Padding(
                       padding: EdgeInsets.only(top: 8), // Icons zentrieren
                       child: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
-                    ), 
+                    ),*/ 
                     label: 'Home',
                   ),
                   BottomNavigationBarItem(
-                    icon: Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: Icon(Platform.isIOS ? CupertinoIcons.search : Icons.search, size: 25),
-                    ), 
+                    icon: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      //onTap: () => _onItemTapped(1),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Icon(Platform.isIOS ? CupertinoIcons.search : Icons.search, size: 25),
+                      ),
+                    ),
                     label: 'Suche',
                   ),
                   BottomNavigationBarItem(
-                    icon: Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: Icon(Platform.isIOS ? CupertinoIcons.person : Icons.person, size: 25),
-                    ), 
+                    icon: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      //onTap: () => _onItemTapped(2),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Icon(Platform.isIOS ? CupertinoIcons.person : Icons.person, size: 25),
+                      ),
+                    ),
                     label: 'Profil',
                   ),
                 ],

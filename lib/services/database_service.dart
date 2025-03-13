@@ -159,6 +159,15 @@ class DatabaseService {
     return results.take(limit).toList();
   }
 
+  Future<List<Map<String, dynamic>>> getTopRatedRestaurants({int limit = 5}) async {
+    final db = await database;
+    return db.query(
+      'restaurants',
+      orderBy: 'rating DESC',
+      limit: limit,
+    );
+  }
+
   Future<List<Map<String, dynamic>>> getFilteredRestaurants({
     required double minLat,
     required double minLng,

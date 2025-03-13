@@ -181,6 +181,17 @@ class FirestoreService {
     return querySnapshot.docs.isNotEmpty;
   }
 
+  Future<void> updateUsernameInReviews(String userId, String newUsername) async {
+    QuerySnapshot querySnapshot = await _db
+      .collection("restaurantReviews")
+      .where('userId', isEqualTo: userId)
+      .get();
+
+    for(var doc in querySnapshot.docs) {
+      doc.reference.update({"userName": newUsername});
+    }
+  }
+
   Future<void> addReview(String restaurantId, double rating, String comment, String userId, String userName, String userProfileUrl) async {
     if (await hasUserReviewed(restaurantId, userId)) {
       print("⚠️ Nutzer hat dieses Restaurant bereits bewertet.");

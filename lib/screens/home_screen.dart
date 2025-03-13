@@ -211,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
         visibleRegion.southwest.longitude,
         visibleRegion.northeast.latitude,
         visibleRegion.northeast.longitude,
-        100,
+        10,
       );
     } else if (selectedFilter == "openNow") {
       filteredMarkers = await databaseService.getOpenRestaurantsInBounds(

@@ -36,6 +36,12 @@ class _SearchScreenState extends State<SearchScreen> {
     "€€€€": ["Luxus", "Gehoben - Luxus"]
   };
 
+  @override
+  void initState() {
+    super.initState();
+    _getRecommendations();
+  }
+
   void _navigateToUserProfile(String userId) async {
     if(userId == FirebaseAuth.instance.currentUser!.uid) {
       if(navigatorKey.currentContext != null) {
@@ -59,6 +65,19 @@ class _SearchScreenState extends State<SearchScreen> {
         setState(() {}); // Refresh the list on return from UserProfileScreen
       });
     }
+  }
+
+  Future<void> _getRecommendations() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    List<Map<String, dynamic>> recommendedRestaurants = await databaseService.getTopRatedRestaurants(limit: 5);
+
+    setState(() {
+      searchResults = recommendedRestaurants;
+      isLoading = false;
+    });
   }
 
   void _navigateToRestaurant(Map<String, dynamic> restaurant) {
@@ -91,6 +110,23 @@ class _SearchScreenState extends State<SearchScreen> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text("Filter", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
+                  ElevatedButton(
+                    onPressed: () {
+                      setModalState(() {
+                        filterOpenNow = false;
+                        filterCuisines.clear();
+                        filterPriceLevel = null;
+                      });
+
+                      Navigator.pop(context);
+                      _searchRestaurants(searchQuery);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text("Alle Filter zurücksetzen"),
+                  ),
                   SwitchListTile.adaptive(
                     title: Text("Nur geöffnete Restaurants"),
                     value: filterOpenNow,
@@ -316,9 +352,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _searchRestaurants(String query) async {
     if(query.isEmpty) {
-      setState(() {
-        searchResults = [];
-      });
+      _getRecommendations();
       return;
     }
 
@@ -379,7 +413,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
     final snapshot = await FirebaseFirestore.instance
       .collection("users")
-      .where("name", isGreaterThanOrEqualTo: query)
+      .where("lowercaseName", isGreaterThanOrEqualTo: query.toLowerCase())
+      // ignore: prefer_interpolation_to_compose_strings
+      .where("lowercaseName", isLessThanOrEqualTo: query.toLowerCase() + '\uf8ff')
       .get();
 
     setState(() {

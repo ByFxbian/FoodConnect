@@ -9,15 +9,20 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   static Future<void> init() async {
-   // await _firebaseMessaging.requestPermission();
     NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
       sound: true,
+      announcement: true,
+      carPlay: true,
+      criticalAlert: true,
+      provisional: true,
     );
 
     if(settings.authorizationStatus == AuthorizationStatus.authorized) {
       _logPermissionStatus("authorized");
+      String? apnsToken = await _firebaseMessaging.getAPNSToken();
+      print("APNS-Token: $apnsToken");
       String? token = await _firebaseMessaging.getToken();
       print("FCM-Token: $token");
       if(token != null) {
