@@ -53,10 +53,14 @@
 	<string>Wir verwenden deine Standortdaten nur, um Restaurants in deiner Umgebung anzuzeigen.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Diese App benötigt den Standortzugriff, um dir Restaurants in deiner Umgebung zu zeigen.</string>
+
 	<key>NSCameraUsageDescription</key>
 	<string>Diese App benötigt Zugriff auf die Kamera, um Profilbilder aufzunehmen.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Diese App benötigt Zugriff auf die Galerie, um Profilbilder auszuwählen.</string>
+
+	<key>GIDClientID</key>
+	<string>593098836626-c7522bskeudkakk0lq3e0ndp5bjd5slo.apps.googleusercontent.com</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -68,5 +72,6 @@
 			</array>
 		</dict>
 	</array>
+
 </dict>
 </plist>
