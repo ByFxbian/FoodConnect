@@ -68,6 +68,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _getRecommendations() async {
+    if(selectedTab == 1) return;
     setState(() {
       isLoading = true;
     });
@@ -235,6 +236,12 @@ class _SearchScreenState extends State<SearchScreen> {
                   } else {
                     _searchUsers(searchQuery);
                   }
+                } else {
+                  if(selectedTab == 1) {
+                    searchResults = [];
+                  } else {
+                    _getRecommendations();
+                  }
                 }
               });
             },
@@ -251,104 +258,66 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           Expanded(
             child: isLoading
-                ? Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator.adaptive())
                 : searchResults.isEmpty && searchQuery.isNotEmpty
                     ? Center(child: Text("Keine Ergebnisse gefunden"))
-                    : ListView.builder(
-                        itemCount: searchResults.length,
-                        itemBuilder: (context, index) {
-                          var data = searchResults[index];
-                          return ListTile(
-                            leading: selectedTab == 1 ? CircleAvatar(
-                              backgroundImage: selectedTab == 0 ? NetworkImage(data['photoUrl'] ?? "") : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
-                            ) : null,
-                            title: Text(data['name']),
-                            subtitle: Text(selectedTab == 0 ? "Restaurant" : "Nutzer"),
-                            onTap: () {
-                              if (selectedTab == 0) {
-                                _navigateToRestaurant(data);
-                              } else {
-                                _navigateToUserProfile(data['id']);
-                              }
-                            },
-                          );
-                        },
-                      ),
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if(searchQuery.isEmpty && searchResults.isNotEmpty && selectedTab == 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 12, bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.restaurant_menu, color: Theme.of(context).colorScheme.primary, size: 22),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Empfehlungen für dich",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: searchResults.length,
+                                itemBuilder: (context, index) {
+                                  var data = searchResults[index];
+                                  return ListTile(
+                                    leading: selectedTab == 1 
+                                      ? CircleAvatar(
+                                          backgroundImage: selectedTab == 0 
+                                            ? NetworkImage(data['photoUrl'] ?? "") 
+                                            : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
+                                        ) 
+                                      : null,
+                                    title: Text(data['name']),
+                                    subtitle: Text(selectedTab == 0 ? "Restaurant" : "Nutzer"),
+                                    onTap: () {
+                                      if (selectedTab == 0) {
+                                        _navigateToRestaurant(data);
+                                      } else {
+                                        _navigateToUserProfile(data['id']);
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                            )
+                          ],
+                        ) ,
+                      )
           ),
         ],
       ),
     );
   }
-
-  /*void _searchRestaurants(String query) async {
-    if (query.isEmpty) {
-      setState(() {
-        searchResults = [];
-      });
-      return;
-    }
-
-    setState(() {
-      isLoading = true;
-    });
-
-    /*final results = await databaseService.searchRestaurantsWithFilters(
-      query: query,
-      openNow: filterOpenNow,
-      priceLevel: filterPriceLevel,
-      cuisines: filterCuisines,
-    );*/
-    final rawResults = await databaseService.searchRestaurants(query);
-    print(rawResults.toList());
-    List<Map<String, dynamic>> filteredResults = [];
-
-    for (var restaurant in rawResults) {
-      if(filteredResults.length >= 5) break;
-
-      var details = await firestoreService.fetchRestaurantDetails(restaurant['id']);
-      if(details != null) {
-        bool matchesFilters = true;
-
-        print(details['priceLevel']);
-        if(filterPriceLevel != null) {
-          print("FILTERPRICELEVEL NOT NULL");
-          List<String> allowedPriceLevels = priceLevelMapping[filterPriceLevel!] ?? [];
-          if(!allowedPriceLevels.contains(details['priceLevel'])) {
-            matchesFilters = false;
-          }
-        }
-
-        if(filterCuisines.isNotEmpty) {
-          print("FILTERCUISINES NOT EMPTY");
-          bool cuisinesMatch = filterCuisines.any((cuisines) => details['cuisines'].contains(cuisines));
-          if(!cuisinesMatch) {
-            matchesFilters = false;
-          }
-        }
-
-        if(matchesFilters) {
-          Map<String, dynamic> mutableRestaurant = Map<String, dynamic>.from(restaurant);
-          mutableRestaurant.addAll(details);
-          filteredResults.add(mutableRestaurant);
-        }
-      }
-    }
-
-    if(filterCuisines.isEmpty && filterPriceLevel == null && filterOpenNow == false) {
-      print("RESTAURANTS SHOWN BY NAME!");
-      setState(() {
-        searchResults = rawResults;
-        isLoading = false;
-      });
-    } else {
-      print("FILTERED RESTAURANTS SHOWN");
-      setState(() {
-        searchResults = filteredResults.toList();
-        isLoading = false;
-      });
-    }
-
-  }*/
 
   void _searchRestaurants(String query) async {
     if(query.isEmpty) {
