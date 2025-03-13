@@ -57,5 +57,16 @@
 	<string>Diese App benötigt Zugriff auf die Kamera, um Profilbilder aufzunehmen.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Diese App benötigt Zugriff auf die Galerie, um Profilbilder auszuwählen.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.593098836626-c7522bskeudkakk0lq3e0ndp5bjd5slo</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
