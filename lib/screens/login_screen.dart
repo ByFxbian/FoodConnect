@@ -25,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -33,7 +34,14 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+   Future<void> emptyFunction() async {
+    return;
+   }
+
   Future<void> loginWithEmailAndPassword() async {
+    setState(() {
+      isLoading = true;
+    });
     try {
       final userCredential =
         await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -50,16 +58,25 @@ class _LoginScreenState extends State<LoginScreen> {
           print("Nutzer geladen: ${userDoc["name"]}");
 
           if(mounted) {
+            setState(() {
+              isLoading = false;
+            });
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => AuthWrapper()),
             );
           }
         } else {
+           setState(() {
+              isLoading = false;
+            });
           print("Fehler: Nutzer nicht in Firestore gefunden.");
         }
 
     } on FirebaseException catch(e) {
+      setState(() {
+        isLoading = false;
+      });
       print(e.message);
     }
   }
@@ -192,7 +209,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              GradientButton(pressAction: loginWithEmailAndPassword, buttonLabel: "Anmelden"),
+              isLoading ? GradientButton(pressAction: emptyFunction, buttonLabel: "Wird angemeldet...")
+              : GradientButton(pressAction: loginWithEmailAndPassword, buttonLabel: "Anmelden"),
               const SizedBox(height: 15),
               const Text(
                 'oder',

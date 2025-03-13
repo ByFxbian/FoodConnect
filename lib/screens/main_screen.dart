@@ -71,7 +71,7 @@ class _MainScreenState extends State<MainScreen> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
-              height: 70,
+              padding: EdgeInsets.symmetric(vertical: 5),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(30),
@@ -80,15 +80,15 @@ class _MainScreenState extends State<MainScreen> {
               child: Platform.isIOS ? 
                 CupertinoTabBar(
                   backgroundColor: Colors.transparent,
-                  currentIndex: 0,
+                  currentIndex: _selectedIndex,
                   onTap: _onItemTapped,
                   activeColor: Theme.of(context).colorScheme.primary,
                   inactiveColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
+                  iconSize: 25,
                   items: [
                     BottomNavigationBarItem(
                       icon: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        //onTap: () => _onItemTapped(0),
                         child: Container(
                           padding: EdgeInsets.only(top: 8),
                           child: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),

@@ -27,6 +27,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String? errorMessage;
   bool isPasswordVisible = false;
   bool isPasswordValid = false;
+  bool isLoading = false;
 
   final RegExp passwordRegex = RegExp(
     r'^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()])[A-Za-z\d!@#$%^&*()]{8,}$');
@@ -59,11 +60,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
   }
 
+  Future<void> emptyFunction() async {
+    return;
+  }
+
   Future<void> createUserWithEmailAndPassword() async {
     FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      isLoading = true;
+    });
     try {
+      
       if(usernameController.text.trim().isEmpty) {
         setState(() {
+          isLoading = false;
           errorMessage = "Bitte gib einen Nutzernamen ein.";
         });
         return;
@@ -72,6 +82,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       bool userNameExists = await checkIfUsernameExists(usernameController.text.trim());
       if(userNameExists) {
         setState(() {
+          isLoading = false;
           errorMessage = "Dieser Nutzername ist bereits vergeben.";
         });
         return;
@@ -95,7 +106,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         });
 
         print("Nutzer erfolgreich erstellt & in Firestore gespeichert");
-
+        setState(() {
+          isLoading = false;
+        });
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => TasteProfileScreen(userId: userCredential.user!.uid)),
@@ -103,6 +116,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } on FirebaseException catch (e) {
       print(e.message);
       setState(() {
+        isLoading = false;
         errorMessage = e.message;
       });
     }
@@ -149,7 +163,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: const TextStyle(color: Colors.red, fontSize: 14),
                   ),
                 ),
-              GradientButton(pressAction: createUserWithEmailAndPassword, buttonLabel: "Registrieren"),
+              isLoading ? GradientButton(pressAction: emptyFunction, buttonLabel: "Registrieren")
+              : GradientButton(pressAction: createUserWithEmailAndPassword, buttonLabel: "Registrieren"),
               const SizedBox(height: 15),
               const Text(
                 'oder',
