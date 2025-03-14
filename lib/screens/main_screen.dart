@@ -64,21 +64,20 @@ class _MainScreenState extends State<MainScreen> {
       ),
       extendBody: true,
       bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 8),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(30),
           clipBehavior: Clip.antiAlias,
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
-              padding: EdgeInsets.symmetric(vertical: 5),
+              height: 70,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(30),
                 border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)),
               ),
-              child:
-                BottomNavigationBar(
+              child: BottomNavigationBar(
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 currentIndex: _selectedIndex,
@@ -95,10 +94,14 @@ class _MainScreenState extends State<MainScreen> {
                       behavior: HitTestBehavior.opaque,
                       //onTap: () => _onItemTapped(0),
                       child: Container(
-                        padding: EdgeInsets.only(top: 3),
+                        padding: EdgeInsets.symmetric(vertical: 12),
                         child: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
                       ),
                     ),
+                    /*Padding(
+                      padding: EdgeInsets.only(top: 8), // Icons zentrieren
+                      child: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
+                    ),*/ 
                     label: 'Home',
                   ),
                   BottomNavigationBarItem(
@@ -106,7 +109,7 @@ class _MainScreenState extends State<MainScreen> {
                       behavior: HitTestBehavior.opaque,
                       //onTap: () => _onItemTapped(1),
                       child: Container(
-                        padding: EdgeInsets.only(top: 3),
+                        padding: EdgeInsets.symmetric(vertical: 12),
                         child: Icon(Platform.isIOS ? CupertinoIcons.search : Icons.search, size: 25),
                       ),
                     ),
@@ -117,7 +120,7 @@ class _MainScreenState extends State<MainScreen> {
                       behavior: HitTestBehavior.opaque,
                       //onTap: () => _onItemTapped(2),
                       child: Container(
-                        padding: EdgeInsets.only(top: 3),
+                        padding: EdgeInsets.symmetric(vertical: 12),
                         child: Icon(Platform.isIOS ? CupertinoIcons.person : Icons.person, size: 25),
                       ),
                     ),
