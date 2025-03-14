@@ -217,9 +217,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: Colors.white
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 30),
               SocialButton(iconPath: 'assets/svgs/g_logo.svg', label: 'Weiter mit Google', onTap: loginWithGoogle),
-              if(Platform.isIOS) 
+              if(Platform.isIOS)
+                const SizedBox(height: 15),
                 SocialButton(iconPath: 'assets/svgs/a_logo.svg', label: 'Weiter mit Apple', onTap: loginWithApple),
               const SizedBox(height: 15),
               const Text(
