@@ -95,7 +95,7 @@ class _MainScreenState extends State<MainScreen> {
                       behavior: HitTestBehavior.opaque,
                       //onTap: () => _onItemTapped(0),
                       child: Container(
-                        padding: EdgeInsets.only(top: 8),
+                        padding: EdgeInsets.only(top: 3),
                         child: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
                       ),
                     ),
@@ -106,7 +106,7 @@ class _MainScreenState extends State<MainScreen> {
                       behavior: HitTestBehavior.opaque,
                       //onTap: () => _onItemTapped(1),
                       child: Container(
-                        padding: EdgeInsets.only(top: 8),
+                        padding: EdgeInsets.only(top: 3),
                         child: Icon(Platform.isIOS ? CupertinoIcons.search : Icons.search, size: 25),
                       ),
                     ),
@@ -117,7 +117,7 @@ class _MainScreenState extends State<MainScreen> {
                       behavior: HitTestBehavior.opaque,
                       //onTap: () => _onItemTapped(2),
                       child: Container(
-                        padding: EdgeInsets.only(top: 8),
+                        padding: EdgeInsets.only(top: 3),
                         child: Icon(Platform.isIOS ? CupertinoIcons.person : Icons.person, size: 25),
                       ),
                     ),

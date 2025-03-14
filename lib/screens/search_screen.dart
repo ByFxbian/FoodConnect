@@ -320,10 +320,10 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _searchRestaurants(String query) async {
-    if(query.isEmpty) {
+    /*if(query.isEmpty) {
       _getRecommendations();
       return;
-    }
+    }*/
 
     setState(() {
       isLoading = true;
