@@ -82,19 +82,36 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _navigateToRestaurant(Map<String, dynamic> restaurant) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MainScreen(
-          initialPage: 0,
-          targetLocation: LatLng(
-            restaurant['latitude'],
-            restaurant['longitude'],
+    if(restaurant['latitude'] == null || restaurant['longitude'] == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MainScreen(
+            initialPage: 0,
+            targetLocation: LatLng(
+              restaurant['location'].latitude,
+              restaurant['location'].longitude,
+            ),
+            selectedRestaurantId: restaurant['id'],
           ),
-          selectedRestaurantId: restaurant['id'],
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MainScreen(
+            initialPage: 0,
+            targetLocation: LatLng(
+              restaurant['latitude'],
+              restaurant['longitude'],
+            ),
+            selectedRestaurantId: restaurant['id'],
+          ),
+        ),
+      );
+    }
+    
   }
 
   void _showFilterModal() {
@@ -354,6 +371,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
     QuerySnapshot querySnapshot = await firestoreQuery.limit(10).get();
     List<Map<String, dynamic>> results = querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+    print(results);
 
     setState(() {
       searchResults = results;
