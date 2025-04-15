@@ -309,7 +309,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   return ListTile(
                                     leading: selectedTab == 1 
                                       ? CircleAvatar(
-                                          backgroundImage: selectedTab == 0 
+                                          backgroundImage: selectedTab == 1 
                                             ? NetworkImage(data['photoUrl'] ?? "") 
                                             : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
                                         ) 
