@@ -363,53 +363,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ) 
-                  
-                  /*PopupMenuButton<String>(
-                    icon: Icon(Platform.isIOS ? CupertinoIcons.list_dash : Icons.filter_list, color: Theme.of(context).colorScheme.surface, size: 30),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)
-                    ),
-                    color: Theme.of(context).colorScheme.surface,
-                    onSelected: (value) {
-                      setState(() {
-                        selectedFilter = value;
-                      });
-                      _updateFilteredMarkers();
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: "highestRated",
-                        child: Row(
-                          children: [
-                            if (selectedFilter == "highestRated") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
-                            SizedBox(width: 8),
-                            Text("Beste Bewertung"),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: "nearest",
-                        child: Row(
-                          children: [
-                            if (selectedFilter == "nearest") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
-                            SizedBox(width: 8),
-                            Text("Kürzeste Entfernung"),
-                          ],
-                        ),
-                      ),
-                      PopupMenuDivider(),
-                      PopupMenuItem(
-                        value: "openNow",
-                        child: Row(
-                          children: [
-                            if (selectedFilter == "openNow") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
-                            SizedBox(width: 8),
-                            Text("Jetzt geöffnet"),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),*/
                 ),
               ),
               Align(
