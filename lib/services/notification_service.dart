@@ -2,14 +2,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:rxdart/rxdart.dart';
 
 class NotificationService {
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   static Future<void> init() async {
-    NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+    final messaging = FirebaseMessaging.instance;
+
+    NotificationSettings settings = await messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
@@ -18,6 +22,10 @@ class NotificationService {
       criticalAlert: true,
       provisional: true,
     );
+
+    if(kDebugMode) {
+      print("Benachrichtigungsberechtigungen: ${settings.authorizationStatus}");
+    }
 
     if(settings.authorizationStatus == AuthorizationStatus.authorized) {
       _logPermissionStatus("authorized");
@@ -33,9 +41,17 @@ class NotificationService {
       _logPermissionStatus("denied");
     }
 
+    final _messageStreamController = BehaviorSubject<RemoteMessage>();
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("Nachricht erhalten: ${message.notification?.title} - ${message.notification?.body}");
-      _showNotification(message);
+      if (kDebugMode) {
+        print('Handling a foreground message: ${message.messageId}');
+        print('Message data: ${message.data}');
+        print('Message notification: ${message.notification?.title}');
+        print('Message notification: ${message.notification?.body}');
+      }
+      //_showNotification(message);
+      _messageStreamController.sink.add(message);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
@@ -91,6 +107,7 @@ class NotificationService {
     String? token = userDoc['notificationToken'];
     if(token!=null) {
       await FirebaseFirestore.instance.collection('notifications').add({
+        'recipientUserId': recipientUserId,
         'to': token,
         'title': title,
         'body': body,

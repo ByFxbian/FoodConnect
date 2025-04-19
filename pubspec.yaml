@@ -37,7 +37,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_launcher_icons: ^0.14.3
-  flutter_local_notifications: ^18.0.1
+  flutter_local_notifications: ^19.1.0
   flutter_svg: ^2.0.16
   geocoding: ^3.0.0
   geolocator: ^13.0.2
@@ -55,6 +55,7 @@ dependencies:
       ref: master
       path: packages/platform_maps_flutter
   provider: ^6.1.2
+  rxdart: ^0.28.0
   shared_preferences: ^2.5.2
   sign_in_with_apple: ^6.1.4
   sqflite: ^2.4.2
@@ -82,6 +83,9 @@ flutter:
     - assets/icons/mapicon.png
     - assets/icons/default_avatar.png
     - assets/map_styles/map_style.json
+    - assets/map_styles/map_style_dark.json
+    - assets/map_styles/map_style_apple.json
+    - assets/map_styles/map_style_final.json
     - assets/app_icon.png
     - assets/app_icon_rounded.png
     - assets/app_icon.jpg

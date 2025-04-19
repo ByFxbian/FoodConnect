@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/main.dart';
 import 'package:foodconnect/services/database_service.dart';
+import 'package:foodconnect/services/noti_service.dart';
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
@@ -64,7 +65,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadMapStyle() async {
     try {
-      _mapStyleString = await DefaultAssetBundle.of(context).loadString('assets/map_styles/map_style.json');
+      _mapStyleString = await DefaultAssetBundle.of(context).loadString('assets/map_styles/map_style_final.json');
+      if(!mounted) return;
       setState(() {});
     } catch (e) {
       print("Fehler beim Laden des Map-Stils: $e");
@@ -88,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _moveToSelectedLocation() async {
     print("📌 _moveToSelectedLocation() aufgerufen!");
+    if (!mounted) return;
     if (widget.targetLocation == null) {
         print("⚠️ Keine Ziel-Location vorhanden.");
         return;
@@ -125,6 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
     bool serviceEnabled;
     LocationPermission permission;
 
+    if (!mounted) return;
+
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
 
@@ -142,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       Position newPosition = await Geolocator.getCurrentPosition(locationSettings: locationSettings);
-
+      if (!mounted) return;
       setState(() {
         position = newPosition;
         _mapVisible = false;
@@ -160,6 +165,10 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (e) {
       print("Fehler beim Abrufen des Standorts: $e");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Standort konnte nicht abgerufen werden.')),
+      );
     }
   }
 
@@ -193,8 +202,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     List<Map<String, dynamic>> filteredMarkers;
 
-    await _getCurrentLocation();
-
     if (selectedFilter == "highestRated") {
       filteredMarkers = await databaseService.getHighestRatedInBounds(
         visibleRegion.southwest.latitude,
@@ -204,6 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
         100,
       );
     } else if (selectedFilter == "nearest") {
+      await _getCurrentLocation();
       filteredMarkers = await databaseService.getNearestRestaurantsInBounds(
         position.latitude,
         position.longitude,
@@ -246,12 +254,28 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       markers = updatedMarkers;
       MarkerManager().markers = updatedMarkers;
+      markers = MarkerManager().markers;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      /*appBar: AppBar(
+        title: Text("DEBUG MENÜ"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              NotiService().showNotification(
+                title: "Title",
+                body: "Body",
+              );
+            },
+            child: Text("Send Notification Debug"),
+          )
+        ],
+      ),*/
       body: PlatformMap(
             initialCameraPosition: CameraPosition(
               target: LatLng(48.210033, 16.363449),
@@ -264,9 +288,10 @@ class _HomeScreenState extends State<HomeScreen> {
             rotateGesturesEnabled: false,
             minMaxZoomPreference: MinMaxZoomPreference(11, 20),
             onCameraIdle: () {
-              _updateInvisibleMarkers();
+              _updateFilteredMarkers();
             },
             googleMapsStyle: _mapStyleString,
+            googleMapsCloudMapId: '15939377b909413f',
             onMapCreated: (controller) {
               if (!mounted) return;
               setState(() {
@@ -348,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-                          PopupMenuDivider(),
+                          /*PopupMenuDivider(),
                           PopupMenuItem(
                             value: "openNow",
                             child: Row(
@@ -358,7 +383,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text("Jetzt geöffnet"),
                               ],
                             ),
-                          ),
+                          ),*/
                         ],
                       ),
                     ),
@@ -389,6 +414,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _updateInvisibleMarkers() async {
+    if (!mounted) return;
     if(mapController == null) return;
 
     LatLngBounds? visibleRegion = await mapController?.getVisibleRegion();

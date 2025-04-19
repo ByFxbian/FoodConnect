@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+// ignore: unused_import
 import 'dart:ui';
 import 'package:foodconnect/screens/home_screen.dart';
 import 'package:foodconnect/screens/search_screen.dart';
@@ -63,7 +64,7 @@ class _MainScreenState extends State<MainScreen> {
         child: pages[_selectedIndex],
       ),
       extendBody: true,
-      bottomNavigationBar: Padding(
+      bottomNavigationBar: /*Padding(
         padding: const EdgeInsets.only(left: 20, right: 20, bottom: 8),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(30),
@@ -98,10 +99,6 @@ class _MainScreenState extends State<MainScreen> {
                         child: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
                       ),
                     ),
-                    /*Padding(
-                      padding: EdgeInsets.only(top: 8), // Icons zentrieren
-                      child: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
-                    ),*/ 
                     label: 'Home',
                   ),
                   BottomNavigationBarItem(
@@ -130,6 +127,41 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
           ),
+        ),
+      )*/
+      Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: _selectedIndex == 0 ? Border(top: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+            width: 1.0,
+          ),
+          ) : null
+        ),
+        padding: const EdgeInsets.only(top: 10, bottom: 10),
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          showSelectedLabels: true,
+          showUnselectedLabels: false,
+          type: BottomNavigationBarType.fixed,
+          items: [
+            BottomNavigationBarItem(
+              icon: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Platform.isIOS ? CupertinoIcons.search : Icons.search, size: 25),
+              label: 'Suche',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Platform.isIOS ? CupertinoIcons.person : Icons.person, size: 25),
+              label: 'Profil',
+            ),
+          ],
         ),
       )
     );

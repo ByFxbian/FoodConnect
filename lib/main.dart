@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/loading_screen.dart';
+import 'package:foodconnect/services/noti_service.dart';
+// ignore: unused_import
 import 'package:foodconnect/services/notification_service.dart';
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +23,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  NotiService().initNotification();
+
+
 
   runApp(
     ChangeNotifierProvider(
@@ -42,6 +48,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  String _lastMessage = "";
 
   @override
   void initState() {
@@ -131,7 +138,7 @@ class AuthWrapper extends StatelessWidget {
                   if(snapshot.connectionState == ConnectionState.waiting) {
                     return LoadingScreen();
                   }
-                  NotificationService.init();
+                  //NotificationService.init();
                   return MainScreen();
                 },
               );
