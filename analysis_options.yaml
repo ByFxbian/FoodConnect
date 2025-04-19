@@ -18,6 +18,7 @@ analyzer:
     library_prefixes: ignore
     unused_element: ignore
     prefer_interpolation_to_compose_strings: ignore
+    no_leading_underscores_for_local_identifiers: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

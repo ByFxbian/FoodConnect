@@ -6,7 +6,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/main.dart';
 import 'package:foodconnect/services/database_service.dart';
-import 'package:foodconnect/services/noti_service.dart';
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';

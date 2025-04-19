@@ -41,6 +41,7 @@ class NotificationService {
       _logPermissionStatus("denied");
     }
 
+    // ignore: no_leading_underscores_for_local_identifiers
     final _messageStreamController = BehaviorSubject<RemoteMessage>();
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
