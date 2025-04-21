@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+// ignore: unused_import
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -28,11 +29,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final ImagePicker _picker = ImagePicker();
   bool notificationsEnabled = false;
 
+  bool userNotificationsEnabled = true;
+  bool _isLoadingPreferences = true;
+
   @override
   void initState() {
     super.initState();
     _loadProfileImage();
-    _loadNotificationPreference();
+    //_loadNotificationPreference();
+    _loadUserNotificationPreference();
+  }
+
+  Future<void> _loadUserNotificationPreference() async {
+    setState(() {
+      _isLoadingPreferences = true;
+    });
+    User? user = FirebaseAuth.instance.currentUser;
+    if(user != null) {
+      try {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+        if(userDoc.exists && userDoc.data() != null) {
+          var data = userDoc.data() as Map<String, dynamic>;
+
+          setState(() {
+            userNotificationsEnabled = data['userNotificationsEnabled'] ?? true;
+          });
+        } else {
+          setState(() {
+            userNotificationsEnabled = true;
+          });
+        }
+      } catch (e) {
+        print("Fehler beim Laden der Benachrichtigungseinstellung: $e");
+         setState(() {
+           userNotificationsEnabled = true;
+         });
+      } finally {
+        setState(() {
+          _isLoadingPreferences = false;
+        });
+      }
+    } else {
+      setState(() {
+        userNotificationsEnabled = true;
+        _isLoadingPreferences = false;
+      });
+    }
   }
 
   Future<void> _loadProfileImage() async {
@@ -61,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _toggleNotifications(bool value) async {
+  /*Future<void> _toggleNotifications(bool value) async {
     User? user = FirebaseAuth.instance.currentUser;
     if(user==null) return;
 
@@ -84,6 +126,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       notificationsEnabled = value;
     });
+  }*/
+
+  Future<void> _toggleNotifications(bool value) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if(user==null) return;
+
+    try {
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+        'userNotificationsEnabled': value,
+      }, SetOptions(merge: true));
+
+      if (mounted) {
+        setState(() {
+          userNotificationsEnabled = value;
+        });
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Benachrichtigungseinstellung gespeichert."), duration: Duration(seconds: 1)),
+      );
+    } catch (e) {
+      print("Fehler beim Speichern der Benachrichtigungseinstellung: $e");
+       ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(content: Text("Fehler beim Speichern der Einstellung."), backgroundColor: Colors.red),
+       );
+       
+    }
   }
 
   Future<bool> checkIfUsernameExists(String username) async {
@@ -281,8 +349,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   CircleAvatar(
                     radius: 60,
                     backgroundImage: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                        ? NetworkImage(_profileImageUrl!)
-                        : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
+                        ? ResizeImage(NetworkImage(_profileImageUrl!), height: 420, policy: ResizeImagePolicy.fit)
+                        : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 420, policy: ResizeImagePolicy.fit) as ImageProvider,
                   ),
                   Positioned(
                     bottom: 0,
@@ -310,8 +378,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             SwitchListTile.adaptive(
               title: Text("Push-Benachrichtigungen", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-              value: notificationsEnabled,
+              value: userNotificationsEnabled,
               onChanged: _toggleNotifications,
+              activeColor: Theme.of(context).colorScheme.primary,
             ),
             ListTile(
               title: Text("Benutzernamen ändern", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),

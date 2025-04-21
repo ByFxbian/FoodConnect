@@ -5,6 +5,7 @@ import 'package:foodconnect/screens/follower_list_screen.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:lottie/lottie.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class UserProfileScreen extends StatefulWidget{
@@ -126,7 +127,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: isLoading
-                ? Center(child: CircularProgressIndicator())
+                ? Center(child: /*CircularProgressIndicator()*/ Lottie.asset('assets/animations/loading.json'))
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,12 +221,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // TODO: Bild zum Anklicken & Zoomen machen wie bei Instagram.
           CircleAvatar(
             radius: 60,
             backgroundImage: userData?['photoUrl'] != null &&
                     userData?['photoUrl'] != ""
-                ? NetworkImage(userData?['photoUrl'])
-                : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
+                ? ResizeImage(NetworkImage(userData?['photoUrl']), height: 420, policy: ResizeImagePolicy.fit)
+                : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 420, policy: ResizeImagePolicy.fit) as ImageProvider,
           ),
           SizedBox(width: 15),
           ElevatedButton(

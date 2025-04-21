@@ -11,7 +11,7 @@ class Palette {
   static const Color lightTextColor = Colors.black;
   static const Color lightIconColor = Colors.black;
 
-  static const Color gradient1 = Color.fromRGBO(187, 63, 221, 1); /* Color.fromRGBO(187, 63, 221, 1) */
-  static const Color gradient2 = Color.fromRGBO(251, 109, 169, 1); /* Color.fromRGBO(251, 109, 169, 1) */
-  static const Color gradient3 = Color.fromRGBO(255, 159, 124, 1); /* Color.fromRGBO(255, 159, 124, 1) */
+  static const Color gradient1 = Color.fromRGBO(250, 124, 51, 1); /* Color.fromRGBO(187, 63, 221, 1) */
+  static const Color gradient2 = Color.fromRGBO(251, 118, 109, 1); /* Color.fromRGBO(251, 109, 169, 1) */
+  static const Color gradient3 = Color.fromRGBO(255, 124, 124, 1); /* Color.fromRGBO(255, 159, 124, 1) */
 }

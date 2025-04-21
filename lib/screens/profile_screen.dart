@@ -9,6 +9,7 @@ import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/settings_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:lottie/lottie.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -161,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: isLoading
                   ? Center(
-                      child: CircularProgressIndicator.adaptive(),
+                      child: /*CircularProgressIndicator.adaptive(),*/Lottie.asset('assets/animations/loading.json')
                     )
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -191,8 +192,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           radius: 60,
                           backgroundImage: userData?['photoUrl'] != null &&
                                   userData?['photoUrl'] != ""
-                              ? NetworkImage(userData?['photoUrl'])
-                              : AssetImage("assets/icons/default_avatar.png")
+                              ? ResizeImage(NetworkImage(userData?['photoUrl']), height: 420, policy: ResizeImagePolicy.fit)
+                              : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 420, policy: ResizeImagePolicy.fit)
                                   as ImageProvider,
                         ),
                         SizedBox(height: 20),
@@ -459,7 +460,7 @@ class NotificationsScreen extends StatelessWidget {
           .snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if(!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator.adaptive());
+            return Center(child: /*CircularProgressIndicator.adaptive()*/ Lottie.asset('assets/animations/loading.json'));
           } 
           var notifications = snapshot.data!.docs;
           return ListView.builder(

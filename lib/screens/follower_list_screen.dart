@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
+import 'package:lottie/lottie.dart';
 
 class FollowerListScreen extends StatelessWidget {
   final String userId;
@@ -24,7 +25,7 @@ class FollowerListScreen extends StatelessWidget {
             .get(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
+            return Center(child: Lottie.asset('assets/animations/loading.json'));
           }
           var docs = snapshot.data!.docs;
           if (docs.isEmpty) {

@@ -8,6 +8,7 @@ import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:lottie/lottie.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -62,6 +63,7 @@ class _SearchScreenState extends State<SearchScreen> {
           builder: (context) => UserProfileScreen(userId: userId),
         ),
       ).then((_) {
+        if(!mounted) return;
         setState(() {}); // Refresh the list on return from UserProfileScreen
       });
     }
@@ -275,7 +277,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           Expanded(
             child: isLoading
-                ? Center(child: CircularProgressIndicator.adaptive())
+                ? Center(child: /*CircularProgressIndicator.adaptive()*/ Lottie.asset('assets/animations/loading.json'))
                 : searchResults.isEmpty && searchQuery.isNotEmpty
                     ? Center(child: Text("Keine Ergebnisse gefunden"))
                     : Padding(
@@ -310,8 +312,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                     leading: selectedTab == 1 
                                       ? CircleAvatar(
                                           backgroundImage: selectedTab == 1 
-                                            ? NetworkImage(data['photoUrl'] ?? "") 
-                                            : AssetImage("assets/icons/default_avatar.png") as ImageProvider,
+                                            ? ResizeImage(NetworkImage(data['photoUrl'] ?? ""), height: 140, policy: ResizeImagePolicy.fit) 
+                                            : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 140, policy: ResizeImagePolicy.fit) as ImageProvider,
                                         ) 
                                       : null,
                                     title: Text(data['name']),

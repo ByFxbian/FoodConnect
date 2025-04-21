@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts package
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart'; // Import Google Fonts package
 
 class LoadingScreen extends StatefulWidget {
   @override
@@ -76,7 +77,6 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
             _buildAnimatedLogo(),
             SizedBox(height: 30),
             _buildLoadingText(),
-            SizedBox(height: 30),
             _buildLoadingIndicator(),
           ],
         );
@@ -86,14 +86,15 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
 
   Widget _buildLoadingIndicator() {
     return SizedBox(
-      height: 60,
-      width: 60,
-      child: CircularProgressIndicator.adaptive(
+      height: 250,
+      width: 250,
+      child: Lottie.asset('assets/animations/loading.json'),
+      /*CircularProgressIndicator.adaptive(
         strokeWidth: 6,
         valueColor: AlwaysStoppedAnimation<Color>(
           Theme.of(context).colorScheme.primary,
         ),
-      ),
+      ),*/
     );
   }
 
@@ -120,6 +121,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
         child: Image.asset(
           'assets/app_icon_vertical_text.png',
           width: 300,
+          cacheHeight: 620,
+          cacheWidth: 1050,
           fit: BoxFit.contain,
         ),
       );

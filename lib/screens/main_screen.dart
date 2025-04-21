@@ -137,7 +137,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           ) : null
         ),
-        padding: const EdgeInsets.only(top: 10, bottom: 10),
+        padding: Platform.isAndroid ? const EdgeInsets.only(top: 10, bottom: 10) : const EdgeInsets.only(top: 10),
         child: BottomNavigationBar(
           backgroundColor: Colors.transparent,
           elevation: 0,

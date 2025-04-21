@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static bool isFirstLoad = true;
   bool _mapVisible = true;
   final GlobalKey<PopupMenuButtonState<String>> filterButtonKey = GlobalKey<PopupMenuButtonState<String>>();
+  final GlobalKey filterButtonKeyNew = GlobalKey();
 
   String selectedFilter = "highestRated";
   Position position = Position(
@@ -60,6 +61,111 @@ class _HomeScreenState extends State<HomeScreen> {
         _updateFilteredMarkers();
       });
     }
+  }
+
+  void _showMaterialFilterMenu(BuildContext context) {
+    final RenderBox? buttonRenderBox = filterButtonKeyNew.currentContext?.findRenderObject() as RenderBox?;
+    if (buttonRenderBox == null) return;
+
+    final position = buttonRenderBox.localToGlobal(Offset.zero);
+    final size = buttonRenderBox.size;
+
+    final menuPosition = RelativeRect.fromLTRB(
+      position.dx - size.width * 2,
+      position.dy + size.height + 5,
+      position.dx,
+      position.dy + size.height + 100, 
+    );
+
+    showMenu<String>(
+      context: context,
+      position: menuPosition,
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      items: <PopupMenuEntry<String>>[
+        PopupMenuItem<String>(
+          value: "highestRated",
+          child: Row(
+            children: [
+              if (selectedFilter == "highestRated") Icon(Icons.check, color: Colors.green), // Material Icon
+              SizedBox(width: 8),
+              Text("Beste Bewertung"),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: "nearest",
+          child: Row(
+            children: [
+              if (selectedFilter == "nearest") Icon(Icons.check, color: Colors.green), // Material Icon
+              SizedBox(width: 8),
+              Text("Kürzeste Entfernung"),
+            ],
+          ),
+        ),
+      ],
+    ).then((String? newValue) {
+      if (newValue != null) {
+        setState(() {
+          selectedFilter = newValue;
+        });
+        _updateFilteredMarkers();
+      }
+    }) ;
+  } 
+
+  void _showCupertinoFilterMenu(BuildContext context) {
+    showCupertinoModalPopup<String>(
+      context: context,
+      builder: (BuildContext context) => CupertinoActionSheet(
+        title: Text('Filter wählen'),
+        actions: <CupertinoActionSheetAction>[
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context, 'highestRated'); 
+            },
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (selectedFilter == "highestRated") Icon(CupertinoIcons.check_mark, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text('Beste Bewertung'),
+                ],
+              ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context, 'nearest');
+            },
+             child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (selectedFilter == "nearest") Icon(CupertinoIcons.check_mark, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text('Kürzeste Entfernung'),
+                ],
+              ),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: Text('Abbrechen'),
+        ),
+      ),
+    ).then((String? newValue) {
+       
+       if (newValue != null) {
+         setState(() {
+           selectedFilter = newValue;
+         });
+         _updateFilteredMarkers();
+       }
+    });
   }
 
   Future<void> _loadMapStyle() async {
@@ -306,15 +412,15 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
           ),
-          floatingActionButton: Stack(
+          /*floatingActionButton: Stack(
             children: [
               Align(
                 alignment: Alignment.topRight,
                 child: Container(
                   margin: EdgeInsets.only(top: 60, right: 10),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(25),
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.2),
@@ -338,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Icon(
                             Platform.isIOS ? CupertinoIcons.list_dash : Icons.filter_list,
                             color: Colors.white,
-                            size: 30
+                            size: 25
                           ),
                         ),
                         shape: RoundedRectangleBorder(
@@ -372,17 +478,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-                          /*PopupMenuDivider(),
-                          PopupMenuItem(
-                            value: "openNow",
-                            child: Row(
-                              children: [
-                                if (selectedFilter == "openNow") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
-                                SizedBox(width: 8),
-                                Text("Jetzt geöffnet"),
-                              ],
-                            ),
-                          ),*/
                         ],
                       ),
                     ),
@@ -390,25 +485,148 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: 90, right: 10),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(height: 10),
-                    FloatingActionButton(
-                      heroTag: "location_button",
-                      onPressed: _moveToCurrentLocation,
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: Icon(Platform.isIOS ? CupertinoIcons.location : Icons.my_location, color: Theme.of(context).colorScheme.onPrimary),
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 90, right: 10),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(height: 10),
+                      FloatingActionButton(
+                        heroTag: "location_button",
+                        onPressed: _moveToCurrentLocation,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        child: Icon(Platform.isIOS ? CupertinoIcons.location : Icons.my_location, color: Theme.of(context).colorScheme.onPrimary),
+                      ),
+                    ],
+                  )
+                ),
+              ),
+            ],
+          ) */
+         floatingActionButton: Align(
+          alignment: Alignment.topRight,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 15.0, right: 10.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  /*Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: Offset(2,2),
+                        )
+                      ],
                     ),
-                  ],
-                )
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          dynamic state = filterButtonKey.currentState;
+                          state.showButtonMenu();
+                        },
+                        child: PopupMenuButton<String>(
+                          key: filterButtonKey,
+                          offset: const Offset(-120, 15),
+                          icon: Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Platform.isIOS ? CupertinoIcons.list_dash : Icons.filter_list,
+                              color: Colors.white,
+                              size: 30
+                            ),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          color: Theme.of(context).colorScheme.surface,
+                          onSelected: (value) {
+                            setState(() {
+                              selectedFilter = value;
+                            });
+                            _updateFilteredMarkers();
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: "highestRated",
+                              child: Row(
+                                children: [
+                                  if (selectedFilter == "highestRated") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Text("Beste Bewertung"),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: "nearest",
+                              child: Row(
+                                children: [
+                                  if (selectedFilter == "nearest") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Text("Kürzeste Entfernung"),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  ),*/
+                  Container(
+                    key: filterButtonKeyNew,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: Offset(2,2),
+                        )
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          if(Platform.isIOS) {
+                            _showCupertinoFilterMenu(context);
+                          } else {
+                            _showMaterialFilterMenu(context);
+                          }
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Icon(
+                            Platform.isIOS ? CupertinoIcons.list_dash : Icons.filter_list,
+                            color: Colors.white,
+                            size: 30
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 15.0),
+                  FloatingActionButton(
+                    heroTag: "location_button",
+                    onPressed: _moveToCurrentLocation,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    child: Icon(Platform.isIOS ? CupertinoIcons.location : Icons.my_location, color: Theme.of(context).colorScheme.onPrimary),
+                  ),
+                ],
               ),
             ),
-            ],
-          ) 
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
     );
   }
 
