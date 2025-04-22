@@ -57,7 +57,9 @@ workflows:
       - name: Update App Delegate
         script: |
           cat ios/Runner/AppDelegate.swift
-          perl -pi -e 's/(^\s*import UIKit\s*)/$1\nimport flutter_local_notifications/' ios/Runner/AppDelegate.swift
+          perl -pi -e 's/(^\s*import UIKit\s*)/$1\nimport Firebase/' ios/Runner/AppDelegate.swift
+          perl -pi -e 's/(^\s*import Firebase\s*)/$1\nimport flutter_local_notifications/' ios/Runner/AppDelegate.swift
+          perl -pi -e 's/(^\s+)(GeneratedPluginRegistrant.register\(with: self\))/$1FirebaseApp.configure()\n$1$2/' ios/Runner/AppDelegate.swift
           perl -pi -e 's/^(\s*GeneratedPluginRegistrant\.register\(with: self\))/\n    FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in\n      GeneratedPluginRegistrant.register(with: registry)\n    }\n\n$1/s' ios/Runner/AppDelegate.swift
           perl -pi -e 's/^(.*GeneratedPluginRegistrant\.register\(with: self\).*)$/$1\n\n    if #available(iOS 10.0, *) {\n      UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate\n    }\n/s' ios/Runner/AppDelegate.swift
           cat ios/Runner/AppDelegate.swift
@@ -67,7 +69,7 @@ workflows:
           BUILD_NUMBER=$(($(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID") + 1))
           flutter build ipa --release \
             --build-name=1.0.6 \
-            --build-number=3 \
+            --build-number=4 \
             --export-options-plist=/Users/builder/export_options.plist
 
       - name: Check IPA for App Icons
