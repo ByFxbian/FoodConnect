@@ -27,6 +27,11 @@ workflows:
           flutter pub get
           dart run flutter_launcher_icons
 
+      - name: Set iOS Platform Target in Podfile
+        script: | 
+          perl -pi -e 's/# platform :ios, .*/platform :ios, "16.0"/' ios/Podfile
+          cat ios/Podfile | grep platform
+
       - name: Install Pods
         script: |
           find . -name "Podfile" -execdir pod install \;
@@ -40,8 +45,6 @@ workflows:
           cat ios/Runner.xcodeproj/project.pbxproj | grep PRODUCT_BUNDLE_IDENTIFIER
           perl -pi -e 's/PRODUCT_BUNDLE_IDENTIFIER = at\.hfs\.foodconnect/PRODUCT_BUNDLE_IDENTIFIER = at.foodconnect/g' ios/Runner.xcodeproj/project.pbxproj
           cat ios/Runner.xcodeproj/project.pbxproj | grep PRODUCT_BUNDLE_IDENTIFIER
-          perl -pi -e 's/# platform :ios, .*/platform :ios, "16.0"/' ios/Podfile
-          cat ios/Podfile | grep platform
 
       - name: Update Versions in AppFramework
         script: |
