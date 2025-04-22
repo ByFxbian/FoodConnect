@@ -1,6 +1,159 @@
+/* eslint-disable quotes */
+/* eslint-disable max-len */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+// eslint-disable-next-line object-curly-spacing
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+
 admin.initializeApp();
+
+
+const db = admin.firestore();
+const messaging = admin.messaging();
+
+exports.sendFollowNotification = onDocumentCreated("users/{followerId}/followers/{followedId}", async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) {
+    console.log("Keine Daten im Event gefunden für sendFollowNotification.");
+    return null;
+  }
+
+  const followedId = event.params.followedId;
+  const followerId = event.params.followerId;
+
+  console.log(`V2 Trigger: ${followerId} folgt ${followedId}`);
+
+  try {
+    const followerDoc = await db.collection("users").doc(followerId).get();
+    if (!followerDoc.exists) {
+      console.error("V2: Follower-Dokument nicht gefunden:", followerId);
+      return null;
+    }
+    const followerData = followerDoc.data();
+    const followerName = (followerData && followerData.name) ? followerData.name : "Ein Nutzer";
+
+    const recipientDoc = await db.collection("users").doc(followedId).get();
+    if (!recipientDoc.exists) {
+      console.error("V2: Empfänger-Dokument nicht gefunden:", followedId);
+      return null;
+    }
+    const recipientData = recipientDoc.data();
+    const recipientToken = (recipientData && recipientData.notificationToken) ? recipientData.notificationToken : null;
+
+    const recipientEnabled = (recipientData && typeof recipientData.userNotificationsEnabled === 'boolean') ? recipientData.userNotificationsEnabled : true;
+
+    if (recipientEnabled && recipientToken) {
+      console.log(`V2: Sende Follow-Benachrichtigung an Token: ${recipientToken}`);
+      const payload = {
+        notification: {
+          title: "Neuer Follower!",
+          body: `${followerName} folgt dir jetzt.`,
+        },
+      };
+
+      await messaging.send(recipientToken, payload);
+      console.log("V2: Follow-Benachrichtigung erfolgreich gesendet.");
+    } else {
+      console.log(`V2: Keine Benachrichtigung gesendet an ${followedId} (Token: ${recipientToken}, Enabled: ${recipientEnabled})`);
+    }
+  } catch (error) {
+    console.error("V2: Fehler in sendFollowNotification:", error);
+
+    if (error.code === 'messaging/registration-token-not-registered') {
+      try {
+        await db.collection("users").doc(followedId).update({notificationToken: admin.firestore.FieldValue.delete()});
+      } catch (cleanupError) {
+        console.error("V2: Fehler beim Bereinigen des Tokens:", cleanupError);
+      }
+    }
+  }
+  return null;
+});
+
+exports.sendReviewNotification = onDocumentCreated("restaurantReviews/{reviewId}", async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) {
+    console.log("Keine Daten im Event gefunden für sendReviewNotification.");
+    return null;
+  }
+
+  const reviewData = snapshot.data();
+  if (!reviewData) {
+    console.error("Review-Daten nicht gefunden.");
+    return null;
+  }
+
+  const reviewerId = reviewData.userId;
+  const reviewerName = (reviewData && reviewData.userName) ? reviewData.userName : "Ein Nutzer";
+
+  const restaurantName = (reviewData && reviewData.restaurantName) ? reviewData.restaurantName : "einem Restaurant";
+  const rating = reviewData.rating;
+
+  console.log(`Neues Review Trigger von ${reviewerId}`);
+
+  try {
+    const followersSnapshot = await db.collection("users").doc(reviewerId).collection("followers").get();
+
+    if (followersSnapshot.empty) {
+      console.log("Reviewer hat keine Follower.");
+      return null;
+    }
+
+    const payload = {
+      notification: {
+        title: `Neue Bewertung von ${reviewerName}`,
+        body: `${reviewerName} hat ${restaurantName} mit ${rating} ⭐ bewertet.`,
+      },
+    };
+
+    const tokensToSend = [];
+
+    for (const doc of followersSnapshot.docs) {
+      const followerId = doc.id;
+      try {
+        const followerDoc = await db.collection("users").doc(followerId).get();
+        if (followerDoc.exists) {
+          const followerData = followerDoc.data();
+          const followerToken = (followerData && followerData.notificationToken) ? followerData.notificationToken : null;
+          const followerEnabled = (followerData && typeof followerData.userNotificationsEnabled === 'boolean') ? followerData.userNotificationsEnabled : true;
+
+          if (followerEnabled && followerToken) {
+            console.log(`Füge Token für Follower ${followerId} hinzu: ${followerToken}`);
+            tokensToSend.push(followerToken);
+          } else {
+            console.log(`Keine Review-Benachrichtigung an Follower ${followerId} (Token: ${followerToken}, Enabled: ${followerEnabled})`);
+          }
+        }
+      } catch (error) {
+        console.error(`Fehler beim Holen des Follower-Dokuments ${followerId}:`, error);
+      }
+    }
+
+    if (tokensToSend.length > 0) {
+      console.log(`Sende Review-Benachrichtigung an ${tokensToSend.length} Tokens.`);
+      const response = await messaging.sendToDevice(tokensToSend, payload);
+      console.log(`Review-Benachrichtigungen gesendet. Erfolgreich: ${response.successCount}, Fehler: ${response.failureCount}`);
+
+      response.results.forEach(async (result, index) => {
+        const error = result.error;
+        if (error) {
+          console.error(`Fehler beim Senden an Token ${tokensToSend[index]}:`, error);
+          if (error.code === 'messaging/registration-token-not-registered' ||
+              error.code === 'messaging/invalid-registration-token') {
+            console.warn("-> Token Bereinigung wird empfohlen, ist aber hier nicht implementiert.");
+          }
+        }
+      });
+    } else {
+      console.log("Keine gültigen Tokens zum Senden der Review-Benachrichtigung gefunden.");
+    }
+  } catch (error) {
+    console.error("Fehler in sendReviewNotification:", error);
+  }
+
+  return null;
+});
+
 
 exports.checkUsernameExists =
 functions.https.onCall(async (database, context) => {

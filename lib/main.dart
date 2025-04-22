@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/loading_screen.dart';
+// ignore: unused_import
 import 'package:foodconnect/services/noti_service.dart';
 // ignore: unused_import
 import 'package:foodconnect/services/notification_service.dart';
@@ -24,9 +25,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  NotiService().initNotification();
-
-
+  //NotiService().initNotification();
 
   runApp(
     ChangeNotifierProvider(
@@ -133,12 +132,14 @@ class AuthWrapper extends StatelessWidget {
               }
 
               return FutureBuilder(
-                future: _initializeData(),
-                builder: (context, snapshot) {
-                  if(snapshot.connectionState == ConnectionState.waiting) {
+                future: _initializeAppData(),
+                builder: (context, initSnapshot) {
+                  if(initSnapshot.connectionState == ConnectionState.waiting) {
                     return LoadingScreen();
                   }
-                  //NotificationService.init();
+                  if(initSnapshot.hasError) {
+                    print("Fehler während der App-Initialisierung: ${initSnapshot.error}");
+                  }
                   return MainScreen();
                 },
               );
@@ -148,6 +149,24 @@ class AuthWrapper extends StatelessWidget {
         return const SignUpScreen();
       },
     );
+  }
+}
+
+Future<void> _initializeAppData() async {
+  print("⏳ Initialisiere App-Daten (Restaurants/Marker)...");
+  await _initializeData();
+  print("✅ App-Daten initialisiert.");
+
+  if (FirebaseAuth.instance.currentUser != null) {
+    print("⏳ Initialisiere FCM Notification Service...");
+    try {
+      await NotificationService.init();
+      print("✅ FCM Notification Service initialisiert.");
+    } catch (e) {
+      print("🔥 Fehler bei der FCM-Initialisierung: $e");
+    }
+  } else {
+    print("⚠️ Nutzer nicht eingeloggt bei FCM-Initialisierung.");
   }
 }
 

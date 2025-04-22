@@ -1,3 +1,4 @@
+// ignore: unused_import
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,6 +14,8 @@ import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final DatabaseService dbService = DatabaseService();
+
+  final NotiService _notiLogger = NotiService();
 
   Future<void> followUser(String targetUserId) async {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
@@ -51,8 +54,13 @@ class FirestoreService {
       title: "$currentUserName folgt dir jetzt!",
       body: "Tippe, um sein/ihr Profil zu besuchen.",
     );*/
-    NotiService().showNotification(
+    /*NotiService().showNotification(
       id: Random().nextInt(100000000),
+      title: "$currentUserName folgt dir jetzt!",
+      body: "Tippe, um sein/ihr Profil zu besuchen.",
+      recipientUserId: targetUserId
+    );*/
+    await _notiLogger.logNotificationInDatabase(
       title: "$currentUserName folgt dir jetzt!",
       body: "Tippe, um sein/ihr Profil zu besuchen.",
       recipientUserId: targetUserId
@@ -235,8 +243,13 @@ class FirestoreService {
         title: "$userName hat ein Restaurant bewertet!",
         body: "Es wurde mit $rating Sternen bewertet.",
       );*/
-      NotiService().showNotification(
+      /*NotiService().showNotification(
         id: Random().nextInt(100000000),
+        title: "$userName hat ein Restaurant bewertet!",
+        body: "Es wurde mit $rating Sternen bewertet.",
+        recipientUserId: followerId
+      );*/
+      await _notiLogger.logNotificationInDatabase(
         title: "$userName hat ein Restaurant bewertet!",
         body: "Es wurde mit $rating Sternen bewertet.",
         recipientUserId: followerId

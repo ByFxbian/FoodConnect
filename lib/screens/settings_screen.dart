@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:foodconnect/main.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:foodconnect/services/notification_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -36,44 +37,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadProfileImage();
-    //_loadNotificationPreference();
     _loadUserNotificationPreference();
   }
 
   Future<void> _loadUserNotificationPreference() async {
-    setState(() {
-      _isLoadingPreferences = true;
-    });
+    if (!mounted) return;
+    setState(() { _isLoadingPreferences = true; });
     User? user = FirebaseAuth.instance.currentUser;
-    if(user != null) {
+
+    if (user != null) {
       try {
         DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
-        if(userDoc.exists && userDoc.data() != null) {
+        bool isEnabled = true; // Standardwert
+        if (userDoc.exists && userDoc.data() != null) {
           var data = userDoc.data() as Map<String, dynamic>;
-
+          isEnabled = data['userNotificationsEnabled'] ?? true;
+        }
+        if (mounted) {
           setState(() {
-            userNotificationsEnabled = data['userNotificationsEnabled'] ?? true;
-          });
-        } else {
-          setState(() {
-            userNotificationsEnabled = true;
+            userNotificationsEnabled = isEnabled;
           });
         }
       } catch (e) {
         print("Fehler beim Laden der Benachrichtigungseinstellung: $e");
-         setState(() {
-           userNotificationsEnabled = true;
-         });
+        if (mounted) {
+          setState(() {
+            userNotificationsEnabled = true;
+          });
+        }
       } finally {
+        if (mounted) {
+          setState(() { _isLoadingPreferences = false; });
+        }
+      }
+    } else {
+      if (mounted) {
         setState(() {
+          userNotificationsEnabled = true;
           _isLoadingPreferences = false;
         });
       }
-    } else {
-      setState(() {
-        userNotificationsEnabled = true;
-        _isLoadingPreferences = false;
-      });
     }
   }
 
@@ -128,7 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }*/
 
-  Future<void> _toggleNotifications(bool value) async {
+  /*Future<void> _toggleNotifications(bool value) async {
     User? user = FirebaseAuth.instance.currentUser;
     if(user==null) return;
 
@@ -152,6 +155,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
        );
        
     }
+  }*/
+  Future<void> _toggleNotifications(bool value) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    
+    try {
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+        'userNotificationsEnabled': value,
+      }, SetOptions(merge: true));
+
+      if (mounted) {
+        setState(() {
+          userNotificationsEnabled = value;
+        });
+      }
+
+      if (value) {
+        print("Einstellungen: Versuche Token zu speichern...");
+        await NotificationService.saveTokenToFirestore();
+      } else {
+         print("Einstellungen: Lösche Token...");
+        await NotificationService.deleteTokenFromFirestore();
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Benachrichtigungseinstellung ${value ? 'aktiviert' : 'deaktiviert'}."), duration: Duration(seconds: 2)),
+      );
+    } catch (e) {
+      print("Fehler beim Umschalten der Benachrichtigungen: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Fehler beim Speichern der Einstellung."), backgroundColor: Colors.red),
+      );
+    }
+
   }
 
   Future<bool> checkIfUsernameExists(String username) async {

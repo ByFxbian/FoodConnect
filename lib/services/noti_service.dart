@@ -10,7 +10,7 @@ class NotiService {
 
   bool get isInitialized => _isInitialized;
 
-  Future<void> initNotification() async {
+  /*Future<void> initNotification() async {
     if(_isInitialized) return;
 
     const initSettingsAndroid = AndroidInitializationSettings('@mipmap/app_icon');
@@ -28,6 +28,22 @@ class NotiService {
 
     await notificationsPlugin.initialize(initSettings);
     _isInitialized = true;
+  }*/
+  
+  Future<void> initNotification() async {
+    if(_isInitialized) return;
+    const initSettingsAndroid = AndroidInitializationSettings('@mipmap/app_icon');
+    const initSettingsIOS = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    const initSettings = InitializationSettings(
+      android: initSettingsAndroid,
+      iOS: initSettingsIOS,
+    );
+    await notificationsPlugin.initialize(initSettings);
+    _isInitialized = true;
   }
 
   NotificationDetails notificationDetails() {
@@ -43,7 +59,7 @@ class NotiService {
     );
   }
 
-  Future<void> showNotification({int id = 0, String? title, String? body, String? recipientUserId}) async {
+  /*Future<void> showNotification({int id = 0, String? title, String? body, String? recipientUserId}) async {
     if(!_isInitialized) await initNotification();
 
     if(recipientUserId == null || recipientUserId.isEmpty) {
@@ -101,6 +117,36 @@ class NotiService {
        if (kDebugMode) {
          print("NotiService: Fehler beim Anzeigen/Speichern der Benachrichtigung: $e");
        }
+    }
+  }*/
+
+  Future<void> logNotificationInDatabase({
+    String? title,
+    String? body,
+    required String? recipientUserId
+  }) async {
+    if (recipientUserId == null || recipientUserId.isEmpty) {
+      if (kDebugMode) {
+        print("NotiService (log): Keine recipientUserId angegeben, Aktion abgebrochen.");
+      }
+      return;
+    } 
+
+    try {
+      await _db.collection('notifications').add({
+        'recipientUserId': recipientUserId,
+        'title': title,
+        'body': body,
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+      if (kDebugMode) {
+        print("NotiService (log): Benachrichtigung in Firestore geloggt für $recipientUserId.");
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("NotiService (log): Fehler beim Speichern der Benachrichtigung in Firestore: $e");
+      }
     }
   }
 }
