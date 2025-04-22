@@ -58,7 +58,7 @@ workflows:
         script: |
           cat ios/Runner/AppDelegate.swift
           perl -pi -e 's/(^\s*import UIKit\s*)/$1\nimport Firebase/' ios/Runner/AppDelegate.swift
-          perl -pi -e 's/(^\s*import Firebase\s*)/$1\nimport flutter_local_notifications/' ios/Runner/AppDelegate.swift
+          perl -pi -e 's/(^\s*import UIKit\s*)/$1\nimport flutter_local_notifications/' ios/Runner/AppDelegate.swift
           perl -pi -e 's/(^\s+)(GeneratedPluginRegistrant.register\(with: self\))/$1FirebaseApp.configure()\n$1$2/' ios/Runner/AppDelegate.swift
           perl -pi -e 's/^(\s*GeneratedPluginRegistrant\.register\(with: self\))/\n    FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in\n      GeneratedPluginRegistrant.register(with: registry)\n    }\n\n$1/s' ios/Runner/AppDelegate.swift
           perl -pi -e 's/^(.*GeneratedPluginRegistrant\.register\(with: self\).*)$/$1\n\n    if #available(iOS 10.0, *) {\n      UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate\n    }\n/s' ios/Runner/AppDelegate.swift
