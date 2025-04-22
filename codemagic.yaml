@@ -47,7 +47,7 @@ workflows:
         script: |
           cat ios/Flutter/AppframeworkInfo.plist
           perl -pi -e 's/12\.0/16\.0/g' ios/Flutter/AppframeworkInfo.plist
-          perl -pi -e 's/1\.0/2\.0/g' ios/Flutter/AppframeworkInfo.plist 
+          perl -pi -e 's/1\.0/3\.0/g' ios/Flutter/AppframeworkInfo.plist 
           cat ios/Flutter/AppframeworkInfo.plist
           perl -pi -e 's#(</dict>)#    <key>NSLocationWhenInUseUsageDescription</key>\n    <string>Diese App benötigt Zugriff auf deinen Standort, um Restaurants in deiner Nähe zu zeigen.</string>\n    <key>NSLocationAlwaysUsageDescription</key>\n    <string>Diese App benötigt Zugriff auf deinen Standort für eine verbesserte Kartenfunktionalität.</string>\n    <key>NSLocationWhenInUseUsageDescription</key>\n    <string>Wir verwenden deine Standortdaten nur, um Restaurants in deiner Umgebung anzuzeigen.</string>\n    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>\n    <string>Diese App benötigt den Standortzugriff, um dir Restaurants in deiner Umgebung zu zeigen.</string>\n\n$1#' ios/Runner/Info.plist
           perl -pi -e 's#(</dict>)#    <key>NSCameraUsageDescription</key>\n    <string>Diese App benötigt Zugriff auf die Kamera, um Profilbilder aufzunehmen.</string>\n    <key>NSPhotoLibraryUsageDescription</key>\n    <string>Diese App benötigt Zugriff auf die Galerie, um Profilbilder auszuwählen.</string>\n\n$1#' ios/Runner/Info.plist
