@@ -27,9 +27,13 @@ workflows:
           flutter pub get
           dart run flutter_launcher_icons
 
-      - name: Set iOS Platform Target in Podfile
+      - name: Set iOS Deployment Targets
         script: | 
-          perl -pi -e 's/# platform :ios, .*/platform :ios, "16.0"/' ios/Podfile
+          MIN_IOS_VERSION="16.0"
+          sed -i.bak -E "s/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+;/IPHONEOS_DEPLOYMENT_TARGET = $MIN_IOS_VERSION;/g" ios/Runner.xcodeproj/project.pbxproj
+          grep IPHONEOS_DEPLOYMENT_TARGET ios/Runner.xcodeproj/project.pbxproj || echo "Target line not found by grep, check project file manually if build fails."
+          
+          perl -pi -e "s/^#?\s*platform :ios, .*$/platform :ios, \'$MIN_IOS_VERSION\'/" ios/Podfile
           cat ios/Podfile | grep platform
 
       - name: Install Pods
