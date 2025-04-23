@@ -20,7 +20,7 @@ workflows:
 
       - name: Set up code signing settings on Xcode project
         script: |
-          xcode-project use-profiles 
+          xcode-project use-profiles --custom-export-options='{"testFlightInternalTestingOnly": true}' 
 
       - name: Get Flutter packages
         script: |
