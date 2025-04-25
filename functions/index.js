@@ -44,15 +44,36 @@ exports.sendFollowNotification = onDocumentCreated("users/{followerId}/followers
 
     if (recipientEnabled && recipientToken) {
       console.log(`V2: Sende Follow-Benachrichtigung an Token: ${recipientToken}`);
-      const payload = {
+      /* const payload = {
         notification: {
           title: "Neuer Follower!",
           body: `${followerName} folgt dir jetzt.`,
         },
       };
 
-      await messaging.send(recipientToken, payload);
-      console.log("V2: Follow-Benachrichtigung erfolgreich gesendet.");
+      await messaging.send(recipientToken, payload);*/
+
+      const message = {
+        notification: {
+          title: "Neuer Follower!",
+          body: `${followerName} folgt dir jetzt.`,
+        },
+        token: recipientToken,
+      };
+
+      try {
+        const response = await messaging.send(message);
+        console.log("V2: Follow-Benachrichtigung erfolgreich gesendet:", response);
+      } catch (error) {
+        console.error("V2: Fehler beim Senden der Follow-Benachrichtigung:", error);
+        if (error.code === 'messaging/registration-token-not-registered') {
+          try {
+            await db.collection("users").doc(followedId).update({notificationToken: admin.firestore.FieldValue.delete()});
+          } catch (cleanupError) {
+            console.error("V2: Fehler beim Bereinigen des Tokens:", cleanupError);
+          }
+        }
+      }
     } else {
       console.log(`V2: Keine Benachrichtigung gesendet an ${followedId} (Token: ${recipientToken}, Enabled: ${recipientEnabled})`);
     }
@@ -99,12 +120,12 @@ exports.sendReviewNotification = onDocumentCreated("restaurantReviews/{reviewId}
       return null;
     }
 
-    const payload = {
+    /* const payload = {
       notification: {
         title: `Neue Bewertung von ${reviewerName}`,
         body: `${reviewerName} hat ${restaurantName} mit ${rating} ⭐ bewertet.`,
       },
-    };
+    };*/
 
     const tokensToSend = [];
 
@@ -131,8 +152,35 @@ exports.sendReviewNotification = onDocumentCreated("restaurantReviews/{reviewId}
 
     if (tokensToSend.length > 0) {
       console.log(`Sende Review-Benachrichtigung an ${tokensToSend.length} Tokens.`);
-      const response = await messaging.sendToDevice(tokensToSend, payload);
-      console.log(`Review-Benachrichtigungen gesendet. Erfolgreich: ${response.successCount}, Fehler: ${response.failureCount}`);
+      const multicastMessage = {
+        notification: {
+          title: `Neue Bewertung von ${reviewerName}`,
+          body: `${reviewerName} hat ${restaurantName} mit ${rating} ⭐ bewertet.`,
+        },
+        tokens: tokensToSend,
+      };
+      try {
+        const response = await messaging.sendEachForMulticast(multicastMessage);
+        console.log(`V2: Review-Benachrichtigung gesendet. Erfolgreich: ${response.successCount}, Fehler: ${response.failureCount}`);
+
+        if (response.failureCount > 0) {
+          const failedTokens = [];
+          response.responses.forEach((resp, idx) => {
+            if (!resp.success) {
+              console.error(`Fehler beim Senden an Token ${tokensToSend[idx]}: ${resp.error.code}`);
+              if (resp.error.code === 'messaging/registration-token-not-registered' ||
+                  resp.error.code === 'messaging/invalid-registration-token') {
+                failedTokens.push(tokensToSend[idx]);
+              }
+            }
+          });
+          console.warn("-> V2: Token Bereinigung für fehlgeschlagene Tokens wird empfohlen.");
+        }
+      } catch (error) {
+        console.error("V2: Allgemeiner Fehler beim Senden von Multicast Review-Benachrichtigungen:", error);
+      }
+      // const response = await messaging.sendToDevice(tokensToSend, payload);
+      /* console.log(`Review-Benachrichtigungen gesendet. Erfolgreich: ${response.successCount}, Fehler: ${response.failureCount}`);
 
       response.results.forEach(async (result, index) => {
         const error = result.error;
@@ -143,7 +191,7 @@ exports.sendReviewNotification = onDocumentCreated("restaurantReviews/{reviewId}
             console.warn("-> Token Bereinigung wird empfohlen, ist aber hier nicht implementiert.");
           }
         }
-      });
+      }); */
     } else {
       console.log("Keine gültigen Tokens zum Senden der Review-Benachrichtigung gefunden.");
     }
