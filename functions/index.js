@@ -11,30 +11,30 @@ admin.initializeApp();
 const db = admin.firestore();
 const messaging = admin.messaging();
 
-exports.sendFollowNotification = onDocumentCreated("users/{followerId}/followers/{followedId}", async (event) => {
+exports.sendFollowNotification = onDocumentCreated("users/{userId}/followers/{followerId}", async (event) => {
   const snapshot = event.data;
   if (!snapshot) {
     console.log("Keine Daten im Event gefunden für sendFollowNotification.");
     return null;
   }
 
-  const followedId = event.params.followedId;
-  const followerId = event.params.followerId;
+  const recipientId = event.params.userId;
+  const actorId = event.params.followerId;
 
-  console.log(`V2 Trigger: ${followerId} folgt ${followedId}`);
+  console.log(`V2 Trigger: ${actorId} folgt ${recipientId}`);
 
   try {
-    const followerDoc = await db.collection("users").doc(followerId).get();
-    if (!followerDoc.exists) {
-      console.error("V2: Follower-Dokument nicht gefunden:", followerId);
+    const actorDoc = await db.collection("users").doc(actorId).get();
+    if (!actorDoc.exists) {
+      console.error("V2: Follower-Dokument nicht gefunden:", actorId);
       return null;
     }
-    const followerData = followerDoc.data();
-    const followerName = (followerData && followerData.name) ? followerData.name : "Ein Nutzer";
+    const actorData = actorDoc.data();
+    const actorName = (actorData && actorData.name) ? actorData.name : "Ein Nutzer";
 
-    const recipientDoc = await db.collection("users").doc(followedId).get();
+    const recipientDoc = await db.collection("users").doc(recipientId).get();
     if (!recipientDoc.exists) {
-      console.error("V2: Empfänger-Dokument nicht gefunden:", followedId);
+      console.error("V2: Empfänger-Dokument nicht gefunden:", recipientId);
       return null;
     }
     const recipientData = recipientDoc.data();
@@ -56,9 +56,13 @@ exports.sendFollowNotification = onDocumentCreated("users/{followerId}/followers
       const message = {
         notification: {
           title: "Neuer Follower!",
-          body: `${followerName} folgt dir jetzt.`,
+          body: `${actorName} folgt dir jetzt.`,
         },
         token: recipientToken,
+        data: {
+          type: 'follow',
+          screen: 'notificationsScreen',
+        },
       };
 
       try {
@@ -68,25 +72,17 @@ exports.sendFollowNotification = onDocumentCreated("users/{followerId}/followers
         console.error("V2: Fehler beim Senden der Follow-Benachrichtigung:", error);
         if (error.code === 'messaging/registration-token-not-registered') {
           try {
-            await db.collection("users").doc(followedId).update({notificationToken: admin.firestore.FieldValue.delete()});
+            await db.collection("users").doc(recipientId).update({notificationToken: admin.firestore.FieldValue.delete()});
           } catch (cleanupError) {
             console.error("V2: Fehler beim Bereinigen des Tokens:", cleanupError);
           }
         }
       }
     } else {
-      console.log(`V2: Keine Benachrichtigung gesendet an ${followedId} (Token: ${recipientToken}, Enabled: ${recipientEnabled})`);
+      console.log(`V2: Keine Benachrichtigung gesendet an ${recipientId} (Token: ${recipientToken}, Enabled: ${recipientEnabled})`);
     }
   } catch (error) {
     console.error("V2: Fehler in sendFollowNotification:", error);
-
-    if (error.code === 'messaging/registration-token-not-registered') {
-      try {
-        await db.collection("users").doc(followedId).update({notificationToken: admin.firestore.FieldValue.delete()});
-      } catch (cleanupError) {
-        console.error("V2: Fehler beim Bereinigen des Tokens:", cleanupError);
-      }
-    }
   }
   return null;
 });
@@ -158,6 +154,11 @@ exports.sendReviewNotification = onDocumentCreated("restaurantReviews/{reviewId}
           body: `${reviewerName} hat ${restaurantName} mit ${rating} ⭐ bewertet.`,
         },
         tokens: tokensToSend,
+        data: {
+          type: 'review',
+          screen: 'homeScreen',
+          restaurantId: reviewData.restaurantId || "",
+        },
       };
       try {
         const response = await messaging.sendEachForMulticast(multicastMessage);

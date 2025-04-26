@@ -7,10 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/follower_list_screen.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/settings_screen.dart';
+import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:lottie/lottie.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class ProfileScreen extends StatefulWidget {
 
@@ -440,10 +442,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
+  @override
+  _NotificationsScreenState createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  Future<void> _markAsread(String docId) async {
+    try {
+      await _db.collection("notifications").doc(docId).update({'isRead': true});
+    } catch (e) {
+      print("Fehler beim Markieren als gelesen: $e");
+    }
+  }
+
+  void _navigateToUser(String userId) {
+    if (userId == _auth.currentUser?.uid) {
+      if(Navigator.canPop(context)){
+        Navigator.popUntil(context, (route) => route.isFirst);
+      }
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UserProfileScreen(userId: userId),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    String userId = FirebaseAuth.instance.currentUser!.uid;
+    String? userId = _auth.currentUser?.uid;
+
+    if(userId == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text("Benachrichtigungen")),
+        body: Center(child: Text("Bitte neu anmelden."))
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Benachrichtigungen"),
@@ -459,19 +500,92 @@ class NotificationsScreen extends StatelessWidget {
           .orderBy("timestamp", descending: true)
           .snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.hasError) {
+             return Center(child: Text("Fehler beim Laden: ${snapshot.error}"));
+          }
           if(!snapshot.hasData) {
             return Center(child: /*CircularProgressIndicator.adaptive()*/ Lottie.asset('assets/animations/loading.json'));
           } 
           var notifications = snapshot.data!.docs;
+
+          if (notifications.isEmpty) {
+             return Center(child: Text("Keine neuen Benachrichtigungen."));
+          }
           return ListView.builder(
             itemCount: notifications.length,
             itemBuilder: (context, index) {
-              var notification = notifications[index].data() as Map<String, dynamic>;
-              return ListTile(
+              var doc = notifications[index];
+              var notification = doc.data() as Map<String, dynamic>;
+
+              String type = notification['type'] ?? '';
+
+              if(type == 'follow') {
+                String? actorName = notification['actorName'];
+                String? actorImageUrl = notification['actorImageUrl'];
+                String? actorId = notification['actorId'];
+                Timestamp? timestamp = notification['timestamp'];
+
+                String timeAgoString = "unbekannt";
+                if(timestamp != null) {
+                  timeAgoString = timeago.format(timestamp.toDate(), locale: 'de_short');
+                }
+
+                if (actorName == null || actorId == null) {
+                  return ListTile(title: Text("Ungültige Follower-Benachrichtigung"));
+                }
+
+                return InkWell(
+                  onTap: () {
+                    _markAsread(doc.id);
+                    _navigateToUser(actorId);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundImage: (actorImageUrl != null && actorImageUrl.isNotEmpty)
+                              ? ResizeImage(NetworkImage(actorImageUrl), height: 420, policy: ResizeImagePolicy.fit)
+                              : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 420, policy: ResizeImagePolicy.fit) as ImageProvider,
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: DefaultTextStyle.of(context).style,
+                              children: <TextSpan>[
+                                TextSpan(text: actorName, style: TextStyle(fontWeight: FontWeight.bold)),
+                                TextSpan(text: ' folgt dir jetzt.'),
+                                TextSpan(
+                                  text: timeAgoString,
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        SizedBox(
+                          width: 90,
+                          height: 35,
+                          child: FollowButton(
+                            targetUserId: actorId,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              } else {
+                return SizedBox.shrink();
+              }
+
+              /*return ListTile(
                 title: Text(notification['title'] ?? "Benachrichtigung"),
                 subtitle: Text(notification['body'] ?? ""),
                 trailing: Text(notification['timestamp']?.toDate().toString() ?? ""),
-              );
+              );*/
             },
           );
         },

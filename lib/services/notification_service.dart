@@ -3,7 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:foodconnect/main.dart';
+import 'package:foodconnect/screens/main_screen.dart';
+import 'package:foodconnect/screens/profile_screen.dart';
+import 'package:foodconnect/services/database_service.dart';
+import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class NotificationService {
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
@@ -43,6 +49,8 @@ class NotificationService {
         if (kDebugMode) {
            print('Benachrichtigung geöffnet (App im Hintergrund/geschlossen): ${message.messageId}');
          }
+
+         _handleMessageNavigation(message.data);
       });
 
       FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
@@ -50,6 +58,8 @@ class NotificationService {
           if (kDebugMode) {
             print('App durch Klick auf Benachrichtigung gestartet: ${message.messageId}');
           }
+
+          _handleMessageNavigation(message.data);
         }
       });
     } else {
@@ -135,9 +145,61 @@ class NotificationService {
     }
   }
 
-  static void _handleMessageNavigation(Map<String, dynamic> data) {
+  static Future<void> _handleMessageNavigation(Map<String, dynamic> data) async {
     if (kDebugMode) {
       print("Handling Navigation für Daten: $data");
+    }
+
+    final String? type = data['type'];
+    final String? screen = data['screen'];
+
+    await Future.delayed(Duration(milliseconds: 300));
+
+    if (navigatorKey.currentState == null) {
+      print("Navigator nicht bereit für Benachrichtigungs-Navigation.");
+      return;
+    }
+
+    try {
+      if (type == 'review' && screen == 'homeScreen' && data['restaurantId'] != null) {
+        String restaurantId = data['restaurantId'];
+        print("Navigiere zur Karte für Restaurant: $restaurantId");
+
+        DatabaseService dbService = DatabaseService();
+        Map<String, dynamic>? restaurantData = await dbService.getRestaurantById(restaurantId);
+
+        if (restaurantData != null && restaurantData['latitude'] != null && restaurantData['longitude'] != null) {
+          LatLng targetLocation = LatLng(restaurantData['latitude'], restaurantData['longitude']);
+
+          navigatorKey.currentState!.pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => MainScreen(
+                initialPage: 0,
+                targetLocation: targetLocation,
+                selectedRestaurantId: restaurantId,
+              ),
+            ),
+            (route) => false,
+          );
+        } else {
+          print("Restaurant-Daten für Navigation nicht gefunden (ID: $restaurantId). Navigiere zur Startseite.");
+
+          navigatorKey.currentState!.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => MainScreen(initialPage: 0)),
+            (route) => false,
+          );
+        }
+      } else if (type == 'follow' && screen == 'notificationsScreen' ) {
+        print("Navigiere zur Benachrichtigungsseite.");
+
+        navigatorKey.currentState!.push(
+          MaterialPageRoute(builder: (context) => NotificationsScreen())
+        );
+      } else {
+        print("Unbekannter Benachrichtigungstyp oder fehlende Daten für Navigation.");
+      }
+    } catch (e) {
+      print("🔥 Fehler bei der Benachrichtigungs-Navigation: $e");
     }
   }
 

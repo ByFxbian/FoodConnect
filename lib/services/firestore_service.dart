@@ -47,23 +47,18 @@ class FirestoreService {
         .doc(currentUserId)
         .set({});
 
-    String currentUserName = userDoc["name"] ?? "Ein Nutzer";
+    final actorData = userDoc.data() as Map<String, dynamic>;
+    String actorName = actorData["name"] ?? "Ein Nutzer";
+    String actorImageUrl = actorData["photoUrl"] ?? "";
 
-    /*NotificationService.sendNotification(
-      recipientUserId: targetUserId,
-      title: "$currentUserName folgt dir jetzt!",
-      body: "Tippe, um sein/ihr Profil zu besuchen.",
-    );*/
-    /*NotiService().showNotification(
-      id: Random().nextInt(100000000),
-      title: "$currentUserName folgt dir jetzt!",
-      body: "Tippe, um sein/ihr Profil zu besuchen.",
-      recipientUserId: targetUserId
-    );*/
     await _notiLogger.logNotificationInDatabase(
-      title: "$currentUserName folgt dir jetzt!",
+      title: "$actorName folgt dir jetzt!",
       body: "Tippe, um sein/ihr Profil zu besuchen.",
-      recipientUserId: targetUserId
+      recipientUserId: targetUserId,
+      type: 'follow',
+      actorId: currentUserId,
+      actorName: actorName,
+      actorImageUrl: actorImageUrl
     );
   }
 
