@@ -123,7 +123,13 @@ class NotiService {
   Future<void> logNotificationInDatabase({
     String? title,
     String? body,
-    required String? recipientUserId
+    required String? recipientUserId,
+
+    String? type,
+    String? actorId,
+    String? actorName,
+    String? actorImageUrl,
+    String? relevantId,
   }) async {
     if (recipientUserId == null || recipientUserId.isEmpty) {
       if (kDebugMode) {
@@ -139,6 +145,12 @@ class NotiService {
         'body': body,
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
+
+        'type': type,
+        'actorId': actorId,
+        'actorName': actorName,
+        'actorImageUrl': actorImageUrl,
+        'relevantId': relevantId,
       });
       if (kDebugMode) {
         print("NotiService (log): Benachrichtigung in Firestore geloggt für $recipientUserId.");
