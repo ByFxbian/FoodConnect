@@ -10,20 +10,26 @@ import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:lottie/lottie.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchScreen extends StatefulWidget {
   @override
-  // ignore: library_private_types_in_public_api
   _SearchScreenState createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
   String searchQuery = "";
-  int selectedTab = 0;
+  int selectedTab = 0; // 0 for restaurants, 1 for users
   bool isLoading = false;
   List<Map<String, dynamic>> searchResults = [];
   final DatabaseService databaseService = DatabaseService();
   final FirestoreService firestoreService = FirestoreService();
+
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isSearchFocused = false;
+  List<String> _recentSearches = [];
+  static const String _recentSearchesKey = 'recent_searches';
 
   // FILTER
   bool filterOpenNow = false;
@@ -40,7 +46,97 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
+
+    _searchFocusNode.addListener(_onFocusChange);
+    _loadRecentSearches();
+
     _getRecommendations();
+  }
+
+  @override
+  void dispose() {
+    _searchFocusNode.removeListener(_onFocusChange);
+    _searchFocusNode.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if(!mounted) return;
+    setState(() {
+      _isSearchFocused = _searchFocusNode.hasFocus;
+      if(!_isSearchFocused && _searchController.text.isEmpty) {
+        _getRecommendations();
+      }
+    });
+  }
+
+  Future<void> _loadRecentSearches() async {
+    final prefs = await SharedPreferences.getInstance();
+    if(!mounted) return;
+    setState(() {
+      _recentSearches = prefs.getStringList(_recentSearchesKey) ?? [];
+    });
+  }
+
+  Future<void> _addAndSaveFolderSearch(String query) async {
+    if(query.trim().isEmpty) return;
+    final String term = query.trim();
+
+    List<String> updatedSearches = List<String>.from(_recentSearches);
+
+    updatedSearches.remove(term);
+    updatedSearches.insert(0, term);
+
+    const int maxRecentSearches = 10;
+    if (updatedSearches.length > maxRecentSearches) {
+      updatedSearches = updatedSearches.sublist(0, maxRecentSearches);
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_recentSearchesKey, updatedSearches);
+
+    if(!mounted) return;
+    setState(() {
+      _recentSearches = updatedSearches;
+    });
+  }
+
+  Future<void> _removeRecentSearch(String term) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> updatedSearches = List<String>.from(_recentSearches);
+    updatedSearches.remove(term);
+    await prefs.setStringList(_recentSearchesKey, updatedSearches);
+
+    if(!mounted) return;
+    setState(() {
+      _recentSearches = updatedSearches;
+    });
+  }
+
+  Future<void> _clearRecentSearches() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_recentSearchesKey);
+
+    if(!mounted) return;
+    setState(() {
+      _recentSearches = [];
+    });
+  }
+
+  void _performSearch(String query) {
+    if(query.trim().isEmpty) return;
+    searchQuery = query.trim();
+    _searchController.text = searchQuery;
+    _searchFocusNode.unfocus();
+
+    _addAndSaveFolderSearch(searchQuery);
+
+    if(selectedTab == 0) {
+      _searchRestaurants(searchQuery);
+    } else {
+      _searchUsers(searchQuery);
+    }
   }
 
   void _navigateToUserProfile(String userId) async {
@@ -70,16 +166,45 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _getRecommendations() async {
-    if(selectedTab == 1) return;
+    if(_isSearchFocused || _searchController.text.isNotEmpty) return;
+    if(selectedTab == 1) {
+      setState(() {
+        searchResults = [];
+        isLoading = false;
+      });
+      return;
+    }
     setState(() {
       isLoading = true;
     });
 
     List<Map<String, dynamic>> recommendedRestaurants = await databaseService.getTopRatedRestaurants(limit: 5);
-
+    if(!mounted) return;
     setState(() {
       searchResults = recommendedRestaurants;
       isLoading = false;
+    });
+  }
+
+  void _onSearchChanged(String query) {
+    if(!mounted) return;
+    setState(() {
+      searchQuery = query;
+
+      if(query.isEmpty && _isSearchFocused) {
+        searchResults = [];
+        isLoading = false;
+      } else if (query.isNotEmpty) {
+        isLoading = true;
+        if(selectedTab == 0) {
+          _searchRestaurants(query);
+        } else {
+          _searchUsers(query);
+        }
+      } else {
+        isLoading = false;
+        _getRecommendations();
+      }
     });
   }
 
@@ -212,7 +337,9 @@ class _SearchScreenState extends State<SearchScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
-              onChanged: (query) {
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              onChanged: /*(query) {
                 setState(() {
                   searchQuery = query;
                 });
@@ -221,11 +348,15 @@ class _SearchScreenState extends State<SearchScreen> {
                 } else {
                   _searchUsers(query);
                 }
+              }*/
+                _onSearchChanged,
+              onSubmitted: (query) {
+                _performSearch(query);
               },
               decoration: InputDecoration(
                 hintText: "Suche nach Restaurants oder Nutzern...",
                 prefixIcon: Icon(Platform.isIOS ? CupertinoIcons.search : Icons.search),
-                suffixIcon: selectedTab == 0
+                suffixIcon: (selectedTab == 0 && searchQuery.isNotEmpty && !isLoading) 
                     ? IconButton(
                         icon: Icon(Icons.filter_list),
                         onPressed: _showFilterModal,
@@ -247,7 +378,7 @@ class _SearchScreenState extends State<SearchScreen> {
             fillColor: Theme.of(context).colorScheme.primary,
             isSelected: [selectedTab == 0, selectedTab == 1],
             onPressed: (index) {
-              setState(() {
+              /*setState(() {
                 selectedTab = index;
                 if (searchQuery.isNotEmpty) {
                   if (selectedTab == 0) {
@@ -262,6 +393,14 @@ class _SearchScreenState extends State<SearchScreen> {
                     _getRecommendations();
                   }
                 }
+              });*/
+              if(!mounted) return;
+              setState(() {
+                selectedTab = index;
+                _searchController.clear();
+                searchQuery = "";
+                _searchFocusNode.unfocus();
+                _getRecommendations();
               });
             },
             children: [
@@ -276,7 +415,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ],
           ),
           Expanded(
-            child: isLoading
+            child: /*isLoading
                 ? Center(child: /*CircularProgressIndicator.adaptive()*/ Lottie.asset('assets/animations/loading.json'))
                 : searchResults.isEmpty && searchQuery.isNotEmpty
                     ? Center(child: Text("Keine Ergebnisse gefunden"))
@@ -331,23 +470,167 @@ class _SearchScreenState extends State<SearchScreen> {
                             )
                           ],
                         ) ,
-                      )
+                      )*/
+            _buildContentArea(),
           ),
         ],
       ),
     );
   }
 
-  void _searchRestaurants(String query) async {
-    /*if(query.isEmpty) {
-      _getRecommendations();
-      return;
-    }*/
+  Widget _buildContentArea() {
+    if(_isSearchFocused && searchQuery.isEmpty) {
+      return _buildRecentSearchesList();
+    }
 
+    else if (!_isSearchFocused && searchQuery.isEmpty && selectedTab == 0) {
+      if(isLoading) return Center(child: Lottie.asset('assets/animations/loading.json'));
+      if(searchResults.isEmpty) return Center(child: Text("Keine Empfehlungen verfügbar."));
+      return _buildResultsList(title: "Empfehlungen für dich", icon: Icons.restaurant_menu);
+    }
+
+    else if (searchQuery.isNotEmpty) {
+      if(isLoading) return Center(child: Lottie.asset('assets/animations/loading.json'));
+      if(searchResults.isEmpty) return Center(child: Text("Keine Ergebnisse gefunden."));
+      return _buildResultsList();
+    }
+
+    else {
+      return Center(child: Text(""));
+    }
+  }
+
+  Widget _buildRecentSearchesList() {
+    if(_recentSearches.isEmpty) {
+      return Center(child: Text("Keine letzten Suchen."));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Letzte Suchen",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[600]),
+              ),
+              TextButton(
+                onPressed: _clearRecentSearches,
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                child: Text("Alle löschen", style: TextStyle(color: Colors.redAccent)),
+              )
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _recentSearches.length,
+            itemBuilder: (context, index) {
+              final term = _recentSearches[index];
+              return ListTile(
+                leading: Icon(Icons.history, color: Colors.grey[600]),
+                title: Text(term),
+                trailing: IconButton(
+                  icon: Icon(Icons.close, size: 20, color: Colors.grey[600]),
+                  onPressed: () => _removeRecentSearch(term),
+                ),
+                onTap: () {
+                  _performSearch(term);
+                },
+              );
+            },
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget _buildResultsList({String? title, IconData? icon}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if(title != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 8),
+              child: Row(
+                children: [
+                  if(icon != null) Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
+                  SizedBox(width: 8),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: searchResults.length,
+                itemBuilder: (context, index) {
+                  var data = searchResults[index];
+                  // *** TODO: Ergebnisdarstellung verbessern (Preis/Bewertung hinzufügen)
+                  String subtitle;
+                  ImageProvider leadingImage;
+
+                  if(selectedTab == 0) {
+                    subtitle = "Restaurant";
+                    leadingImage = ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 140, policy: ResizeImagePolicy.fit) as ImageProvider;
+                  } else {
+                    subtitle = "Nutzer";
+                    leadingImage = (data['photoUrl'] != null && data['photoUrl'].isNotEmpty) 
+                      ? ResizeImage(NetworkImage(data['photoUrl']), height: 140, policy: ResizeImagePolicy.fit) 
+                      : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 140, policy: ResizeImagePolicy.fit) as ImageProvider;
+                  }
+
+                  return ListTile(
+                    leading: selectedTab == 1 
+                    ? CircleAvatar(
+                      backgroundImage: leadingImage,
+                    )
+                    : null,
+                    title: Text(data['name'] ?? "Unbekannt"),
+                    subtitle: Text(subtitle),
+                    onTap: () {
+                      if(selectedTab == 0) {
+                        _navigateToRestaurant(data);
+                      } else {
+                        _navigateToUserProfile(data['id']);
+                      }
+
+                      if(searchQuery.isNotEmpty) {
+                        _addAndSaveFolderSearch(searchQuery);
+                      }
+
+                      _searchFocusNode.unfocus();
+                    }
+                  );
+                },
+              ),
+            )
+        ],
+      ),
+    );
+  }
+
+  void _searchRestaurants(String query) async {
+    if(query.trim().isEmpty) {
+      if(mounted) setState(() { searchResults = []; isLoading = false;});
+      return;
+    }
+
+    if(!mounted) return;
     setState(() {
       isLoading = true;
     });
 
+    // TODO: databaseService.searchRestaurantsWithFilters verwenden
     Query firestoreQuery = FirebaseFirestore.instance.collection("restaurantDetails");
 
     if(filterCuisines.isEmpty && filterPriceLevel == null && filterOpenNow == false) {
@@ -374,8 +657,7 @@ class _SearchScreenState extends State<SearchScreen> {
     QuerySnapshot querySnapshot = await firestoreQuery.limit(10).get();
     List<Map<String, dynamic>> results = querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
 
-    print(results);
-
+    if (!mounted) return;
     setState(() {
       searchResults = results;
       isLoading = false;
@@ -383,31 +665,24 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _searchUsers(String query) async {
-    if (query.isEmpty) {
-      setState(() {
-        searchResults = [];
-      });
+    if (query.trim().isEmpty) {
+      if(mounted) setState(() { searchResults = []; isLoading = false;});
       return;
     }
 
+    if(!mounted) return;
     setState(() {
       isLoading = true;
     });
 
-    if(query.isEmpty) {
-      setState(() {
-        isLoading = false;
-      });
-      return;
-    }
-
     final snapshot = await FirebaseFirestore.instance
       .collection("users")
       .where("lowercaseName", isGreaterThanOrEqualTo: query.toLowerCase())
-      // ignore: prefer_interpolation_to_compose_strings
       .where("lowercaseName", isLessThanOrEqualTo: query.toLowerCase() + '\uf8ff')
+      .limit(10)
       .get();
 
+    if(!mounted) return;
     setState(() {
       searchResults = snapshot.docs.map((doc) => doc.data()).toList();
       isLoading = false;
