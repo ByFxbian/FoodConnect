@@ -10,6 +10,7 @@ import 'package:foodconnect/screens/settings_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -334,18 +335,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
           ),
-        ...displayedReviews.map((review) => ListTile(
-              title: Text(review['restaurantName'] ?? 'Unbekanntes Restaurant'),
-              subtitle: Text("${review['rating']} ⭐: ${review['comment']}",
-                  style: TextStyle(fontSize: 14)),
-              onTap: () => _navigateToRestaurant(review['restaurantId']),
-            )),
-            if (userReviews.length > 5)
-              TextButton(
-                onPressed: () => setState(() => showAllReviews = !showAllReviews),
-                child: Text(showAllReviews ? "Weniger anzeigen" : "Mehr anzeigen"),
-              ),
-      ],
+        ...displayedReviews.map((review) {
+          Timestamp? timestamp = review['timestamp'];
+          String timeAgoString = "";
+          if(timestamp != null) {
+            try {
+              timeAgoString = timeago.format(timestamp.toDate(), locale: 'de_short');
+            } catch (e) {
+              print("Fehler beim Formatieren des Zeitstempels: $e");
+              timeAgoString = DateFormat('dd.MM.yy').format(timestamp.toDate());
+            }
+          }
+
+          return ListTile(
+            title: Text(review['restaurantName'] ?? 'Unbekanntes Restaurant'),
+            subtitle: Text("${review['rating']} ⭐: ${review['comment']}",
+                style: TextStyle(fontSize: 14)),
+            trailing: Text(timeAgoString.isNotEmpty ? " • $timeAgoString" : ""),
+            isThreeLine: true,
+            onTap: () => _navigateToRestaurant(review['restaurantId']),
+          );
+        // ignore: unnecessary_to_list_in_spreads
+        }).toList(),
+          if (userReviews.length > 5)
+          TextButton(
+            onPressed: () => setState(() => showAllReviews = !showAllReviews),
+            child: Text(showAllReviews ? "Weniger anzeigen" : "Mehr anzeigen"),
+          ),
+        ]
     );
   }
 

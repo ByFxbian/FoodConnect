@@ -14,7 +14,9 @@ import 'package:foodconnect/services/database_service.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:foodconnect/services/firestore_service.dart'; // Import hinzugefügt
 import 'package:foodconnect/widgets/rating_dialog.dart';
+import 'package:intl/intl.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class MarkerManager {
   static final MarkerManager _instance = MarkerManager._internal();
@@ -490,13 +492,24 @@ class __MarkerPanelContentState extends State<_MarkerPanelContent> {
 
                       if(_reviews.isNotEmpty) ...[
                         Text(
-                            "Reviews:",
+                            "Bewertungen:",
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: _reviews.map((review) =>
-                              ListTile(
+                            children: _reviews.map((review) {
+                              Timestamp? timestamp = review['timestamp'];
+                              String timeAgoString = "";
+                              if (timestamp != null) {
+                                try {
+                                    timeAgoString = timeago.format(timestamp.toDate(), locale: 'de_short');
+                                } catch(e) {
+                                    print("Error formatting timeago in marker panel: $e");
+                                    timeAgoString = DateFormat('dd.MM.yy').format(timestamp.toDate());
+                                }
+                              }
+
+                              return ListTile(
                                 leading: CircleAvatar(
                                   backgroundImage: review['userProfileUrl'] != null && review['userProfileUrl'].isNotEmpty
                                     ? NetworkImage(review['userProfileUrl'])
@@ -508,8 +521,8 @@ class __MarkerPanelContentState extends State<_MarkerPanelContent> {
                                 title: Text(review['userName'] ?? 'Unbekannt'),
                                 subtitle: Text("${review['rating']} ⭐: ${review['comment']}"),
                                 onTap: () => _navigateToUserProfileHelper(review['userId']),
-                              )
-                            ).toList(),
+                              );
+                            }).toList(),
                           ),
                         ] else if (!_isLoading) ...[
                           Text("Noch keine Bewertungen vorhanden.", style: TextStyle(fontSize: 16, color: Colors.grey[600])),

@@ -5,8 +5,10 @@ import 'package:foodconnect/screens/follower_list_screen.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class UserProfileScreen extends StatefulWidget{
   final String userId;
@@ -24,6 +26,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   int followerCount = 0;
   int followingCount = 0;
   List<Map<String, dynamic>> userReviews = [];
+  bool showAllReviews = false;
   final FirestoreService _firestoreService = FirestoreService();
   final DatabaseService _databaseService = DatabaseService();
   User? currentUser = FirebaseAuth.instance.currentUser;
@@ -255,6 +258,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget _buildUserReviewsSection() {
+    List<Map<String, dynamic>> displayedReviews =
+        showAllReviews ? userReviews : userReviews.take(5).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -266,14 +272,45 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               color: Theme.of(context).colorScheme.primary),
         ),
         Divider(color: Theme.of(context).colorScheme.primary),
-        if (userReviews.isEmpty)
+        if (displayedReviews.isEmpty)
           Text(
             "Keine Bewertungen vorhanden.",
             style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
           ),
-        ...userReviews.map((review) => ListTile(
+        ...displayedReviews.map((review) {
+          Timestamp? timestamp = review['timestamp'];
+          String timeAgoString = "";
+          if(timestamp != null) {
+            try {
+              timeAgoString = timeago.format(timestamp.toDate(), locale: 'de_short');
+            } catch (e) {
+              print("Fehler beim Formatieren des Zeitstempels: $e");
+              timeAgoString = DateFormat('dd.MM.yy').format(timestamp.toDate());
+            }
+          }
+
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundImage: userData?['photoUrl'] != null &&
+                      userData?['photoUrl'] != ""
+                  ? ResizeImage(NetworkImage(userData?['photoUrl']), height: 140, policy: ResizeImagePolicy.fit)
+                  : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 140, policy: ResizeImagePolicy.fit) as ImageProvider,
+            ),
+            title: Text(review['restaurantName'] ?? 'Unbekanntes Restaurant'),
+            subtitle: Text("${review['rating']} ⭐: ${review['comment']}",
+                style: TextStyle(fontSize: 14)),
+            trailing: Text(timeAgoString.isNotEmpty ? " • $timeAgoString" : ""),
+            onTap: () => _navigateToRestaurant(review["restaurantId"]),
+          );
+        }).toList(),
+          if (userReviews.length > 5)
+          TextButton(
+            onPressed: () => setState(() => showAllReviews = !showAllReviews),
+            child: Text(showAllReviews ? "Weniger anzeigen" : "Mehr anzeigen"),
+          ),
+         /*=> ListTile(
               leading: CircleAvatar(
                 backgroundImage: userData?['photoUrl'] != null &&
                     userData?['photoUrl'] != ""
@@ -284,7 +321,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               subtitle: Text("${review['rating']} ⭐: ${review['comment']}",
                   style: TextStyle(fontSize: 14)),
               onTap: () => _navigateToRestaurant(review["restaurantId"]),
-            ))
+            ))*/
       ],
     );
   }
