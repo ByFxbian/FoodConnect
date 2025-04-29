@@ -228,7 +228,11 @@ class FirestoreService {
       'userId': userId,
       'userName': userName,
       'userProfileUrl': userProfileUrl,
+      'timestamp': FieldValue.serverTimestamp(),
     });
+
+    Map<String, dynamic>? restaurantData = await dbService.getRestaurantById(restaurantId);
+    String restaurantName = restaurantData?["name"] ?? "ein Restaurant";
 
     QuerySnapshot followerSnapshot = await _db.collection("users").doc(userId).collection("followers").get();
     for (var doc in followerSnapshot.docs) {
@@ -245,9 +249,14 @@ class FirestoreService {
         recipientUserId: followerId
       );*/
       await _notiLogger.logNotificationInDatabase(
-        title: "$userName hat ein Restaurant bewertet!",
+        title: "$userName hat ein $restaurantName bewertet!",
         body: "Es wurde mit $rating Sternen bewertet.",
-        recipientUserId: followerId
+        recipientUserId: followerId,
+        type: 'review',
+        actorId: userId,
+        actorName: userName,
+        actorImageUrl: userProfileUrl,
+        relevantId: restaurantId
       );
     }
 

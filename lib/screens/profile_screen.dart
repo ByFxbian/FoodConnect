@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/follower_list_screen.dart';
 import 'package:foodconnect/screens/main_screen.dart';
 import 'package:foodconnect/screens/settings_screen.dart';
+import 'package:foodconnect/screens/taste_profile_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
@@ -369,43 +370,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildTasteProfileSection(Map<String, dynamic>? tasteProfile) {
     bool isIOS = Theme.of(context).platform == TargetPlatform.iOS;
 
-    if(tasteProfile == null || tasteProfile.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "🍽️ Geschmacksprofil",
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary),
+    void _navigateToEditProfile() async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TasteProfileScreen(
+            userId: user!.uid,
+            initialProfileData: tasteProfile,
           ),
-          Divider(color: Theme.of(context).colorScheme.primary),
-          Text(
-            "Keine Informationen vorhanden.",
-            style: TextStyle(
-                fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-          ),
-        ],
+        ),
       );
+
+      _loadUserData();
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "🍽️ Geschmacksprofil",
-          style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween, // Verteilt Elemente
+          children: [
+            Text(
+              "🍽️ Geschmacksprofil",
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary),
+            ),
+            IconButton(
+               icon: Icon(Platform.isIOS ? CupertinoIcons.pencil : Icons.edit, size: 20),
+               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+               onPressed: _navigateToEditProfile,
+               tooltip: 'Geschmacksprofil bearbeiten',
+            )
+            // -----------------------
+          ],
         ),
         isIOS ? Divider() : Divider(color: Theme.of(context).colorScheme.primary),
-        ...tasteProfile.entries.map((entry) {
-          return _buildTasteProfileRow(_mapKeyToLabel(entry.key), entry.value);
-        // ignore: unnecessary_to_list_in_spreads
-        }).toList(),
+        if (tasteProfile == null || tasteProfile.isEmpty)
+           Padding( // Padding für Konsistenz
+             padding: const EdgeInsets.symmetric(vertical: 8.0),
+             child: Text(
+                "Keine Informationen vorhanden.",
+                style: TextStyle(
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+              ),
+           )
+        else
+          ...tasteProfile.entries
+            // Nur Einträge anzeigen, die einen Wert haben (optional, für Sauberkeit)
+            .where((entry) => entry.value != null && entry.value.toString().isNotEmpty)
+            .map((entry) {
+                 return _buildTasteProfileRow(_mapKeyToLabel(entry.key), entry.value);
+               // ignore: unnecessary_to_list_in_spreads
+               }).toList(), // .toList() kann hier weg, wenn spread (...) verwendet wird
+
       ],
     );
   }
