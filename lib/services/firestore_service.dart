@@ -262,6 +262,22 @@ class FirestoreService {
 
   }
 
+  Future<int> getUserReviewCount(String userId) async {
+    if(userId.isEmpty) return 0;
+    try {
+      AggregateQuerySnapshot snapshot = await _db
+          .collection('restaurantReviews')
+          .where('userId', isEqualTo: userId)
+          .count()
+          .get();
+      print("Review count for $userId: ${snapshot.count}");
+      return snapshot.count ?? 0;
+    } catch (e) {
+      print("Fehler beim Zählen der User Reviews für $userId: $e");
+      return 0;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getReviewsForRestaurant(String restaurantId) async {
     QuerySnapshot querySnapshot = await _db
         .collection('restaurantReviews')

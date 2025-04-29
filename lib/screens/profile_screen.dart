@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable
+
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -30,6 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool isLoading = true;
   int followerCount = 0;
   int followingCount = 0;
+  int reviewCount = 0;
   List<Map<String, dynamic>> userReviews = [];
   bool showAllReviews = false;
   final FirestoreService _firestoreService = FirestoreService();
@@ -41,7 +44,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
     _loadFollowCounts();
     _loadUserReviews();
+    _loadReviewCount();
     FirestoreService().updateEmailVerificationStatus();
+  }
+
+  Future<void> _loadReviewCount() async {
+    int count = await _firestoreService.getUserReviewCount(user!.uid);
+    setState(() {
+      reviewCount = count;
+    });
   }
 
   Future<void> _loadFollowCounts() async {
@@ -298,6 +309,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 )
                               ],
                             ),
+                            SizedBox(width: 20),
+                            Column(
+                              children: [
+                                Text(
+                                  reviewCount.toString(),
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                Text(
+                                  "Bewertungen",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                         SizedBox(height: 30),
@@ -406,7 +440,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // -----------------------
           ],
         ),
-        isIOS ? Divider() : Divider(color: Theme.of(context).colorScheme.primary),
+        isIOS ? Divider(color: Theme.of(context).colorScheme.primary) : Divider(color: Theme.of(context).colorScheme.primary),
         if (tasteProfile == null || tasteProfile.isEmpty)
            Padding( // Padding für Konsistenz
              padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -487,6 +521,7 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+   final DatabaseService dbService = DatabaseService();
 
   Future<void> _markAsread(String docId) async {
     try {
@@ -508,6 +543,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           builder: (context) => UserProfileScreen(userId: userId),
         ),
       );
+    }
+  }
+
+  Future<void> _navigateToRestaurantFromNotification(String? restaurantId) async {
+    if(restaurantId == null || restaurantId.isEmpty) {
+      print("Keine Restaurant-ID für Navigation vorhanden.");
+      return;
+    }
+    print("Navigiere zur Karte für Restaurant: $restaurantId");
+    try {
+      Map<String, dynamic>? restaurantData = await dbService.getRestaurantById(restaurantId);
+      if(restaurantData != null && restaurantData['latitude'] != null && restaurantData['longitude'] != null) {
+        LatLng targetLocation = LatLng(restaurantData['latitude'], restaurantData['longitude']);
+        if(mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+                builder: (context) => MainScreen(
+                    initialPage: 0,
+                    targetLocation: targetLocation,
+                    selectedRestaurantId: restaurantId,
+                ),
+            ),
+            (route) => route.isFirst,
+          );
+        }
+      } else {
+        print("Restaurant-Daten für Navigation nicht gefunden.");
+      }
+    } catch (e) {
+      print("🔥 Fehler bei Navigation zum Restaurant: $e");
     }
   }
 
@@ -614,8 +680,74 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                   ),
                 );
+              } else if (type == 'review') {
+                String? actorName = notification['actorName']; // Name des Reviewers
+                String? actorImageUrl = notification['actorImageUrl']; // Bild des Reviewers
+                String? actorId = notification['actorId']; // ID des Reviewers (falls benötigt)
+                String? title = notification['title']; // Sollte enthalten "X hat Y bewertet"
+                String? body = notification['body']; // Sollte enthalten "Wurde mit Z Sternen bewertet"
+                Timestamp? timestamp = notification['timestamp'];
+                bool isRead = notification['isRead'] ?? false;
+                String? restaurantId = notification['relevantId'];
+
+                String timeAgoString = "";
+                if (timestamp != null) {
+                  try {
+                    timeAgoString = timeago.format(timestamp.toDate(), locale: 'de_short');
+                  } catch(e) { timeAgoString = "?"; } // Fallback
+                }
+
+                return InkWell(
+                  onTap: () {
+                    _markAsread(doc.id);
+                    _navigateToRestaurantFromNotification(restaurantId); // Navigiere zum Restaurant
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                    child: Row(
+                        children: [
+                          // Bild des Reviewers
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundImage: (actorImageUrl != null && actorImageUrl.isNotEmpty)
+                                ? NetworkImage(actorImageUrl) : null,
+                            child: (actorImageUrl == null || actorImageUrl.isEmpty)
+                                ? Icon(Icons.person, size: 24) : null,
+                          ),
+                          SizedBox(width: 12),
+                          // Text (Titel, Body, Zeit)
+                          Expanded(
+                            child: Column( // Titel und Body/Zeit untereinander
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                    title ?? "Neue Bewertung", // Verwende den gespeicherten Titel
+                                    style: TextStyle(fontWeight: isRead ? FontWeight.normal : FontWeight.bold),
+                                    maxLines: 2, // Max 2 Zeilen für Titel
+                                    overflow: TextOverflow.ellipsis, // ... wenn länger
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                    "${body ?? ''} • $timeAgoString", // Kombiniere Body und Zeit
+                                    style: TextStyle(color: isRead ? Colors.grey[600] : Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.8), fontSize: 13),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                        ],
+                      ),
+                  ),
+                );
+
               } else {
-                return SizedBox.shrink();
+                return ListTile(
+                  leading: Icon(Icons.notifications_none),
+                  title: Text(notification['title'] ?? 'Unbekannte Benachrichtigung'),
+                  subtitle: Text(notification['body'] ?? ''),
+                );
               }
 
               /*return ListTile(
