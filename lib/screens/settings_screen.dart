@@ -331,6 +331,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Text("Konto löschen"),
         content: Text("Bist du sicher, dass du dein Konto dauerhaft löschen möchtest?"),
+        alignment: Alignment.center,
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -351,12 +352,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _deleteAccount() async {
     try {
       await FirebaseAuth.instance.currentUser?.delete();
-       Navigator.of(context).pushNamedAndRemoveUntil(
-        '/LoginScreen',
-        (Route<dynamic> route) => false,
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => AuthWrapper()), 
+        (route) => false
       );
-    } catch (e) {
+    } on FirebaseException catch (e) {
       print("Fehler beim Löschen des Accounts: $e");
+
+      if (e.code == "requires-recent-login") {
+        print("Reauthentifizierung erforderlich zum Löschen des Accounts.");
+        await _reauthenticateAndDelete();
+      } else {
+        print("Anderer Fehlercode: ${e.code}");
+      }
+    } catch (e) {
+      print("Unbekannter Fehler beim Löschen des Accounts: $e");
+    }
+  }
+
+  Future<void> _reauthenticateAndDelete() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final providerId = user.providerData.first.providerId;
+
+    try {
+      if (providerId == EmailAuthProvider.PROVIDER_ID) {
+        final TextEditingController passwordController = TextEditingController();
+
+        final bool? confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Bitte bestätige deine Identität"),
+            content: TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: InputDecoration(hintText: "Dein Passwort"),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text("Abbrechen")),
+              ElevatedButton(onPressed: () => Navigator.of(context).pop(true), child: Text("Bestätigen & Löschen")),
+            ],
+          ),
+        );
+
+        if (confirmed == true && passwordController.text.isNotEmpty) {
+          AuthCredential credential = EmailAuthProvider.credential(
+            email: user.email!,
+            password: passwordController.text,
+          );
+
+          await user.reauthenticateWithCredential(credential);
+          _deleteAccount();
+        }
+      } else if (AppleAuthProvider.PROVIDER_ID ==providerId) {
+        await FirebaseAuth.instance.currentUser?.reauthenticateWithProvider(AppleAuthProvider());
+        _deleteAccount();
+      } else if (GoogleAuthProvider().providerId == providerId) {
+        await FirebaseAuth.instance.currentUser?.reauthenticateWithProvider(GoogleAuthProvider());
+        _deleteAccount();
+      }
+
+    } catch (e) {
+      print("Fehler beim Reauthentifizieren und Löschen des Accounts: $e");
     }
   }
 

@@ -35,6 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<PopupMenuButtonState<String>> filterButtonKey = GlobalKey<PopupMenuButtonState<String>>();
   final GlobalKey filterButtonKeyNew = GlobalKey();
 
+  String selectedSortBy = "highestRated";
+  bool filterOpenNow = false;
+  double filterMinRating = 0.0;
+  String? filterPriceLevel;
+  List<String> filterCuisines = [];
+
   String selectedFilter = "highestRated";
   Position position = Position(
       longitude: 16.363449,
@@ -61,6 +67,91 @@ class _HomeScreenState extends State<HomeScreen> {
         _updateFilteredMarkers();
       });
     }
+  }
+
+  void _showFilterModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setModalState) {
+          return Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text("Sortieren & Filtern", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+
+                SizedBox(height: 16),
+                Text("Sortieren nach", style: TextStyle(fontWeight: FontWeight.bold)),
+                RadioListTile<String>(
+                  title: Text("Beste Bewertung"),
+                  value: "highestRated",
+                  groupValue: selectedSortBy,
+                  onChanged: (val) => setModalState(() => selectedSortBy = val!),
+                ),
+                RadioListTile<String>(
+                  title: Text("Kürzeste Entfernung"),
+                  value: "nearest",
+                  groupValue: selectedSortBy,
+                  onChanged: (val) => setModalState(() => selectedSortBy = val!),
+                ),
+
+                Divider(),
+
+                SizedBox(height: 16),
+                Text("Filtern nach", style: TextStyle(fontWeight: FontWeight.bold)),
+                SwitchListTile.adaptive(
+                  title: Text("Nur geöffnete Restaurants"),
+                  value: filterOpenNow,
+                  onChanged: (val) => setModalState(() => filterOpenNow = val),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  child: Text("Mindestbewertung: ${filterMinRating.toStringAsFixed(1)} ★"),
+                ),
+                Slider(
+                  value: filterMinRating,
+                  min: 0.0,
+                  max: 5.0,
+                  divisions: 50,
+                  label: filterMinRating.toStringAsFixed(1),
+                  onChanged: (val) => setModalState(() => filterMinRating = val),
+                ),
+                SizedBox(height: 10),
+                Wrap(
+                  spacing: 5,
+                  children: ["Italienisch", "Asiatisch", "Mexikanisch", "Amerikanisch", "Vegetarisch"]
+                    .map((cuisine) => FilterChip(
+                      label: Text(cuisine),
+                      selected: filterCuisines.contains(cuisine),
+                      onSelected: (bool selected) {
+                        setModalState(() {
+                          if(selected) {
+                            filterCuisines.add(cuisine);
+                          } else {
+                            filterCuisines.remove(cuisine);
+                          }
+                        });
+                      },
+                    )).toList(),
+                ),
+
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _updateFilteredMarkers();
+                  },
+                  child: Text("Anwenden"),
+                )
+              ],
+            ),
+          );
+        });
+      }
+    );
   }
 
   void _showMaterialFilterMenu(BuildContext context) {
@@ -300,12 +391,51 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _updateFilteredMarkers() async {
-    if (!mounted) return;
+    if (!mounted || mapController == null) return;
 
     LatLngBounds? visibleRegion = await mapController?.getVisibleRegion();
     if (visibleRegion == null) return;
 
-    List<Map<String, dynamic>> filteredMarkers;
+    if (selectedSortBy == "nearest") {
+      await _getCurrentLocation();
+    }
+
+    List<Map<String, dynamic>> filteredMarkersData = await databaseService.getFilteredRestaurants(
+      minLat: visibleRegion.southwest.latitude,
+      minLng: visibleRegion.southwest.longitude,
+      maxLat: visibleRegion.northeast.latitude,
+      maxLng: visibleRegion.northeast.longitude,
+      userLat: position.latitude,
+      userLng: position.longitude,
+      sortBy: selectedSortBy == "nearest" ? "distance" : "rating",
+      openNow: filterOpenNow,
+      minRating: filterMinRating,
+      priceLevel: filterPriceLevel,
+      cuisines: filterCuisines,
+      limit: 100,
+    );
+
+    Set<Marker> updatedMarkers = filteredMarkersData.map((data) {
+      return Marker(
+        markerId: MarkerId(data['id']),
+        position: LatLng(data['latitude'], data['longitude']),
+        icon: MarkerManager().customIcon,
+        onTap: () {
+          final ctx = navigatorKey.currentContext;
+          if (ctx == null) return;
+          MarkerManager().showMarkerPanel(ctx, data);
+        },
+      );
+    }).toSet();
+
+    if(mounted) {
+      setState(() {
+        markers = updatedMarkers;
+        MarkerManager().markers = updatedMarkers;
+        markers = MarkerManager().markers;
+      });
+    }
+    /*List<Map<String, dynamic>> filteredMarkers;
 
     if (selectedFilter == "highestRated") {
       filteredMarkers = await databaseService.getHighestRatedInBounds(
@@ -360,27 +490,12 @@ class _HomeScreenState extends State<HomeScreen> {
       markers = updatedMarkers;
       MarkerManager().markers = updatedMarkers;
       markers = MarkerManager().markers;
-    });
+    });*/
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /*appBar: AppBar(
-        title: Text("DEBUG MENÜ"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              NotiService().showNotification(
-                title: "Title",
-                body: "Body",
-              );
-            },
-            child: Text("Send Notification Debug"),
-          )
-        ],
-      ),*/
       body: PlatformMap(
             initialCameraPosition: CameraPosition(
               target: LatLng(48.210033, 16.363449),
@@ -597,11 +712,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () {
-                          if(Platform.isIOS) {
-                            _showCupertinoFilterMenu(context);
-                          } else {
-                            _showMaterialFilterMenu(context);
-                          }
+                          _showFilterModal();
                         },
                         child: Padding(
                           padding: EdgeInsets.all(12),

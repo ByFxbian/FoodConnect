@@ -20,7 +20,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE restaurants (
@@ -31,10 +31,18 @@ class DatabaseService {
             longitude REAL,
             icon TEXT,
             rating REAL,
-            openingHours TEXT
+            openingHours TEXT,
+            priceLevel TEXT,
+            cuisines TEXT
           )
         ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if(oldVersion < 2) {
+          await db.execute("ALTER TABLE restaurants ADD COLUMN priceLevel TEXT");
+          await db.execute("ALTER TABLE restaurants ADD COLUMN cuisines TEXT");
+        }
+      }
     );
   }
 
@@ -175,20 +183,75 @@ class DatabaseService {
     required double maxLng,
     double? userLat,
     double? userLng,
-    bool sortByRating = false,
-    bool sortByDistance = false,
-    bool onlyOpenNow = false,
+    String sortBy = "rating",
+    bool openNow = false,
+    double minRating = 0.0,
+    String? priceLevel,
+    List<String>? cuisines,
     int limit = 50,
   }) async {
     final db = await database;
-    List<Map<String, dynamic>> results = await db.query(
+    /*List<Map<String, dynamic>> results = await db.query(
       'restaurants',
       where: 'latitude BETWEEN ? and ? AND longitude BETWEEN ? and ?',
       whereArgs: [minLat, maxLat, minLng, maxLng],
+    );*/
+    List<String> whereConditions = ["latitude BETWEEN ? AND ?", 'longitude BETWEEN ? AND ?'];
+    List<dynamic> whereArgs = [minLat, maxLat, minLng, maxLng];
+
+    if (minRating > 0) {
+      whereConditions.add('rating >= ?');
+      whereArgs.add(minRating);
+    }
+
+    if (priceLevel != null && priceLevel.isNotEmpty) {
+      whereConditions.add('priceLevel = ?');
+      whereArgs.add(priceLevel);
+    }
+
+    if (cuisines != null && cuisines.isNotEmpty) {
+
+      List<String> cuisineConditions = cuisines.map((_) => "cuisines LIKE ?").toList();
+
+      whereConditions.add("(${cuisineConditions.join(' OR ')})");
+
+      for (var cuisine in cuisines) {
+        whereArgs.add('%$cuisine%');
+      }
+    }
+
+    String whereClause = whereConditions.join(' AND ');
+
+    List<Map<String, dynamic>> results = await db.query(
+      'restaurants',
+      where: whereClause,
+      whereArgs: whereArgs,
     );
 
+    List<Map<String, dynamic>> mutableResults = results.toList();
+
+    if (openNow) {
+      mutableResults = mutableResults.where((restaurant) {
+        String? hoursString = restaurant["openingHours"] as String?;
+        if (hoursString == null || hoursString.isEmpty) return false;
+        return _isCurrentlyOpen(hoursString);
+      }).toList();
+    }
+
+    if (sortBy == 'distance' && userLat != null && userLng != null) {
+      mutableResults.sort((a, b) {
+        double distanceA = _calculateDistance(userLat, userLng, a["latitude"], a["longitude"]);
+        double distanceB = _calculateDistance(userLat, userLng, b["latitude"], b["longitude"]);
+        return distanceA.compareTo(distanceB);
+      });
+    } else {
+      mutableResults.sort((a, b) => (b["rating"] ?? 0.0).compareTo(a["rating"] ?? 0.0));
+    }
+
+    return mutableResults.take(limit).toList();
+
     // Filter nach Öffnungszeiten
-    if (onlyOpenNow) {
+    /*if (onlyOpenNow) {
       String today = DateFormat('EEEE').format(DateTime.now());
       results = results.where((restaurant) {
         if (restaurant['openingHours'] == null) return false;
@@ -203,10 +266,10 @@ class DatabaseService {
         }
         return false;
       }).toList();
-    }
+    }*/
 
     // Sortiere nach Bewertung
-    if (sortByRating) {
+    /*if (sortByRating) {
       results.sort((a, b) => (b['rating'] ?? 0).compareTo(a['rating'] ?? 0));
     }
 
@@ -217,9 +280,56 @@ class DatabaseService {
         double distanceB = _calculateDistance(userLat, userLng, b['latitude'], b['longitude']);
         return distanceA.compareTo(distanceB);
       });
+    }*/
+
+    //return results.take(limit).toList();
+  }
+
+  bool _isCurrentlyOpen(String openingHoursString) {
+    final now = DateTime.now();
+    final todayWeekday = DateFormat('EEEE').format(now);
+
+    List<String> hoursList = openingHoursString.split(" | ");
+
+    for (String entry in hoursList) {
+      if(entry.startsWith(todayWeekday)) {
+        String hours = entry.substring(entry.indexOf(":") + 2);
+
+        if (hours.toLowerCase() == 'closed') return false;
+        if (hours.toLowerCase() == 'open 24 hours') return true;
+
+        try {
+          final parts = hours.split(" - ");
+          if (parts.length != 2) continue;
+
+          final startTime = _parseTime(parts[0]);
+          final endTime = _parseTime(parts[1]);
+
+          final nowTime = now.hour * 60 + now.minute;
+
+          if(endTime < startTime) {
+            if (nowTime >= startTime || nowTime < endTime) {
+              return true;
+            }
+          } else {
+            if (nowTime >= startTime && nowTime < endTime) {
+              return true;
+            }
+          }
+        } catch (e) {
+          print("Fehler beim Parsen der Öffnungszeit: '$hours' - $e");
+          continue;
+        }
+      }
     }
 
-    return results.take(limit).toList();
+    return false;
+  }
+
+  int _parseTime(String time) {
+    final format = DateFormat("h:mm a");
+    final dt = format.parse(time);
+    return dt.hour * 60 + dt.minute;
   }
 
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
@@ -308,6 +418,10 @@ class DatabaseService {
       ? (restaurant["openingHours"] as List).join(" | ")
       : restaurant["openingHours"].toString();
 
+    String cuisines = restaurant["cuisines"] is List
+      ? (restaurant["cuisines"] as List).join(", ")
+      : restaurant["cuisines"]?.toString() ?? "";
+
     await db.insert('restaurants', {
       "id": restaurant["id"],
       "name": restaurant["name"],
@@ -316,7 +430,9 @@ class DatabaseService {
       "longitude": restaurant["longitude"],
       "icon": restaurant["icon"],
       "rating": restaurant["rating"],
-      "openingHours": openingHours
+      "openingHours": openingHours,
+      "priceLevel": restaurant["priceLevel"],
+      "cuisines": cuisines
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 

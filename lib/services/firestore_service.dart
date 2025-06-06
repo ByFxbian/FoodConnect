@@ -155,7 +155,7 @@ class FirestoreService {
 
   Future<void> fetchAndStoreRestaurants() async {
     print("⚡ Lade Daten aus Firestore und speichere sie in SQLite...");
-    QuerySnapshot querySnapshot = await _db.collection('markers').get();
+    QuerySnapshot querySnapshot = await _db.collection('restaurantDetails').get();
 
     await dbService.clearDatabase();
 
@@ -168,6 +168,9 @@ class FirestoreService {
         "longitude": data["location"].longitude,
         "icon": data["icon"] ?? "",
         "rating": double.tryParse(data["rating"].toString()) ?? 0.0,
+        "priceLevel": data["priceLevel"],
+        "cuisines": data["cuisines"],
+        "openingHours": data["openingHours"] ?? [],
       });
 
       await dbService.setRestaurantRating(data["id"], double.tryParse(data["rating"].toString()) ?? 0.0);

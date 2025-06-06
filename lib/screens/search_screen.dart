@@ -34,7 +34,8 @@ class _SearchScreenState extends State<SearchScreen> {
   // FILTER
   bool filterOpenNow = false;
   String? filterPriceLevel;
-  List<String> filterCuisines = [];
+  //List<String> filterCuisines = [];
+  double filterMinRating = 0.0;
 
   Map<String, List<String>> priceLevelMapping = {
     "€": ["Günstig", "Günstig - Mittelpreisig"],
@@ -259,7 +260,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     onPressed: () {
                       setModalState(() {
                         filterOpenNow = false;
-                        filterCuisines.clear();
+                        //filterCuisines.clear();
                         filterPriceLevel = null;
                       });
 
@@ -279,6 +280,18 @@ class _SearchScreenState extends State<SearchScreen> {
                       setModalState(() => filterOpenNow = value);
                     },
                   ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                    child: Text("Mindestbewertung: ${filterMinRating.toStringAsFixed(1)} ★"),
+                  ),
+                  Slider.adaptive(
+                    value: filterMinRating,
+                    min: 0.0,
+                    max: 5.0,
+                    divisions: 10,
+                    label: filterMinRating.toStringAsFixed(1),
+                    onChanged: (value) => setModalState(() => filterMinRating = value),
+                  ),
                   DropdownButton<String>(
                     hint: Text("Preisniveau wählen"),
                     value: filterPriceLevel,
@@ -292,7 +305,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       );
                     }).toList(),
                   ),
-                  SizedBox(height: 10),
+                  /*SizedBox(height: 10),
                   Wrap(
                     spacing: 5,
                     children: ["Italienisch", "Asiatisch", "Mexikanisch", "Amerikanisch", "Vegetarisch"]
@@ -309,7 +322,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           });
                         },
                       )).toList(),
-                  ),
+                  ),*/
                   SizedBox(height: 20,),
                   ElevatedButton(
                     onPressed: () {
@@ -548,13 +561,13 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildResultsList({String? title, IconData? icon}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 0.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if(title != null)
             Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 8),
+              padding: const EdgeInsets.only(top: 12, bottom: 8, left: 16, right: 16),
               child: Row(
                 children: [
                   if(icon != null) Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
@@ -572,11 +585,12 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             Expanded(
               child: ListView.builder(
+                padding: EdgeInsets.zero,
                 itemCount: searchResults.length,
                 itemBuilder: (context, index) {
                   var data = searchResults[index];
                   // *** TODO: Ergebnisdarstellung verbessern (Preis/Bewertung hinzufügen)
-                  String subtitle;
+                  /*String subtitle;
                   ImageProvider leadingImage;
 
                   if(selectedTab == 0) {
@@ -610,7 +624,80 @@ class _SearchScreenState extends State<SearchScreen> {
 
                       _searchFocusNode.unfocus();
                     }
-                  );
+                  );*/
+                  
+                  if(selectedTab == 0 ) {
+                    final String name = data['name'] ?? "Unbekanntes Restaurant";
+                    final double rating = double.tryParse(data['rating'].toString()) ?? 0.0;
+                    final String priceLevel = data['priceLevel'] ?? "";
+                    final String? imageUrl = data['imageUrl'] ?? "";
+
+                    return ListTile(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                      leading: CircleAvatar(
+                        radius: 24,
+                        backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
+                          ? ResizeImage(NetworkImage(imageUrl), height: 140, policy: ResizeImagePolicy.fit) as ImageProvider
+                          : null,
+                        backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+                        child: (imageUrl == null || imageUrl.isEmpty)
+                          ? Icon(Icons.restaurant_menu, size: 30, color: Colors.grey[600])
+                          : null,
+                      ),
+                      title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: Row(
+                        children: [
+                          if(rating > 0) ...[
+                            Icon(Icons.star, color: Colors.amber, size: 16),
+                            SizedBox(width: 4),
+                            Text(rating.toString(), style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface)),
+                          ],
+                          if(rating > 0 && priceLevel.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              child: Text("•", style: TextStyle(color: Colors.grey[600])),
+                            ),
+                          if(priceLevel.isNotEmpty)
+                            Flexible(
+                              child: Text(
+                                priceLevel,
+                                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                      onTap: () {
+                        _navigateToRestaurant(data);
+                        if(searchQuery.isNotEmpty) {
+                          _addAndSaveFolderSearch(searchQuery);
+                        }
+                        _searchFocusNode.unfocus();
+                      },
+                    );
+                  } else {
+                    final String name = data['name'] ?? "Unbekannter Nutzer";
+                    final String? imageUrl = data['photoUrl'];
+
+                    return ListTile(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                      leading: CircleAvatar(
+                        radius: 24,
+                        backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
+                          ? ResizeImage(NetworkImage(imageUrl), height: 140, policy: ResizeImagePolicy.fit) as ImageProvider
+                          : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 140, policy: ResizeImagePolicy.fit) as ImageProvider,
+                      ),
+                      title: Text(name),
+                      subtitle: Text("Nutzer"),
+                      onTap: () {
+                        _navigateToUserProfile(data['id']);
+                        if(searchQuery.isNotEmpty) {
+                          _addAndSaveFolderSearch(searchQuery);
+                        }
+                        _searchFocusNode.unfocus();
+                      },
+                    );
+                  }
                 },
               ),
             )
@@ -631,9 +718,11 @@ class _SearchScreenState extends State<SearchScreen> {
     });
 
     // TODO: databaseService.searchRestaurantsWithFilters verwenden
-    Query firestoreQuery = FirebaseFirestore.instance.collection("restaurantDetails");
+    //Query firestoreQuery = FirebaseFirestore.instance.collection("restaurantDetails");
+    Query firestoreQuery = FirebaseFirestore.instance.collection("restaurantDetails")
+      .where("lowercaseDishes", arrayContains: query.toLowerCase());
 
-    if(filterCuisines.isEmpty && filterPriceLevel == null && filterOpenNow == false) {
+    /*if(filterCuisines.isEmpty && filterPriceLevel == null && filterOpenNow == false) {
       firestoreQuery = firestoreQuery.where("nameLowerCase", isGreaterThanOrEqualTo: query.toLowerCase());
     } else {
       firestoreQuery = firestoreQuery.where("nameLowerCase", isGreaterThanOrEqualTo: query.toLowerCase());
@@ -653,9 +742,26 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     firestoreQuery.orderBy("nameLowerCase", descending: false);
+    */
 
-    QuerySnapshot querySnapshot = await firestoreQuery.limit(10).get();
-    List<Map<String, dynamic>> results = querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    if(filterPriceLevel != null) {
+      List<String> allowedPriceLevels = priceLevelMapping[filterPriceLevel!] ?? [];
+      firestoreQuery = firestoreQuery.where("priceLevel", whereIn: allowedPriceLevels);
+    }
+    /*if(filterCuisines.isNotEmpty) {
+      firestoreQuery = firestoreQuery.where("cuisines", arrayContainsAny: filterCuisines);
+    }*/
+    if(filterMinRating > 0) {
+      firestoreQuery = firestoreQuery.where("rating", isGreaterThanOrEqualTo: filterMinRating);
+    }
+
+    QuerySnapshot querySnapshot = await firestoreQuery.limit(20).get();
+    List<Map<String, dynamic>> results = querySnapshot.docs.map((doc) {
+      var data = doc.data() as Map<String, dynamic>;
+
+      data['id'] = doc.id;
+      return data;
+    }).toList();
 
     if (!mounted) return;
     setState(() {
