@@ -1,6 +1,21 @@
 # FoodConnect
 
-## Anleitung: FoodConnect auf dem PC über Android Emulator und VS Code starten und testen
+A mobile app that helps people discover restaurants and connect through shared food experiences.
+Built as a diploma project and continued as an independent product.
+
+## Tech
+- Flutter + Dart
+- Firebase
+- (Depending on build) Maps / location features
+
+## Features (done / planned / in progress)
+- Restaurant discovery & map experience
+- Profiles + social layer
+- Ratings / saves / lists
+- Clean UI with scalable architecture
+
+# SETUP (GERMAN) 
+##Anleitung: FoodConnect auf dem PC über Android Emulator und VS Code starten und testen
 
 Diese Anleitung zeigt Schritt für Schritt, wie man Flutter und den Android Emulator installiert und die App in Visual Studio Code startet – auch wenn man vorher noch nie mit Flutter oder Android gearbeitet hat.
 
