@@ -2,8 +2,8 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-//import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import 'package:geocoding/geocoding.dart';
 import 'package:http/http.dart' as http;
 

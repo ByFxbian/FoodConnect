@@ -9,7 +9,8 @@ import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:lottie/lottie.dart';
-import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchScreen extends StatefulWidget {

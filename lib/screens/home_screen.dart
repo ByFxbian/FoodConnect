@@ -1,22 +1,23 @@
 // ignore_for_file: use_build_context_synchronously, unnecessary_breaks
 
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/cupertino.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:foodconnect/main.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:foodconnect/services/database_service.dart';
+import 'package:foodconnect/utils/app_theme.dart';
 import 'package:foodconnect/utils/marker_manager.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:platform_maps_flutter/platform_maps_flutter.dart';
-// ignore: depend_on_referenced_packages, implementation_imports
-import 'package:geolocator_platform_interface/src/enums/location_accuracy.dart' as LA;
+import 'package:foodconnect/utils/match_calculator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   final LatLng? targetLocation;
   final String? selectedRestaurantId;
 
-  HomeScreen({this.targetLocation, this.selectedRestaurantId});
+  const HomeScreen({Key? key, this.targetLocation, this.selectedRestaurantId}) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -25,10 +26,313 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  PlatformMapController? mapController;
+  final Completer<GoogleMapController> _controller = Completer();
+  final DatabaseService _dbService = DatabaseService();
+
+  Set<Marker> _markers = {};
+  List<Map<String, dynamic>> _allRestaurants = [];
+  List<Map<String, dynamic>> _visibleRestaurants = [];
+  Map<String, dynamic> _userProfile = {};
+  
+  bool _isLoading = true;
+  String? _mapStyleString;
+  late PageController _pageController;
+
+  String _selectedCategory = "Alle";
+  final List<String> _categories = ["Alle", "Top Match", "Geöffnet", "Günstig", "Italienisch", "Asiatisch"];
+
+  static const CameraPosition _initialPositin = CameraPosition(
+    target: LatLng(48.2082, 16.3738),
+    zoom: 14.0,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.9);
+    _loadMapStyle();
+    _initData();
+  }
+
+  Future<void> _loadMapStyle() async {
+    try {
+      String style = await rootBundle.loadString('assets/map_styles/map_style_dark.json');
+      setState(() {
+        _mapStyleString = style;
+      });
+    } catch (e) {
+      print("Fehler beim Laden des Map Styles: $e");
+    }
+  }
+
+  Future<void> _initData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if(user != null) {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if(mounted && doc.exists) {
+        _userProfile = doc.data()?['tasteProfile'] ?? {};
+      } 
+    }
+
+    final restaurants = await _dbService.getAllRestaurants();
+
+    if(!mounted) return;
+
+    setState(() {
+      _allRestaurants = restaurants;
+      _visibleRestaurants = restaurants;
+      _generateMarkers();
+      _isLoading = false;
+    });
+  }
+
+  void _filterRestaurants(String category) {
+    setState(() {
+      _selectedCategory = category;
+      if (category == "Alle") {
+        _visibleRestaurants = _allRestaurants;
+      } else if (category == "Top Match") {
+        // Filter nach Score > 80
+        _visibleRestaurants = _allRestaurants.where((r) {
+          return MatchCalculator.calculate(_userProfile, r) >= 80;
+        }).toList();
+      } else if (category == "Günstig") {
+        _visibleRestaurants = _allRestaurants.where((r) => 
+          (r['priceLevel'] ?? "").toString().contains("€") && 
+          !(r['priceLevel'] ?? "").toString().contains("€€€")
+        ).toList();
+      } else {
+        // Suche in Cuisine Strings
+        _visibleRestaurants = _allRestaurants.where((r) => 
+          (r['cuisines'] ?? "").toString().contains(category)
+        ).toList();
+      }
+      
+      _generateMarkers();
+      
+      // Wenn Filter leer, zeige Feedback (optional)
+      if (_visibleRestaurants.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Keine Restaurants für '$category' gefunden."), duration: Duration(seconds: 1))
+        );
+      } else {
+        // Reset PageView
+        if (_pageController.hasClients) _pageController.jumpToPage(0);
+      }
+    });
+  }
+  
+  void _generateMarkers() {
+    _markers = _visibleRestaurants.map((rest) {
+      return Marker(
+        markerId: MarkerId(rest['id']),
+        position: LatLng(rest['latitude'] ?? 48.0, rest['longitude'] ?? 16.0),
+        // Wir nutzen hier Standard-Marker eingefärbt, bis MarkerManager 100% steht
+        icon: MarkerManager().customIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        onTap: () {
+          final index = _visibleRestaurants.indexOf(rest);
+          if (index != -1 && _pageController.hasClients) {
+            _pageController.animateToPage(
+              index, 
+              duration: 500.ms, 
+              curve: Curves.easeOutExpo
+            );
+          }
+        },
+      );
+    }).toSet();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.background,
+      body: Stack(
+        children: [
+          // 1. Google Map
+          // Wenn Style noch nicht geladen ist, zeigen wir kurz Schwarz, um den "Flash" zu vermeiden
+          GoogleMap(
+                initialCameraPosition: _initialPositin,
+                markers: _markers,
+                // HIER IST DER FIX: Style direkt im Widget setzen!
+                style: _mapStyleString, 
+                zoomControlsEnabled: false,
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                compassEnabled: false,
+                mapToolbarEnabled: false,
+                onMapCreated: (controller) {
+                  if (!_controller.isCompleted) {
+                    _controller.complete(controller);
+                    if (widget.targetLocation != null) {
+                      controller.animateCamera(CameraUpdate.newLatLngZoom(widget.targetLocation!, 16));
+                    }
+                  }
+                },
+              ),
+
+          // 2. Kategorien (Oben)
+          SafeArea(
+            child: Container(
+              height: 45,
+              margin: EdgeInsets.only(top: 10),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  final cat = _categories[index];
+                  final isSelected = _selectedCategory == cat;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: GestureDetector(
+                      onTap: () => _filterRestaurants(cat),
+                      child: AnimatedContainer(
+                        duration: 200.ms,
+                        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.primary : AppTheme.surface.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: isSelected ? AppTheme.primary : AppTheme.surfaceHighlight,
+                            width: 1
+                          ),
+                          boxShadow: [
+                            if(!isSelected) BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0,4))
+                          ]
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          cat,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : AppTheme.textSecondary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ).animate().fadeIn().slideY(begin: -0.5, end: 0),
+          ),
+
+          // 3. Restaurant Feed (Unten)
+          if (!_isLoading && _visibleRestaurants.isNotEmpty)
+            Positioned(
+              bottom: 100,
+              left: 0,
+              right: 0,
+              height: 160,
+              child: PageView.builder(
+                controller: _pageController,
+                physics: BouncingScrollPhysics(),
+                itemCount: _visibleRestaurants.length,
+                onPageChanged: (index) {
+                  final rest = _visibleRestaurants[index];
+                  _controller.future.then((c) => c.animateCamera(CameraUpdate.newLatLng(LatLng(rest['latitude'], rest['longitude']))));
+                },
+                itemBuilder: (context, index) {
+                  return _buildCard(_visibleRestaurants[index]);
+                },
+              ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCard(Map<String, dynamic> rest) {
+    final matchScore = MatchCalculator.calculate(_userProfile, rest);
+    final imageUrl = rest['photoUrl'] != null && rest['photoUrl'].isNotEmpty 
+        ? rest['photoUrl'] 
+        : "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1000&auto=format&fit=crop";
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+      decoration: BoxDecoration(
+        color: AppTheme.surface, // Solid Zinc
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.surfaceHighlight), // Subtiler Rand
+        boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: [
+          // Bild
+          SizedBox(
+            width: 130,
+            height: double.infinity,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (_,__) => Container(color: AppTheme.surfaceHighlight),
+                  errorWidget: (_,__,___) => Container(color: AppTheme.surfaceHighlight, child: Icon(Icons.restaurant)),
+                ),
+                Positioned(
+                  top: 8, right: 8,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: matchScore > 80 ? Colors.green : AppTheme.primary)
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text("$matchScore%", style: TextStyle(color: matchScore > 80 ? Colors.green : AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                        SizedBox(width: 4),
+                        Text("Match", style: TextStyle(color: Colors.white, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+          // Info
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(rest['name'] ?? "Restaurant", style: Theme.of(context).textTheme.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      SizedBox(height: 4),
+                      Text("${rest['cuisines'] ?? 'Essen'} • ${rest['priceLevel'] ?? '€€'}", style: Theme.of(context).textTheme.bodyMedium),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Icon(Icons.star_rounded, color: AppTheme.primary, size: 18),
+                      SizedBox(width: 4),
+                      Text("${rest['rating'] ?? 0.0}", style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+/*class _HomeScreenState extends State<HomeScreen> {
+  GoogleMapController? mapController;
   static Set<Marker> markers = {};
   final DatabaseService databaseService = DatabaseService();
-  final Completer<PlatformMapController> _controller = Completer();
+  final Completer<GoogleMapController> _controller = Completer();
   String? _mapStyleString;
   static bool isFirstLoad = true;
   bool _mapVisible = true;
@@ -419,7 +723,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return Marker(
         markerId: MarkerId(data['id']),
         position: LatLng(data['latitude'], data['longitude']),
-        icon: MarkerManager().customIcon,
+        icon: MarkerManager().customIcon!,
         onTap: () {
           final ctx = navigatorKey.currentContext;
           if (ctx == null) return;
@@ -435,68 +739,12 @@ class _HomeScreenState extends State<HomeScreen> {
         markers = MarkerManager().markers;
       });
     }
-    /*List<Map<String, dynamic>> filteredMarkers;
-
-    if (selectedFilter == "highestRated") {
-      filteredMarkers = await databaseService.getHighestRatedInBounds(
-        visibleRegion.southwest.latitude,
-        visibleRegion.southwest.longitude,
-        visibleRegion.northeast.latitude,
-        visibleRegion.northeast.longitude,
-        100,
-      );
-    } else if (selectedFilter == "nearest") {
-      await _getCurrentLocation();
-      filteredMarkers = await databaseService.getNearestRestaurantsInBounds(
-        position.latitude,
-        position.longitude,
-        visibleRegion.southwest.latitude,
-        visibleRegion.southwest.longitude,
-        visibleRegion.northeast.latitude,
-        visibleRegion.northeast.longitude,
-        10,
-      );
-    } else if (selectedFilter == "openNow") {
-      filteredMarkers = await databaseService.getOpenRestaurantsInBounds(
-        visibleRegion.southwest.latitude,
-        visibleRegion.southwest.longitude,
-        visibleRegion.northeast.latitude,
-        visibleRegion.northeast.longitude,
-        100,
-      );
-    } else {
-      filteredMarkers = await databaseService.getRestaurantsInBounds(
-        visibleRegion.southwest.latitude,
-        visibleRegion.southwest.longitude,
-        visibleRegion.northeast.latitude,
-        visibleRegion.northeast.longitude,
-      );
-    }
-
-    Set<Marker> updatedMarkers = filteredMarkers.map((data) {
-      return Marker(
-        markerId: MarkerId(data['id']),
-        position: LatLng(data['latitude'], data['longitude']),
-        icon: MarkerManager().customIcon,
-        onTap: () {
-          final ctx = navigatorKey.currentContext;
-          if (ctx == null) return;
-          MarkerManager().showMarkerPanel(ctx, data);
-        },
-      );
-    }).toSet();
-
-    setState(() {
-      markers = updatedMarkers;
-      MarkerManager().markers = updatedMarkers;
-      markers = MarkerManager().markers;
-    });*/
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PlatformMap(
+      body: GoogleMap(
             initialCameraPosition: CameraPosition(
               target: LatLng(48.210033, 16.363449),
               zoom: 12,
@@ -510,8 +758,6 @@ class _HomeScreenState extends State<HomeScreen> {
             onCameraIdle: () {
               _updateFilteredMarkers();
             },
-            googleMapsStyle: _mapStyleString,
-            googleMapsCloudMapId: '15939377b909413f',
             onMapCreated: (controller) {
               if (!mounted) return;
               setState(() {
@@ -527,98 +773,6 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
           ),
-          /*floatingActionButton: Stack(
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: Container(
-                  margin: EdgeInsets.only(top: 60, right: 10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                        offset: Offset(2,2),
-                      )
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        dynamic state = filterButtonKey.currentState;
-                        state.showButtonMenu();
-                      },
-                      child: PopupMenuButton<String>(
-                        key: filterButtonKey,
-                        icon: Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Icon(
-                            Platform.isIOS ? CupertinoIcons.list_dash : Icons.filter_list,
-                            color: Colors.white,
-                            size: 25
-                          ),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        color: Theme.of(context).colorScheme.surface,
-                        onSelected: (value) {
-                          setState(() {
-                            selectedFilter = value;
-                          });
-                          _updateFilteredMarkers();
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: "highestRated",
-                            child: Row(
-                              children: [
-                                if (selectedFilter == "highestRated") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
-                                SizedBox(width: 8),
-                                Text("Beste Bewertung"),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: "nearest",
-                            child: Row(
-                              children: [
-                                if (selectedFilter == "nearest") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
-                                SizedBox(width: 8),
-                                Text("Kürzeste Entfernung"),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ) 
-                ),
-              ),
-              Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: EdgeInsets.only(top: 90, right: 10),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(height: 10),
-                      FloatingActionButton(
-                        heroTag: "location_button",
-                        onPressed: _moveToCurrentLocation,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        child: Icon(Platform.isIOS ? CupertinoIcons.location : Icons.my_location, color: Theme.of(context).colorScheme.onPrimary),
-                      ),
-                    ],
-                  )
-                ),
-              ),
-            ],
-          ) */
          floatingActionButton: Align(
           alignment: Alignment.topRight,
           child: SafeArea(
@@ -627,73 +781,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  /*Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 4,
-                          offset: Offset(2,2),
-                        )
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          dynamic state = filterButtonKey.currentState;
-                          state.showButtonMenu();
-                        },
-                        child: PopupMenuButton<String>(
-                          key: filterButtonKey,
-                          offset: const Offset(-120, 15),
-                          icon: Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Platform.isIOS ? CupertinoIcons.list_dash : Icons.filter_list,
-                              color: Colors.white,
-                              size: 30
-                            ),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          color: Theme.of(context).colorScheme.surface,
-                          onSelected: (value) {
-                            setState(() {
-                              selectedFilter = value;
-                            });
-                            _updateFilteredMarkers();
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: "highestRated",
-                              child: Row(
-                                children: [
-                                  if (selectedFilter == "highestRated") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
-                                  SizedBox(width: 8),
-                                  Text("Beste Bewertung"),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: "nearest",
-                              child: Row(
-                                children: [
-                                  if (selectedFilter == "nearest") Icon(Platform.isIOS ? CupertinoIcons.check_mark : Icons.check, color: Colors.green),
-                                  SizedBox(width: 8),
-                                  Text("Kürzeste Entfernung"),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  ),*/
                   Container(
                     key: filterButtonKeyNew,
                     decoration: BoxDecoration(
@@ -762,7 +849,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Marker marker = Marker(
           markerId: MarkerId(data['id']),
           position: LatLng(data['latitude'], data['longitude']),
-          icon: MarkerManager().customIcon,
+          icon: MarkerManager().customIcon!,
           onTap: () {
             final ctx = navigatorKey.currentContext;
             if (ctx == null) return;
@@ -779,4 +866,4 @@ class _HomeScreenState extends State<HomeScreen> {
       });
   }
 
-}
+}*/

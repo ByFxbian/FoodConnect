@@ -8,8 +8,8 @@ import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/noti_service.dart';
 // ignore: unused_import
 import 'package:foodconnect/services/notification_service.dart';
-//import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+//import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;

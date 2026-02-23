@@ -7,7 +7,9 @@ import 'dart:ui';
 import 'package:foodconnect/screens/home_screen.dart';
 import 'package:foodconnect/screens/search_screen.dart';
 import 'package:foodconnect/screens/profile_screen.dart';
-import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:foodconnect/utils/app_theme.dart';
+//import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialPage;
@@ -15,6 +17,7 @@ class MainScreen extends StatefulWidget {
   final String? selectedRestaurantId;
 
   MainScreen({
+    super.key,
     this.initialPage = 0,
     this.targetLocation,
     this.selectedRestaurantId
@@ -26,144 +29,91 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  LatLng? targetLocation;
-  String? selectedRestaurantId;
-  
+  late final List<Widget> _screens;
+
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialPage;
-    targetLocation = widget.targetLocation;
-    selectedRestaurantId = widget.selectedRestaurantId;
+    _screens = [
+      HomeScreen(
+        targetLocation: widget.targetLocation,
+        selectedRestaurantId: widget.selectedRestaurantId,
+      ),
+      SearchScreen(),
+      ProfileScreen()
+    ];
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      if(index != 0) {
-        targetLocation = null;
-        selectedRestaurantId = null;
-      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> pages = [
-      HomeScreen(
-        targetLocation: targetLocation,
-        selectedRestaurantId: selectedRestaurantId,
-      ),
-      SearchScreen(),
-      ProfileScreen()
-    ];
-
     return Scaffold(
-      body: AnimatedSwitcher(
-        duration: Duration(milliseconds: 300),
-        child: pages[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
       ),
+      backgroundColor: AppTheme.background,
       extendBody: true,
-      bottomNavigationBar: /*Padding(
-        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 8),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          clipBehavior: Clip.antiAlias,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              height: 80,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)),
+      bottomNavigationBar:
+        SafeArea(
+          child: Container(
+            height: 65,
+            margin: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+            decoration: BoxDecoration(
+              color: AppTheme.surface.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(40),
+              border: Border.all(color: AppTheme.surfaceHighlight.withOpacity(0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                )
+              ],
               ),
-              child: BottomNavigationBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                currentIndex: _selectedIndex,
-                onTap: _onItemTapped,
-                selectedItemColor: Theme.of(context).colorScheme.primary,
-                unselectedItemColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
-                showSelectedLabels: false,
-                showUnselectedLabels: false,
-                type: BottomNavigationBarType.fixed,
-                enableFeedback: true,
-                items: [
-                  BottomNavigationBarItem(
-                    icon: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      //onTap: () => _onItemTapped(0),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
-                      ),
-                    ),
-                    label: 'Home',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(40),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildNavItem(0, CupertinoIcons.map_fill, CupertinoIcons.map),
+                      _buildNavItem(1, CupertinoIcons.search, CupertinoIcons.search),
+                      _buildNavItem(2, CupertinoIcons.person_fill, CupertinoIcons.person),
+                    ],
                   ),
-                  BottomNavigationBarItem(
-                    icon: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      //onTap: () => _onItemTapped(1),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Icon(Platform.isIOS ? CupertinoIcons.search : Icons.search, size: 25),
-                      ),
-                    ),
-                    label: 'Suche',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      //onTap: () => _onItemTapped(2),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Icon(Platform.isIOS ? CupertinoIcons.person : Icons.person, size: 25),
-                      ),
-                    ),
-                    label: 'Profil',
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      )*/
-      Container(
+        );
+  }
+
+  Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon) {
+    final isSelected = _selectedIndex == index;
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          border: _selectedIndex == 0 ? Border(top: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
-            width: 1.0,
-          ),
-          ) : null
+          color: isSelected ? AppTheme.primary.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
         ),
-        padding: Platform.isAndroid ? const EdgeInsets.only(top: 10, bottom: 10) : const EdgeInsets.only(top: 10),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-          showSelectedLabels: true,
-          showUnselectedLabels: false,
-          type: BottomNavigationBarType.fixed,
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Platform.isIOS ? CupertinoIcons.map : Icons.map, size: 25),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Platform.isIOS ? CupertinoIcons.search : Icons.search, size: 25),
-              label: 'Suche',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Platform.isIOS ? CupertinoIcons.person : Icons.person, size: 25),
-              label: 'Profil',
-            ),
-          ],
+        child: Icon(
+          isSelected ? activeIcon : inactiveIcon,
+          color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+          size: 26,
         ),
-      )
+      ),
     );
   }
 }

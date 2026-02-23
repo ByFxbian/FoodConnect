@@ -8,6 +8,7 @@ import 'package:foodconnect/screens/loading_screen.dart';
 import 'package:foodconnect/services/noti_service.dart';
 // ignore: unused_import
 import 'package:foodconnect/services/notification_service.dart';
+import 'package:foodconnect/utils/app_theme.dart';
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:foodconnect/screens/main_screen.dart';
@@ -24,6 +25,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -34,11 +36,9 @@ void main() async {
 
   PlatformDispatcher.instance.onError = (error, stack) {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-  
     return true;
   };
 
-  //NotiService().initNotification();
   timeago.setLocaleMessages('de', timeago.DeMessages());
   timeago.setLocaleMessages('de_short', timeago.DeShortMessages());
 
@@ -62,8 +62,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _lastMessage = "";
-
   @override
   void initState() {
     super.initState();
@@ -72,18 +70,14 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return MaterialApp(
-          navigatorKey: navigatorKey,
-          title: 'Food Connect',
-          theme: lightTheme,
-          darkTheme: darkTheme,
-          themeMode: themeProvider.themeMode,
-          home: AuthWrapper(),
-          debugShowCheckedModeBanner: false,
-        );
-      },
+    return MaterialApp(
+      navigatorKey: navigatorKey,
+      title: 'Food Connect',
+      theme: AppTheme.darkTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
+      home: AuthWrapper(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -115,13 +109,13 @@ class ThemePreferences {
 }
 
 class AuthWrapper extends StatelessWidget {
-  AuthWrapper();
+  AuthWrapper({super.key});
 
   Future<bool> _hasCompletedTasteProfile(String userId) async {
-    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(userId).get();
-    Map<String, dynamic>? data = userDoc.data() as Map<String, dynamic>?;
-
-    return data?["tasteProfile"] != null && data!["tasteProfile"].isNotEmpty;
+    try {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(userId).get();
+      return userDoc.exists && (userDoc.data() as Map<String, dynamic>)["tasteProfile"] != null;
+    } catch (e) { return false; }
   }
 
   @override
@@ -132,7 +126,7 @@ class AuthWrapper extends StatelessWidget {
         if(snapshot.connectionState == ConnectionState.waiting) {
           return LoadingScreen();
         }
-        if(snapshot.data != null) {
+        if(snapshot.hasData && snapshot.data != null) {
           String userId = snapshot.data!.uid;
 
           return FutureBuilder<bool>(
@@ -152,9 +146,6 @@ class AuthWrapper extends StatelessWidget {
                   if(initSnapshot.connectionState == ConnectionState.waiting) {
                     return LoadingScreen();
                   }
-                  if(initSnapshot.hasError) {
-                    print("Fehler während der App-Initialisierung: ${initSnapshot.error}");
-                  }
                   return MainScreen();
                 },
               );
@@ -167,9 +158,21 @@ class AuthWrapper extends StatelessWidget {
   }
 }
 
+Future<void> _initializeNotifications() async {
+  if(FirebaseAuth.instance.currentUser != null) {
+    try {
+      await NotificationService.init();
+      print("✅ FCM Notification Service initialisiert.");
+    } catch (e) {
+      print("🔥 Fehler bei der FCM-Initialisierung: $e");
+    }
+  }
+}
+
 Future<void> _initializeAppData() async {
   print("⏳ Initialisiere App-Daten (Restaurants/Marker)...");
-  await _initializeData();
+  //await _initializeData();
+  await MarkerManager().loadCustomIcons();
   print("✅ App-Daten initialisiert.");
 
   if (FirebaseAuth.instance.currentUser != null) {
@@ -180,6 +183,9 @@ Future<void> _initializeAppData() async {
     } catch (e) {
       print("🔥 Fehler bei der FCM-Initialisierung: $e");
     }
+
+    FirestoreService firestoreService = FirestoreService();
+    await firestoreService.fetchAndStoreRestaurants();
   } else {
     print("⚠️ Nutzer nicht eingeloggt bei FCM-Initialisierung.");
   }
@@ -189,7 +195,7 @@ Future<void> _initializeData() async {
   print("⚡ Lade Restaurants...");
   FirestoreService firestoreService = FirestoreService();
   await firestoreService.fetchAndStoreRestaurants();
-  await MarkerManager().loadMarkers();
+  //await MarkerManager().loadMarkers();
   print("✅ Marker geladen!");
 }
 

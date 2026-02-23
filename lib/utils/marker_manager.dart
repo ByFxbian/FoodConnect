@@ -15,21 +15,54 @@ import 'package:geocoding/geocoding.dart';
 import 'package:foodconnect/services/firestore_service.dart'; // Import hinzugefügt
 import 'package:foodconnect/widgets/rating_dialog.dart';
 import 'package:intl/intl.dart';
-import 'package:platform_maps_flutter/platform_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import 'package:timeago/timeago.dart' as timeago;
 
 class MarkerManager {
   static final MarkerManager _instance = MarkerManager._internal();
   factory MarkerManager() => _instance;
-  MarkerManager._internal() {
-    _loadCustomIcon();
-  }
+  MarkerManager._internal();
 
-  final DatabaseService databaseService = DatabaseService();
-  final FirestoreService firestoreService = FirestoreService(); // Instanz hinzugefügt
-  Set<Marker> markers = {};
   BitmapDescriptor? customIcon;
   BitmapDescriptor? highlightedIcon;
+
+  Future<void> loadCustomIcons() async {
+    if(customIcon != null) return;
+
+    try {
+      customIcon = await _bitmapDescriptorFromAssetBytes(
+        'assets/icons/mapicon.png',
+        50
+      );
+
+      highlightedIcon = await _bitmapDescriptorFromAssetBytes(
+        'assets/icons/mapicon.png',
+        70
+      );
+    } catch (e) {
+      print("Fehler beim Laden der Icons: $e");
+    }
+  }
+
+  Future<BitmapDescriptor> _bitmapDescriptorFromAssetBytes(String path, int width) async {
+    final ByteData data = await rootBundle.load(path);
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+      targetWidth: width
+    );
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    final ByteData? byteData = await fi.image.toByteData(format: ui.ImageByteFormat.png);
+
+    if(byteData == null) throw Exception("Bild konnte nicht konvertiert werden.");
+
+    return BitmapDescriptor.bytes(byteData.buffer.asUint8List());
+  }
+
+  /*final DatabaseService databaseService = DatabaseService();
+  final FirestoreService firestoreService = FirestoreService(); // Instanz hinzugefügt
+  Set<Marker> markers = {};
+
   String? selectedMarkerId;
   Map<String, dynamic>? userData;
   bool isPanelOpen = false;
@@ -555,5 +588,5 @@ class __MarkerPanelContentState extends State<_MarkerPanelContent> {
 
     List<String> stringList = list.map((e) => e.toString()).toList();
     return stringList.map((entry) => Text(entry, style: TextStyle(fontSize: 16))).toList();
-  }
+  }*/
 }
