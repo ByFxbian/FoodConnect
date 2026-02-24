@@ -39,20 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _loadUserData();
     _loadFollowCounts();
-    _loadUserLists();
     FirestoreService().updateEmailVerificationStatus();
-  }
-
-  Future<void> _loadUserLists() async {
-    if (user != null) {
-      List<Map<String, dynamic>> lists =
-          await _firestoreService.getUserLists(user!.uid);
-      if (mounted) {
-        setState(() {
-          userLists = lists;
-        });
-      }
-    }
   }
 
   Future<void> _loadFollowCounts() async {
@@ -298,10 +285,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                         const SizedBox(height: 40),
-                        if (userLists.isNotEmpty) ...[
-                          _buildUserListsSection(),
-                          const SizedBox(height: 30),
-                        ],
+                        // Lists section — real-time stream
+                        if (user != null)
+                          StreamBuilder<List<Map<String, dynamic>>>(
+                            stream:
+                                _firestoreService.streamUserLists(user!.uid),
+                            builder: (context, listSnap) {
+                              final lists = listSnap.data ?? [];
+                              if (lists.isEmpty) return const SizedBox.shrink();
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildUserListsSection(lists),
+                                  const SizedBox(height: 30),
+                                ],
+                              );
+                            },
+                          ),
                         const SizedBox(height: 120), // Bottom nav padding
                       ],
                     ),
@@ -344,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildUserListsSection() {
+  Widget _buildUserListsSection(List<Map<String, dynamic>> lists) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -360,10 +360,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            itemCount: userLists.length,
+            itemCount: lists.length,
             clipBehavior: Clip.none,
             itemBuilder: (context, index) {
-              final list = userLists[index];
+              final list = lists[index];
               return _buildListCard(list);
             },
           ),

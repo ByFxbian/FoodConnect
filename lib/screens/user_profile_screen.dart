@@ -32,15 +32,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     _loadUserData();
     _checkFollowingStatus();
     _loadFollowCounts();
-    _loadUserLists();
-  }
-
-  Future<void> _loadUserLists() async {
-    List<Map<String, dynamic>> lists =
-        await _firestoreService.getUserLists(widget.userId, onlyPublic: true);
-    setState(() {
-      userLists = lists;
-    });
   }
 
   Future<void> _loadUserData() async {
@@ -199,10 +190,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ],
                         ),
                         const SizedBox(height: 40),
-                        if (userLists.isNotEmpty) ...[
-                          _buildUserListsSection(),
-                          const SizedBox(height: 30),
-                        ],
+                        // Public lists — real-time stream
+                        StreamBuilder<List<Map<String, dynamic>>>(
+                          stream: _firestoreService
+                              .streamUserLists(widget.userId, onlyPublic: true),
+                          builder: (context, listSnap) {
+                            final lists = listSnap.data ?? [];
+                            if (lists.isEmpty) return const SizedBox.shrink();
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildUserListsSection(lists),
+                                const SizedBox(height: 30),
+                              ],
+                            );
+                          },
+                        ),
                         const SizedBox(height: 120),
                       ],
                     ),
@@ -245,7 +248,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  Widget _buildUserListsSection() {
+  Widget _buildUserListsSection(List<Map<String, dynamic>> lists) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -262,9 +265,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             clipBehavior: Clip.none,
-            itemCount: userLists.length,
+            itemCount: lists.length,
             itemBuilder: (context, index) {
-              final list = userLists[index];
+              final list = lists[index];
               return GestureDetector(
                 onTap: () {
                   context.push('/lists/${list['id']}', extra: list);

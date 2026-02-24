@@ -27,12 +27,54 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
   late String _listName;
   late bool _isPublic;
 
+  // Inline rename
+  bool _isEditingName = false;
+  late TextEditingController _nameController;
+  late FocusNode _nameFocusNode;
+
   @override
   void initState() {
     super.initState();
     _listName = widget.listData?['name'] ?? 'Liste';
     _isPublic = widget.listData?['isPublic'] ?? false;
+    _nameController = TextEditingController(text: _listName);
+    _nameFocusNode = FocusNode();
+    _nameFocusNode.addListener(_onNameFocusChange);
     _fetchRestaurants();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _nameFocusNode.removeListener(_onNameFocusChange);
+    _nameFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onNameFocusChange() {
+    if (!_nameFocusNode.hasFocus && _isEditingName) {
+      _saveInlineName();
+    }
+  }
+
+  void _startInlineRename() {
+    setState(() {
+      _isEditingName = true;
+      _nameController.text = _listName;
+    });
+    // Request focus after the frame rebuilds
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _nameFocusNode.requestFocus();
+    });
+  }
+
+  Future<void> _saveInlineName() async {
+    final newName = _nameController.text.trim();
+    setState(() => _isEditingName = false);
+    if (newName.isNotEmpty && newName != _listName && _userId != null) {
+      await _firestoreService.renameList(_userId, widget.listId, newName);
+      setState(() => _listName = newName);
+    }
   }
 
   Future<void> _fetchRestaurants() async {
@@ -273,24 +315,38 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: GestureDetector(
-          onTap: _showRenameDialog,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(_listName,
-                    style: theme.textTheme.titleLarge,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+        title: _isEditingName
+            ? TextField(
+                controller: _nameController,
+                focusNode: _nameFocusNode,
+                style: theme.textTheme.titleLarge,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onSubmitted: (_) => _saveInlineName(),
+              )
+            : GestureDetector(
+                onTap: _startInlineRename,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(_listName,
+                          style: theme.textTheme.titleLarge,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(CupertinoIcons.pencil,
+                        size: 16,
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                  ],
+                ),
               ),
-              const SizedBox(width: 4),
-              Icon(CupertinoIcons.pencil,
-                  size: 16,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-            ],
-          ),
-        ),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
