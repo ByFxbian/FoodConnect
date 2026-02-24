@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:foodconnect/utils/palette.dart';
+
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SocialButton extends StatelessWidget {
@@ -23,23 +23,25 @@ class SocialButton extends StatelessWidget {
       icon: SvgPicture.asset(
         iconPath,
         width: 25,
-        // ignore: deprecated_member_use
-        color: Palette.darkIconColor,
+        colorFilter: ColorFilter.mode(
+            Theme.of(context).colorScheme.onSurface, BlendMode.srcIn),
       ),
       label: Text(
         label,
-        style: const TextStyle(
-          color: Palette.darkTextColor,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
           fontSize: 17,
         ),
       ),
       style: TextButton.styleFrom(
-        padding:
-            EdgeInsets.symmetric(vertical: 30, horizontal: horizontalPadding),
+        padding: EdgeInsets.symmetric(
+            vertical: 20,
+            horizontal:
+                horizontalPadding), // Slightly reduced vertical padding for tighter look
         shape: RoundedRectangleBorder(
-          side: const BorderSide(
-            color: Palette.darkBorderColor,
-            width: 3,
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 1, // Reduced width
           ),
           borderRadius: BorderRadius.circular(10),
         ),

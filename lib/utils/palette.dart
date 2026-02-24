@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 
 class Palette {
-  static const Color darkBackground = Color.fromRGBO(18, 18, 18, 1); /* Color.fromRGBO(24, 24, 31, 1) */
-  static const Color darkBorderColor = Color.fromRGBO(58, 58, 58, 1); /* Color.fromRGBO(52, 51, 67, 1) */
-  static const Color darkTextColor = Colors.white;
-  static const Color darkIconColor = Colors.white;
+  // Brand
+  static const Color accent = Color(0xFFD35400); // Terracotta/Tomato
 
-  static const Color lightBackground = Colors.white;
-  static const Color lightBorderColor = Colors.grey;
-  static const Color lightTextColor = Colors.black;
-  static const Color lightIconColor = Colors.black;
+  // Light Mode
+  static const Color backgroundLight = Color(0xFFFFFFFF);
+  static const Color surfaceLight = Color(0xFFF9F9F9);
+  static const Color borderLight = Color(0xFFEAEAEA);
+  static const Color textPrimaryLight = Color(0xFF111111);
+  static const Color textSecondaryLight = Color(0xFF757575);
 
-  static const Color gradient1 = Color.fromRGBO(250, 124, 51, 1); /* Color.fromRGBO(187, 63, 221, 1) */
-  static const Color gradient2 = Color.fromRGBO(251, 118, 109, 1); /* Color.fromRGBO(251, 109, 169, 1) */
-  static const Color gradient3 = Color.fromRGBO(255, 124, 124, 1); /* Color.fromRGBO(255, 159, 124, 1) */
+  // Dark Mode
+  static const Color backgroundDark = Color(0xFF000000);
+  static const Color surfaceDark = Color(0xFF1C1C1E);
+  static const Color borderDark = Color(0xFF38383A);
+  static const Color textPrimaryDark = Color(0xFFFFFFFF);
+  static const Color textSecondaryDark =
+      Color(0x99EBEBF5); // iOS-like secondary dark
 }

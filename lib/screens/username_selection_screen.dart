@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/main.dart';
-import 'package:foodconnect/widgets/gradient_button.dart';
+import 'package:foodconnect/widgets/primary_button.dart';
 import 'package:go_router/go_router.dart';
 import 'package:foodconnect/widgets/login_field.dart';
 
@@ -101,7 +101,7 @@ class _UsernameSelectionScreenState extends State<UsernameSelectionScreen> {
             const SizedBox(
               height: 20,
             ),
-            GradientButton(pressAction: _setUsername, buttonLabel: "Weiter"),
+            PrimaryButton(pressAction: _setUsername, buttonLabel: "Weiter"),
           ],
         ),
       ),

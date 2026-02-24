@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 // ignore: unused_import
 import 'dart:ui';
 import 'package:go_router/go_router.dart';
-import 'package:foodconnect/utils/app_theme.dart';
+
 //import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
 class MainScreen extends StatefulWidget {
@@ -27,24 +27,21 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: widget.navigationShell,
-      backgroundColor: AppTheme.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
       bottomNavigationBar: SafeArea(
         child: Container(
           height: 65,
           margin: const EdgeInsets.fromLTRB(24, 0, 24, 20),
           decoration: BoxDecoration(
-            color: AppTheme.surface.withValues(alpha: 0.85),
+            color:
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(40),
             border: Border.all(
-                color: AppTheme.surfaceHighlight.withValues(alpha: 0.5)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              )
-            ],
+                color: Theme.of(context)
+                    .colorScheme
+                    .outline
+                    .withValues(alpha: 0.5)),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(40),
@@ -77,13 +74,15 @@ class _MainScreenState extends State<MainScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.primary.withValues(alpha: 0.15)
+              ? Theme.of(context).primaryColor.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(30),
         ),
         child: Icon(
           isSelected ? activeIcon : inactiveIcon,
-          color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+          color: isSelected
+              ? Theme.of(context).primaryColor
+              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
           size: 26,
         ),
       ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:lottie/lottie.dart'; // Import Google Fonts package
 
 class LoadingScreen extends StatefulWidget {
@@ -108,7 +108,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       duration: Duration(milliseconds: 500),
       child: Text(
         "Restaurants werden geladen$dots",
-        style: GoogleFonts.poppins(
+        style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.onSurface),

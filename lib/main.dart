@@ -11,7 +11,7 @@ import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:foodconnect/router/app_router.dart';
 import 'package:foodconnect/services/firestore_service.dart';
-import 'package:foodconnect/utils/palette.dart';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
@@ -66,9 +66,9 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp.router(
       routerConfig: AppRouter.router,
       title: 'Food Connect',
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
+      themeMode: ThemeMode.light,
       debugShowCheckedModeBanner: false,
     );
   }
@@ -121,31 +121,3 @@ Future<void> initializeAppData() async {
     print("⚠️ Nutzer nicht eingeloggt bei FCM-Initialisierung.");
   }
 }
-
-final darkTheme = ThemeData(
-    brightness: Brightness.dark,
-    scaffoldBackgroundColor: Palette.darkBackground,
-    useMaterial3: true,
-    colorScheme: ColorScheme.dark(
-        surface: Palette.darkBackground,
-        onSurface: Palette.darkTextColor,
-        primary: Palette.gradient1,
-        secondary: Palette.gradient2,
-        onPrimary: Palette.darkTextColor),
-    splashColor: Colors.transparent,
-    highlightColor: Colors.transparent,
-    splashFactory: NoSplash.splashFactory);
-
-final lightTheme = ThemeData(
-    scaffoldBackgroundColor: Palette.lightBackground,
-    useMaterial3: true,
-    brightness: Brightness.light,
-    colorScheme: ColorScheme.light(
-        surface: Palette.lightBackground,
-        onSurface: Palette.lightTextColor,
-        primary: Palette.gradient1,
-        secondary: Palette.gradient2,
-        onPrimary: Palette.darkTextColor),
-    splashColor: Colors.transparent,
-    highlightColor: Colors.transparent,
-    splashFactory: NoSplash.splashFactory);

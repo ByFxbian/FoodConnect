@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:foodconnect/services/database_service.dart';
-import 'package:foodconnect/utils/app_theme.dart';
+
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:foodconnect/utils/match_calculator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -156,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // 1. Google Map
@@ -203,29 +203,29 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding:
                             EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                         decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppTheme.primary
-                                : AppTheme.surface.withValues(alpha: 0.95),
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                                color: isSelected
-                                    ? AppTheme.primary
-                                    : AppTheme.surfaceHighlight,
-                                width: 1),
-                            boxShadow: [
-                              if (!isSelected)
-                                BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 8,
-                                    offset: Offset(0, 4))
-                            ]),
+                          color: isSelected
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .surface
+                                  .withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                              color: isSelected
+                                  ? Theme.of(context).primaryColor
+                                  : Theme.of(context).colorScheme.outline,
+                              width: 1),
+                        ),
                         alignment: Alignment.center,
                         child: Text(
                           cat,
                           style: TextStyle(
                               color: isSelected
                                   ? Colors.white
-                                  : AppTheme.textSecondary,
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.6),
                               fontWeight: FontWeight.w600,
                               fontSize: 13),
                         ),
@@ -273,12 +273,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 6, vertical: 0),
       decoration: BoxDecoration(
-        color: AppTheme.surface, // Solid Zinc
+        color: Theme.of(context).colorScheme.surface, // Solid Zinc
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.surfaceHighlight), // Subtiler Rand
-        boxShadow: [
-          BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))
-        ],
+        border: Border.all(
+            color: Theme.of(context).colorScheme.outline), // Subtiler Rand
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -294,9 +292,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   imageUrl: imageUrl,
                   fit: BoxFit.cover,
                   placeholder: (_, __) =>
-                      Container(color: AppTheme.surfaceHighlight),
+                      Container(color: Theme.of(context).colorScheme.outline),
                   errorWidget: (_, __, ___) => Container(
-                      color: AppTheme.surfaceHighlight,
+                      color: Theme.of(context).colorScheme.outline,
                       child: Icon(Icons.restaurant)),
                 ),
                 Positioned(
@@ -310,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         border: Border.all(
                             color: matchScore > 80
                                 ? Colors.green
-                                : AppTheme.primary)),
+                                : Theme.of(context).primaryColor)),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -318,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                                 color: matchScore > 80
                                     ? Colors.green
-                                    : AppTheme.primary,
+                                    : Theme.of(context).primaryColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12)),
                         SizedBox(width: 4),
@@ -356,12 +354,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     children: [
                       Icon(Icons.star_rounded,
-                          color: AppTheme.primary, size: 18),
+                          color: Theme.of(context).primaryColor, size: 18),
                       SizedBox(width: 4),
                       Text("${rest['rating'] ?? 0.0}",
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary)),
+                              color: Theme.of(context).colorScheme.onSurface)),
                     ],
                   )
                 ],

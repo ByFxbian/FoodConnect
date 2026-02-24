@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:foodconnect/main.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
 import 'package:foodconnect/screens/username_selection_screen.dart';
-import 'package:foodconnect/widgets/gradient_button.dart';
+import 'package:foodconnect/widgets/primary_button.dart';
 import 'package:go_router/go_router.dart';
 import 'package:foodconnect/widgets/login_field.dart';
 import 'package:foodconnect/widgets/social_button.dart';
@@ -254,10 +254,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20),
               isLoading
-                  ? GradientButton(
+                  ? PrimaryButton(
                       pressAction: emptyFunction,
                       buttonLabel: "Wird angemeldet...")
-                  : GradientButton(
+                  : PrimaryButton(
                       pressAction: loginWithEmailAndPassword,
                       buttonLabel: "Anmelden"),
               const SizedBox(height: 15),

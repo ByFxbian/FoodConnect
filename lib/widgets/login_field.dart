@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:foodconnect/utils/palette.dart';
 
 class LoginField extends StatelessWidget {
   final String hintText;
@@ -26,26 +25,31 @@ class LoginField extends StatelessWidget {
         maxWidth: 400,
       ),
       child: TextFormField(
-        style: TextStyle(color: Colors.white),
-        cursorColor: Colors.deepPurple,
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        cursorColor: Theme.of(context).primaryColor,
         controller: controller,
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.all(27),
           enabledBorder: OutlineInputBorder(
-            borderSide: const BorderSide(
-              color: Palette.darkBorderColor,
-              width: 3,
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outline,
+              width: 1, // Reduced width for cleaner look
             ),
             borderRadius: BorderRadius.circular(10),
           ),
           focusedBorder: OutlineInputBorder(
-            borderSide: const BorderSide(
-              color: Palette.gradient2,
-              width: 3,
+            borderSide: BorderSide(
+              color: Theme.of(context).primaryColor,
+              width: 2,
             ),
             borderRadius: BorderRadius.circular(10),
           ),
           hintText: hintText,
+          hintStyle: TextStyle(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.5)),
         ),
         obscureText: isFieldPassword(hintText),
       ),

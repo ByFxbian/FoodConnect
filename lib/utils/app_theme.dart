@@ -1,62 +1,173 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'palette.dart';
 
 class AppTheme {
-  static const Color background = Color(0xFF09090B);
-  static const Color surface = Color(0xFF18181B);
-  static const Color surfaceHighlight = Color(0xFF27272A);
+  // Typography base configuration (System Fonts)
+  static TextTheme _buildTextTheme(Color primaryColor, Color secondaryColor) {
+    return TextTheme(
+      displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: primaryColor,
+          letterSpacing: -0.5,
+          height: 1.2),
+      displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: primaryColor,
+          letterSpacing: -0.5,
+          height: 1.2),
+      titleLarge: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          color: primaryColor,
+          letterSpacing: -0.3,
+          height: 1.3),
+      titleMedium: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: primaryColor,
+          letterSpacing: -0.2,
+          height: 1.3),
+      bodyLarge: TextStyle(
+          fontSize: 16,
+          color: primaryColor,
+          height: 1.5,
+          fontWeight: FontWeight.normal),
+      bodyMedium: TextStyle(
+          fontSize: 14,
+          color: secondaryColor,
+          height: 1.4,
+          fontWeight: FontWeight.normal),
+      labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: primaryColor,
+          letterSpacing: 0),
+      labelSmall: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: secondaryColor,
+          letterSpacing: 0.2),
+    );
+  }
 
-  static const Color primary = Color(0xFFF97316);
-  static const Color primaryDark = Color(0xFFEA580C);
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: Palette.backgroundLight,
+      primaryColor: Palette.accent,
+      fontFamily:
+          '.SF Pro Display', // Fallbacks handled by Flutter natively to Roboto on Android
+      fontFamilyFallback: const [
+        'Roboto',
+        'Helvetica Neue',
+        'Arial',
+        'sans-serif'
+      ],
 
-  static const Color textPrimary = Color(0xFFFAFAFA);
-  static const Color textSecondary = Color(0xFFA1A1AA);
+      colorScheme: const ColorScheme.light(
+        primary: Palette.accent,
+        secondary: Palette.accent,
+        surface: Palette.surfaceLight,
+        onSurface: Palette.textPrimaryLight,
+        outline: Palette.borderLight,
+      ),
+
+      textTheme:
+          _buildTextTheme(Palette.textPrimaryLight, Palette.textSecondaryLight),
+
+      cardTheme: CardTheme(
+        color: Palette.surfaceLight,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Palette.borderLight, width: 1),
+        ),
+      ),
+
+      dividerTheme: const DividerThemeData(
+        color: Palette.borderLight,
+        thickness: 1,
+        space: 1,
+      ),
+
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Palette.surfaceLight,
+        modalBackgroundColor: Palette.surfaceLight,
+        elevation: 8, // Minimal elevation for readability
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      ),
+
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Palette.backgroundLight,
+        elevation: 0, // No shadow by default
+        scrolledUnderElevation: 4, // Slight shadow when scrolled under
+        iconTheme: IconThemeData(color: Palette.textPrimaryLight),
+        titleTextStyle: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Palette.textPrimaryLight,
+            letterSpacing: -0.3),
+      ),
+    );
+  }
 
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: background,
-      primaryColor: primary,
-
-      textTheme: TextTheme(
-        displayLarge: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.bold, color: textPrimary),
-        titleLarge: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: textPrimary),
-        bodyLarge: GoogleFonts.inter(fontSize: 16, color: textPrimary),
-        bodyMedium: GoogleFonts.inter(fontSize: 14, color: textSecondary),
-        labelSmall: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: 0.5, color: textSecondary),
+      scaffoldBackgroundColor: Palette.backgroundDark,
+      primaryColor: Palette.accent,
+      fontFamily: '.SF Pro Display',
+      fontFamilyFallback: const [
+        'Roboto',
+        'Helvetica Neue',
+        'Arial',
+        'sans-serif'
+      ],
+      colorScheme: const ColorScheme.dark(
+        primary: Palette.accent,
+        secondary: Palette.accent,
+        surface: Palette.surfaceDark,
+        onSurface: Palette.textPrimaryDark,
+        outline: Palette.borderDark,
       ),
-
-      colorScheme: ColorScheme.dark(
-        primary: primary,
-        secondary: primaryDark,
-        surface: surface,
-        onSurface: textPrimary
-      ),
-
+      textTheme:
+          _buildTextTheme(Palette.textPrimaryDark, Palette.textSecondaryDark),
       cardTheme: CardTheme(
-        color: surface,
+        color: Palette.surfaceDark,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: surfaceHighlight, width: 1),
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Palette.borderDark, width: 1),
         ),
       ),
-
-      iconTheme: IconThemeData(color: textPrimary),
-
-      bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: surface,
-        modalBackgroundColor: surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      dividerTheme: const DividerThemeData(
+        color: Palette.borderDark,
+        thickness: 1,
+        space: 1,
       ),
-
-      appBarTheme: AppBarTheme(
-        backgroundColor: background,
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Palette.surfaceDark,
+        modalBackgroundColor: Palette.surfaceDark,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Palette.backgroundDark,
         elevation: 0,
-        titleTextStyle: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
-        iconTheme: IconThemeData(color: textPrimary),
-      )
+        scrolledUnderElevation: 4,
+        iconTheme: IconThemeData(color: Palette.textPrimaryDark),
+        titleTextStyle: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Palette.textPrimaryDark,
+            letterSpacing: -0.3),
+      ),
     );
   }
 }
