@@ -39,22 +39,15 @@
 	<string>593098836626-c7522bskeudkakk0lq3e0ndp5bjd5slo.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Diese App benötigt Zugriff auf die Kamera, um Profilbilder aufzunehmen.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Diese App benötigt den Standortzugriff, um dir Restaurants in deiner Umgebung zu zeigen.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Diese App benötigt Zugriff auf deinen Standort für eine verbesserte Kartenfunktionalität.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Wir verwenden deine Standortdaten nur, um Restaurants in deiner Umgebung anzuzeigen.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Diese App benötigt Zugriff auf die Galerie, um Profilbilder auszuwählen.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 		<string>fetch</string>
+		<string>location</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
