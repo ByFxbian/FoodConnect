@@ -5,9 +5,9 @@ class Palette {
   static const Color accent = Color(0xFFD35400); // Terracotta/Tomato
 
   // Light Mode
-  static const Color backgroundLight = Color(0xFFFFFFFF);
-  static const Color surfaceLight = Color(0xFFF9F9F9);
-  static const Color borderLight = Color(0xFFEAEAEA);
+  static const Color backgroundLight = Color(0xFFFAFAFA); // Off-white
+  static const Color surfaceLight = Color(0xFFFFFFFF);
+  static const Color borderLight = Color(0xFFE0E0E0);
   static const Color textPrimaryLight = Color(0xFF111111);
   static const Color textSecondaryLight = Color(0xFF757575);
 

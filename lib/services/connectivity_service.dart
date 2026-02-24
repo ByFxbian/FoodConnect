@@ -15,14 +15,25 @@ class ConnectivityService {
 
   void init() {
     // Check initial state
-    Connectivity().checkConnectivity().then((results) {
-      isOnline.value = !results.contains(ConnectivityResult.none);
-    });
+    try {
+      Connectivity().checkConnectivity().then((results) {
+        isOnline.value = !results.contains(ConnectivityResult.none);
+      }).catchError((_) {
+        // Plugin not available — assume online
+        isOnline.value = true;
+      });
 
-    // Listen for changes
-    _subscription = Connectivity().onConnectivityChanged.listen((results) {
-      isOnline.value = !results.contains(ConnectivityResult.none);
-    });
+      // Listen for changes
+      _subscription = Connectivity().onConnectivityChanged.listen((results) {
+        isOnline.value = !results.contains(ConnectivityResult.none);
+      }, onError: (_) {
+        // Plugin stream error — stay online
+        isOnline.value = true;
+      });
+    } catch (_) {
+      // MissingPluginException — plugin not registered (e.g. hot restart)
+      isOnline.value = true;
+    }
   }
 
   void dispose() {

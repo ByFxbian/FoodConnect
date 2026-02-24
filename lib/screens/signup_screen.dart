@@ -226,8 +226,10 @@ class _SignUpScreenState extends State<SignUpScreen>
                   const SizedBox(height: 6),
                   Text(
                     'Werde Teil von FoodConnect',
-                    style: theme.textTheme.bodyLarge
-                        ?.copyWith(color: theme.colorScheme.outline),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    ),
                   ),
                   const SizedBox(height: 40),
 
@@ -266,8 +268,10 @@ class _SignUpScreenState extends State<SignUpScreen>
                     children: [
                       Text(
                         'Schon ein Konto? ',
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: theme.colorScheme.outline),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.55),
+                        ),
                       ),
                       GestureDetector(
                         onTap: () => context.go('/login'),

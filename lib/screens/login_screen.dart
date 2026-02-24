@@ -252,10 +252,11 @@ class _LoginScreenState extends State<LoginScreen>
             children: [
               Text(
                 "Gib deine E-Mail-Adresse ein, um einen Link zum Zurücksetzen zu erhalten.",
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.outline),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55)),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -350,8 +351,10 @@ class _LoginScreenState extends State<LoginScreen>
                   const SizedBox(height: 6),
                   Text(
                     'Willkommen zurück',
-                    style: theme.textTheme.bodyLarge
-                        ?.copyWith(color: theme.colorScheme.outline),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                    ),
                   ),
                   const SizedBox(height: 40),
 
@@ -437,8 +440,10 @@ class _LoginScreenState extends State<LoginScreen>
                     children: [
                       Text(
                         'Noch kein Konto? ',
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: theme.colorScheme.outline),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.55),
+                        ),
                       ),
                       GestureDetector(
                         onTap: () => context.go('/signup'),
