@@ -36,12 +36,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _loadUserLists() async {
     List<Map<String, dynamic>> lists =
-        await _firestoreService.getUserLists(widget.userId);
-    if (mounted) {
-      setState(() {
-        userLists = lists;
-      });
-    }
+        await _firestoreService.getUserLists(widget.userId, onlyPublic: true);
+    setState(() {
+      userLists = lists;
+    });
   }
 
   Future<void> _loadUserData() async {

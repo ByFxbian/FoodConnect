@@ -337,13 +337,16 @@ class FirestoreService {
 
   // --- List Management ---
 
-  Future<List<Map<String, dynamic>>> getUserLists(String userId) async {
-    QuerySnapshot querySnapshot = await _db
-        .collection('users')
-        .doc(userId)
-        .collection('lists')
-        .orderBy('createdAt', descending: true)
-        .get();
+  Future<List<Map<String, dynamic>>> getUserLists(String userId,
+      {bool onlyPublic = false}) async {
+    Query query = _db.collection('users').doc(userId).collection('lists');
+
+    if (onlyPublic) {
+      query = query.where('isPublic', isEqualTo: true);
+    }
+
+    QuerySnapshot querySnapshot =
+        await query.orderBy('createdAt', descending: true).get();
 
     return querySnapshot.docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
@@ -357,6 +360,7 @@ class FirestoreService {
     await _db.collection('users').doc(userId).collection('lists').add({
       'name': listName,
       'restaurantIds': restaurantIds,
+      'isPublic': false,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }

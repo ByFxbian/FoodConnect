@@ -30,7 +30,8 @@ class _MainScreenState extends State<MainScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
       bottomNavigationBar: Container(
-        height: 80, // Taller for native edge feel
+        height: 85, // Taller for native edge feel
+        padding: const EdgeInsets.only(top: 8),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
           border: Border(
@@ -71,11 +72,9 @@ class _MainScreenState extends State<MainScreen> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).primaryColor.withValues(alpha: 0.15)
-              : Colors.transparent,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(30),
         ),
         child: Icon(

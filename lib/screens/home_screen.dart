@@ -152,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _generateMarkers() {
-    _markers = _visibleRestaurants.map((rest) {
+    _markers = _visibleRestaurants.take(200).map((rest) {
       return Marker(
         markerId: MarkerId(rest['id']),
         position: LatLng(rest['latitude'] ?? 48.0, rest['longitude'] ?? 16.0),
@@ -173,10 +173,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: _showMap,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text("Explore", style: Theme.of(context).textTheme.titleLarge),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: _showMap
+            ? Colors.transparent
+            : Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
@@ -189,11 +192,18 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          _buildCategories(),
-          Expanded(
+          Positioned.fill(
             child: _showMap ? _buildMapStack() : _buildListView(),
+          ),
+          Positioned(
+            top: _showMap
+                ? MediaQuery.of(context).padding.top + kToolbarHeight
+                : 0,
+            left: 0,
+            right: 0,
+            child: _buildCategories(),
           ),
         ],
       ),
@@ -277,10 +287,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         if (!_isLoading && _visibleRestaurants.isNotEmpty)
           Positioned(
-            bottom: 100,
+            bottom: 110,
             left: 0,
             right: 0,
-            height: 140,
+            height: 160,
             child: PageView.builder(
               controller: _pageController,
               physics: BouncingScrollPhysics(),
@@ -310,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: Theme.of(context).textTheme.bodyLarge));
     }
     return ListView.builder(
-      padding: EdgeInsets.only(top: 10, bottom: 120),
+      padding: EdgeInsets.only(top: 70, bottom: 120),
       itemCount: _visibleRestaurants.length,
       itemBuilder: (context, index) {
         return Padding(
@@ -401,24 +411,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(rest['name'] ?? "Restaurant",
-                              style: Theme.of(context).textTheme.titleLarge,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis),
-                          SizedBox(height: 4),
-                          Text(
-                              "${rest['cuisines'] ?? 'Essen'} • ${rest['priceLevel'] ?? '€€'}",
-                              style: Theme.of(context).textTheme.bodyMedium,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis),
-                        ],
-                      ),
-                      SizedBox(height: 8),
+                      Text(rest['name'] ?? "Restaurant",
+                          style: Theme.of(context).textTheme.titleLarge,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
+                      SizedBox(height: 4),
+                      Text(
+                          "${rest['cuisines'] ?? 'Essen'} • ${rest['priceLevel'] ?? '€€'}",
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
+                      Spacer(),
                       Row(
                         children: [
                           Icon(Icons.star_rounded,
