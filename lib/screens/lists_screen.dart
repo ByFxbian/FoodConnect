@@ -54,6 +54,7 @@ class _ListsScreenState extends State<ListsScreen> {
             Text("Meine Listen", style: Theme.of(context).textTheme.titleLarge),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator.adaptive())
@@ -98,7 +99,7 @@ class _ListsScreenState extends State<ListsScreen> {
 
   Widget _buildListsGrid() {
     return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 120),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 16,

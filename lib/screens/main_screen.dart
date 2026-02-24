@@ -49,9 +49,10 @@ class _MainScreenState extends State<MainScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildNavItem(0, CupertinoIcons.map_fill, CupertinoIcons.map),
                   _buildNavItem(
-                      1, CupertinoIcons.search, CupertinoIcons.search),
+                      0, CupertinoIcons.search, CupertinoIcons.search),
+                  _buildNavItem(
+                      1, CupertinoIcons.bookmark_fill, CupertinoIcons.bookmark),
                   _buildNavItem(
                       2, CupertinoIcons.person_fill, CupertinoIcons.person),
                 ],

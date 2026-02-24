@@ -99,7 +99,6 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
         RestaurantDetailSheet.show(context, rest);
       },
       child: Container(
-        height: 130,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -107,59 +106,68 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
           border: Border.all(color: Theme.of(context).colorScheme.outline),
         ),
         clipBehavior: Clip.antiAlias,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 130,
-              height: double.infinity,
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (_, __) =>
-                    Container(color: Theme.of(context).colorScheme.outline),
-                errorWidget: (_, __, ___) => Container(
-                    color: Theme.of(context).colorScheme.outline,
-                    child: const Icon(Icons.restaurant)),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      rest['name'] ?? "Restaurant",
-                      style: Theme.of(context).textTheme.titleLarge,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "${rest['cuisines'] ?? 'Essen'} • ${rest['priceLevel'] ?? '€€'}",
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.star_rounded,
-                            color: Theme.of(context).primaryColor, size: 18),
-                        const SizedBox(width: 4),
-                        Text(
-                          "${rest['rating'] ?? 0.0}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    )
-                  ],
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: 130,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) =>
+                      Container(color: Theme.of(context).colorScheme.outline),
+                  errorWidget: (_, __, ___) => Container(
+                      color: Theme.of(context).colorScheme.outline,
+                      child: const Icon(Icons.restaurant)),
                 ),
               ),
-            )
-          ],
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            rest['name'] ?? "Restaurant",
+                            style: Theme.of(context).textTheme.titleLarge,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "${rest['cuisines'] ?? 'Essen'} • ${rest['priceLevel'] ?? '€€'}",
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.star_rounded,
+                              color: Theme.of(context).primaryColor, size: 18),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${rest['rating'] ?? 0.0}",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );

@@ -104,22 +104,36 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedCategory = category;
       if (category == "Alle") {
-        _visibleRestaurants = _allRestaurants;
+        _visibleRestaurants = List.from(_allRestaurants);
       } else if (category == "Top Match") {
-        // Filter nach Score > 80
-        _visibleRestaurants = _allRestaurants.where((r) {
-          return MatchCalculator.calculate(_userProfile, r) >= 80;
-        }).toList();
+        _visibleRestaurants = List.from(_allRestaurants);
+        _visibleRestaurants.sort((a, b) {
+          final scoreA = MatchCalculator.calculate(_userProfile, a);
+          final scoreB = MatchCalculator.calculate(_userProfile, b);
+          return scoreB.compareTo(scoreA); // Descending
+        });
+      } else if (category == "Geöffnet") {
+        // Dummy logic for 'Geöffnet': show all for now, or those explictly open
+        _visibleRestaurants =
+            _allRestaurants.where((r) => r['isOpenNow'] ?? true).toList();
       } else if (category == "Günstig") {
-        _visibleRestaurants = _allRestaurants
-            .where((r) =>
-                (r['priceLevel'] ?? "").toString().contains("€") &&
-                !(r['priceLevel'] ?? "").toString().contains("€€€"))
-            .toList();
+        _visibleRestaurants = _allRestaurants.where((r) {
+          final price = (r['priceLevel'] ?? "").toString();
+          return price == "€" || price == "Inexpensive";
+        }).toList();
+        if (_visibleRestaurants.isEmpty) {
+          // Fallback if no exact cheap matches
+          _visibleRestaurants = _allRestaurants
+              .where((r) => !(r['priceLevel'] ?? "").toString().contains("€€€"))
+              .toList();
+        }
       } else {
         // Suche in Cuisine Strings
         _visibleRestaurants = _allRestaurants
-            .where((r) => (r['cuisines'] ?? "").toString().contains(category))
+            .where((r) => (r['cuisines'] ?? "")
+                .toString()
+                .toLowerCase()
+                .contains(category.toLowerCase()))
             .toList();
       }
 
@@ -164,6 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text("Explore", style: Theme.of(context).textTheme.titleLarge),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(
             icon: Icon(
@@ -262,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         if (!_isLoading && _visibleRestaurants.isNotEmpty)
           Positioned(
-            bottom: 20,
+            bottom: 100,
             left: 0,
             right: 0,
             height: 140,
@@ -295,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: Theme.of(context).textTheme.bodyLarge));
     }
     return ListView.builder(
-      padding: EdgeInsets.only(top: 10, bottom: 100),
+      padding: EdgeInsets.only(top: 10, bottom: 120),
       itemCount: _visibleRestaurants.length,
       itemBuilder: (context, index) {
         return Padding(
@@ -317,8 +332,6 @@ class _HomeScreenState extends State<HomeScreen> {
         RestaurantDetailSheet.show(context, rest);
       },
       child: Container(
-        height:
-            130, // Fixed height since list view needs height constraints and page view had a fixed height of 140
         margin:
             EdgeInsets.symmetric(horizontal: isMapCard ? 6 : 16, vertical: 0),
         decoration: BoxDecoration(
@@ -328,95 +341,102 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Theme.of(context).colorScheme.outline), // Subtiler Rand
         ),
         clipBehavior: Clip.antiAlias,
-        child: Row(
-          children: [
-            // Bild
-            SizedBox(
-              width: 130,
-              height: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) =>
-                        Container(color: Theme.of(context).colorScheme.outline),
-                    errorWidget: (_, __, ___) => Container(
-                        color: Theme.of(context).colorScheme.outline,
-                        child: Icon(Icons.restaurant)),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                          color: Colors.black87,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                              color: matchScore > 80
-                                  ? Colors.green
-                                  : Theme.of(context).primaryColor)),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text("$matchScore%",
-                              style: TextStyle(
-                                  color: matchScore > 80
-                                      ? Colors.green
-                                      : Theme.of(context).primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12)),
-                          SizedBox(width: 4),
-                          Text("Match",
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 12)),
-                        ],
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Bild
+              SizedBox(
+                width: 130,
+                // Height is now defined by IntrinsicHeight
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                          color: Theme.of(context).colorScheme.outline),
+                      errorWidget: (_, __, ___) => Container(
+                          color: Theme.of(context).colorScheme.outline,
+                          child: Icon(Icons.restaurant)),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: matchScore > 80
+                                    ? Colors.green
+                                    : Theme.of(context).primaryColor)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text("$matchScore%",
+                                style: TextStyle(
+                                    color: matchScore > 80
+                                        ? Colors.green
+                                        : Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12)),
+                            SizedBox(width: 4),
+                            Text("Match",
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(rest['name'] ?? "Restaurant",
-                            style: Theme.of(context).textTheme.titleLarge,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
-                        SizedBox(height: 4),
-                        Text(
-                            "${rest['cuisines'] ?? 'Essen'} • ${rest['priceLevel'] ?? '€€'}",
-                            style: Theme.of(context).textTheme.bodyMedium),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Icon(Icons.star_rounded,
-                            color: Theme.of(context).primaryColor, size: 18),
-                        SizedBox(width: 4),
-                        Text("${rest['rating'] ?? 0.0}",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color:
-                                    Theme.of(context).colorScheme.onSurface)),
-                      ],
-                    )
                   ],
                 ),
               ),
-            )
-          ],
+              // Info
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(rest['name'] ?? "Restaurant",
+                              style: Theme.of(context).textTheme.titleLarge,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis),
+                          SizedBox(height: 4),
+                          Text(
+                              "${rest['cuisines'] ?? 'Essen'} • ${rest['priceLevel'] ?? '€€'}",
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.star_rounded,
+                              color: Theme.of(context).primaryColor, size: 18),
+                          SizedBox(width: 4),
+                          Text("${rest['rating'] ?? 0.0}",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface)),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
