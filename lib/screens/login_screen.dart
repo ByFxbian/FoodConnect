@@ -237,20 +237,41 @@ class _LoginScreenState extends State<LoginScreen>
     showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog.adaptive(
+        return AlertDialog(
           title: const Text("Passwort zurücksetzen"),
+          titleTextStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+          contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                  "Gib deine E-Mail-Adresse ein, um dein Passwort zurückzusetzen."),
-              const SizedBox(height: 12),
+              Text(
+                "Gib deine E-Mail-Adresse ein, um einen Link zum Zurücksetzen zu erhalten.",
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Theme.of(context).colorScheme.outline),
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: resetEmailController,
                 keyboardType: TextInputType.emailAddress,
+                autofocus: true,
                 decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.5),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                   hintText: "E-Mail-Adresse",
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -279,7 +300,11 @@ class _LoginScreenState extends State<LoginScreen>
                   _showError("Fehler: Überprüfe die E-Mail-Adresse.");
                 }
               },
-              child: const Text("E-Mail senden"),
+              style: FilledButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              child: const Text("Senden"),
             ),
           ],
         );

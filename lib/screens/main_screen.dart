@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 // ignore: unused_import
 import 'dart:ui';
 import 'package:go_router/go_router.dart';
+import 'package:foodconnect/services/connectivity_service.dart';
 
 //import 'package:platform_maps_flutter/platform_maps_flutter.dart';
 
@@ -26,7 +27,12 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: widget.navigationShell,
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(child: widget.navigationShell),
+        ],
+      ),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
       bottomNavigationBar: Container(

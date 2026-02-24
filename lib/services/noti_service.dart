@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:foodconnect/services/app_logger.dart';
 
 class NotiService {
   final notificationsPlugin = FlutterLocalNotificationsPlugin();
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final _log = AppLogger();
 
   bool _isInitialized = false;
 
@@ -29,10 +30,11 @@ class NotiService {
     await notificationsPlugin.initialize(initSettings);
     _isInitialized = true;
   }*/
-  
+
   Future<void> initNotification() async {
-    if(_isInitialized) return;
-    const initSettingsAndroid = AndroidInitializationSettings('@mipmap/app_icon');
+    if (_isInitialized) return;
+    const initSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/app_icon');
     const initSettingsIOS = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -124,7 +126,6 @@ class NotiService {
     String? title,
     String? body,
     required String? recipientUserId,
-
     String? type,
     String? actorId,
     String? actorName,
@@ -132,11 +133,10 @@ class NotiService {
     String? relevantId,
   }) async {
     if (recipientUserId == null || recipientUserId.isEmpty) {
-      if (kDebugMode) {
-        print("NotiService (log): Keine recipientUserId angegeben, Aktion abgebrochen.");
-      }
+      _log.warn('NotiService',
+          'Keine recipientUserId angegeben, Aktion abgebrochen.');
       return;
-    } 
+    }
 
     try {
       await _db.collection('notifications').add({
@@ -145,20 +145,17 @@ class NotiService {
         'body': body,
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
-
         'type': type,
         'actorId': actorId,
         'actorName': actorName,
         'actorImageUrl': actorImageUrl,
         'relevantId': relevantId,
       });
-      if (kDebugMode) {
-        print("NotiService (log): Benachrichtigung in Firestore geloggt für $recipientUserId.");
-      }
+      _log.info('NotiService',
+          'Benachrichtigung in Firestore geloggt für $recipientUserId.');
     } catch (e) {
-      if (kDebugMode) {
-        print("NotiService (log): Fehler beim Speichern der Benachrichtigung in Firestore: $e");
-      }
+      _log.error('NotiService', 'Fehler beim Speichern der Benachrichtigung',
+          error: e);
     }
   }
 }

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:foodconnect/services/app_logger.dart';
 import 'package:flutter/material.dart';
 // ignore: unused_import
 // import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -16,6 +16,7 @@ class NotificationService {
       FirebaseMessaging.instance;
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static final _log = AppLogger();
 
   static Future<void> init() async {
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
@@ -25,34 +26,24 @@ class NotificationService {
       sound: true,
     );
 
-    if (kDebugMode) {
-      print("FCM Berechtigungsstatus: ${settings.authorizationStatus}");
-    }
+    _log.info('FCM', 'Berechtigungsstatus: ${settings.authorizationStatus}');
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional) {
       await _getTokenAndSaveConditionally();
 
       _firebaseMessaging.onTokenRefresh.listen((newToken) async {
-        if (kDebugMode) {
-          print("FCM Token erneuert: $newToken");
-        }
+        _log.info('FCM', 'Token erneuert');
         await _saveTokenConditionally(newToken);
       });
 
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        if (kDebugMode) {
-          print('Vordergrund-Nachricht empfangen: ${message.messageId}');
-          print(
-              'Notification: ${message.notification?.title} / ${message.notification?.body}');
-        }
+        _log.info(
+            'FCM', 'Vordergrund-Nachricht empfangen: ${message.messageId}');
       });
 
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        if (kDebugMode) {
-          print(
-              'Benachrichtigung geöffnet (App im Hintergrund/geschlossen): ${message.messageId}');
-        }
+        _log.info('FCM', 'Benachrichtigung geöffnet: ${message.messageId}');
 
         _handleMessageNavigation(message.data);
       });
@@ -61,18 +52,14 @@ class NotificationService {
           .getInitialMessage()
           .then((RemoteMessage? message) {
         if (message != null) {
-          if (kDebugMode) {
-            print(
-                'App durch Klick auf Benachrichtigung gestartet: ${message.messageId}');
-          }
+          _log.info('FCM',
+              'App durch Benachrichtigung gestartet: ${message.messageId}');
 
           _handleMessageNavigation(message.data);
         }
       });
     } else {
-      if (kDebugMode) {
-        print("FCM Berechtigung nicht erteilt.");
-      }
+      _log.warn('FCM', 'Berechtigung nicht erteilt.');
       await deleteTokenFromFirestore();
     }
   }
@@ -81,19 +68,13 @@ class NotificationService {
     try {
       String? token = await _firebaseMessaging.getToken();
       if (token != null) {
-        if (kDebugMode) {
-          print("FCM Token erhalten: $token");
-        }
+        _log.info('FCM', 'Token erhalten');
         await _saveTokenConditionally(token);
       } else {
-        if (kDebugMode) {
-          print("FCM Token konnte nicht geholt werden (null).");
-        }
+        _log.warn('FCM', 'Token konnte nicht geholt werden (null).');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("Fehler beim Holen/Speichern des FCM Tokens: $e");
-      }
+      _log.error('FCM', 'Fehler beim Holen/Speichern des Tokens', error: e);
     }
   }
 
@@ -116,20 +97,15 @@ class NotificationService {
             .collection("users")
             .doc(user.uid)
             .set({'notificationToken': token}, SetOptions(merge: true));
-        if (kDebugMode) {
-          print("FCM Token in Firestore gespeichert für User ${user.uid}.");
-        }
+        _log.info(
+            'FCM', 'Token in Firestore gespeichert für User ${user.uid}.');
       } else {
-        if (kDebugMode) {
-          print(
-              "FCM Token NICHT gespeichert, da userNotificationsEnabled=false für User ${user.uid}.");
-        }
+        _log.info('FCM',
+            'Token nicht gespeichert (deaktiviert für User ${user.uid}).');
         await deleteTokenFromFirestore();
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("Fehler beim bedingten Speichern des Tokens: $e");
-      }
+      _log.error('FCM', 'Fehler beim bedingten Speichern des Tokens', error: e);
     }
   }
 
@@ -145,21 +121,15 @@ class NotificationService {
       await _db.collection("users").doc(user.uid).set({
         'notificationToken': FieldValue.delete(),
       }, SetOptions(merge: true));
-      if (kDebugMode) {
-        print("FCM Token aus Firestore gelöscht für User ${user.uid}.");
-      }
+      _log.info('FCM', 'Token aus Firestore gelöscht für User ${user.uid}.');
     } catch (e) {
-      if (kDebugMode) {
-        print("Fehler beim Löschen des Tokens aus Firestore: $e");
-      }
+      _log.error('FCM', 'Fehler beim Löschen des Tokens', error: e);
     }
   }
 
   static Future<void> _handleMessageNavigation(
       Map<String, dynamic> data) async {
-    if (kDebugMode) {
-      print("Handling Navigation für Daten: $data");
-    }
+    _log.info('FCM', 'Handling Navigation für Daten: $data');
 
     final String? type = data['type'];
     final String? screen = data['screen'];
@@ -167,7 +137,8 @@ class NotificationService {
     await Future.delayed(Duration(milliseconds: 300));
 
     if (navigatorKey.currentState == null) {
-      print("Navigator nicht bereit für Benachrichtigungs-Navigation.");
+      _log.warn(
+          'FCM', 'Navigator nicht bereit für Benachrichtigungs-Navigation.');
       return;
     }
 
@@ -176,7 +147,7 @@ class NotificationService {
           screen == 'homeScreen' &&
           data['restaurantId'] != null) {
         String restaurantId = data['restaurantId'];
-        print("Navigiere zur Karte für Restaurant: $restaurantId");
+        _log.info('FCM', 'Navigiere zur Karte für Restaurant: $restaurantId');
 
         DatabaseService dbService = DatabaseService();
         Map<String, dynamic>? restaurantData =
@@ -195,24 +166,25 @@ class NotificationService {
             });
           }
         } else {
-          print(
-              "Restaurant-Daten für Navigation nicht gefunden (ID: $restaurantId). Navigiere zur Startseite.");
+          _log.warn('FCM',
+              'Restaurant-Daten nicht gefunden (ID: $restaurantId), navigiere zur Startseite.');
 
           if (navigatorKey.currentContext != null) {
             navigatorKey.currentContext!.go('/explore');
           }
         }
       } else if (type == 'follow' && screen == 'notificationsScreen') {
-        print("Navigiere zur Benachrichtigungsseite.");
+        _log.info('FCM', 'Navigiere zur Benachrichtigungsseite.');
 
         navigatorKey.currentState!.push(
             MaterialPageRoute(builder: (context) => NotificationsScreen()));
       } else {
-        print(
-            "Unbekannter Benachrichtigungstyp oder fehlende Daten für Navigation.");
+        _log.warn(
+            'FCM', 'Unbekannter Benachrichtigungstyp oder fehlende Daten.');
       }
     } catch (e) {
-      print("🔥 Fehler bei der Benachrichtigungs-Navigation: $e");
+      _log.error('FCM', 'Fehler bei der Benachrichtigungs-Navigation',
+          error: e);
     }
   }
 }

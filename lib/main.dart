@@ -10,6 +10,7 @@ import 'package:foodconnect/utils/app_theme.dart';
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:foodconnect/router/app_router.dart';
+import 'package:foodconnect/services/connectivity_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -39,6 +40,8 @@ void main() async {
   timeago.setLocaleMessages('de_short', timeago.DeShortMessages());
 
   await initializeAppData();
+
+  ConnectivityService().init();
 
   runApp(ChangeNotifierProvider(
     create: (_) => ThemeProvider(),
