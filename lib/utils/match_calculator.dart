@@ -15,14 +15,27 @@ class MatchCalculator {
       score += 10;
     }
 
-    // Price Match (Favor cheap/moderate if no user profile)
+    // Price Match
     final price = (restaurant['priceLevel'] ?? "").toString();
-    if (price == "€" || price == "Inexpensive") {
-      score += 10;
-    } else if (price == "€€" || price == "Moderate") {
-      score += 5;
-    } else if (price == "€€€" || price == "Expensive") {
-      score -= 5;
+    if (userProfile != null && userProfile['priceRange'] != null) {
+      final userPrice = userProfile['priceRange'].toString();
+      if (price == userPrice) {
+        score += 15; // exact match
+      } else if ((price == '€' && userPrice == '€€') ||
+          (price == '€€' && userPrice == '€')) {
+        score += 8; // close match
+      } else if (price == '€€€€' || price == 'Expensive') {
+        score -= 5;
+      }
+    } else {
+      // Fallback: favor cheap/moderate
+      if (price == "€" || price == "Inexpensive") {
+        score += 10;
+      } else if (price == "€€" || price == "Moderate") {
+        score += 5;
+      } else if (price == "€€€" || price == "Expensive") {
+        score -= 5;
+      }
     }
 
     // Distance
@@ -45,27 +58,44 @@ class MatchCalculator {
         } else if (distanceKm < 10.0) {
           score += 5;
         } else {
-          score -= 10; // Penalize far away places
+          score -= 10;
         }
       }
     }
 
-    // Optional Preferences
+    // ─── Cuisine Preferences (multi-select) ───
     if (userProfile != null) {
-      String favCuisine =
-          (userProfile['favoriteCuisine'] ?? "").toString().toLowerCase();
+      final favCuisines = userProfile['favoriteCuisines'];
       String restCuisines =
           (restaurant['cuisines'] ?? "").toString().toLowerCase();
 
-      if (favCuisine.isNotEmpty && restCuisines.contains(favCuisine)) {
-        score += 10;
+      if (favCuisines is List && favCuisines.isNotEmpty) {
+        bool anyMatch = false;
+        for (final c in favCuisines) {
+          if (restCuisines.contains(c.toString().toLowerCase())) {
+            anyMatch = true;
+            break;
+          }
+        }
+        if (anyMatch) {
+          score += 15;
+        }
+      } else {
+        // Fallback: single favoriteCuisine (legacy)
+        String favCuisine =
+            (userProfile['favoriteCuisine'] ?? "").toString().toLowerCase();
+        if (favCuisine.isNotEmpty && restCuisines.contains(favCuisine)) {
+          score += 10;
+        }
       }
 
+      // Diet
       String diet = (userProfile['dietType'] ?? "Allesesser").toString();
       String restDiets = (restaurant['dietaryRestrictions'] ?? "").toString();
 
       if (diet == "Vegetarisch" || diet == "Vegan") {
-        if (restDiets.contains(diet) || restCuisines.contains(diet)) {
+        if (restDiets.contains(diet) ||
+            restCuisines.contains(diet.toLowerCase())) {
           score += 10;
         } else {
           score -= 20;

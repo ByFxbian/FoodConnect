@@ -33,7 +33,7 @@ class _MainScreenState extends State<MainScreen> {
         height: 85, // Taller for native edge feel
         padding: const EdgeInsets.only(top: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+          color: Theme.of(context).colorScheme.surface,
           border: Border(
             top: BorderSide(
               color:

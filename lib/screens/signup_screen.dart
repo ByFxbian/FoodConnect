@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/widgets/primary_button.dart';
+import 'package:foodconnect/widgets/taste_profile_sheet.dart';
 import 'package:go_router/go_router.dart';
 import 'package:foodconnect/widgets/login_field.dart';
 
@@ -114,7 +115,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (!mounted) return;
 
-      if (mounted) context.go('/explore');
+      if (mounted) {
+        context.go('/explore');
+        // Show mandatory taste profile setup after first registration
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            TasteProfileSheet.show(context, dismissible: false);
+          }
+        });
+      }
     } on FirebaseException catch (e) {
       print(e.message);
       setState(() {

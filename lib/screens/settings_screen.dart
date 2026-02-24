@@ -10,9 +10,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/services/notification_service.dart';
+import 'package:foodconnect/widgets/taste_profile_sheet.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
-import 'package:foodconnect/main.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -420,8 +419,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
@@ -476,22 +473,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             SizedBox(height: 20),
             SwitchListTile.adaptive(
-              title: Text("Dark Mode",
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface)),
-              value: themeProvider.themeMode == ThemeMode.dark,
-              onChanged: (_) {
-                themeProvider.toggleTheme();
-              },
-              activeColor: Theme.of(context).colorScheme.primary,
-            ),
-            SwitchListTile.adaptive(
               title: Text("Push-Benachrichtigungen",
                   style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurface)),
               value: userNotificationsEnabled,
               onChanged: _toggleNotifications,
               activeColor: Theme.of(context).colorScheme.primary,
+            ),
+            ListTile(
+              title: Text("Geschmacksprofil bearbeiten",
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface)),
+              trailing: Icon(
+                  Platform.isIOS ? CupertinoIcons.flame : Icons.restaurant_menu,
+                  color: Theme.of(context).colorScheme.onSurface),
+              onTap: () => TasteProfileSheet.show(context),
             ),
             ListTile(
               title: Text("Benutzernamen ändern",

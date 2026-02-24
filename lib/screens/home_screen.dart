@@ -13,6 +13,7 @@ import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:foodconnect/utils/match_calculator.dart';
 import 'package:foodconnect/widgets/restaurant_detail_sheet.dart';
+import 'package:foodconnect/widgets/taste_profile_sheet.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -97,6 +98,13 @@ class _HomeScreenState extends State<HomeScreen> {
           .get();
       if (mounted && doc.exists) {
         _userProfile = doc.data()?['tasteProfile'] ?? {};
+        // If user has no taste profile, prompt them
+        if (_userProfile.isEmpty ||
+            (_userProfile['favoriteCuisines'] as List?)?.isEmpty == true) {
+          Future.delayed(const Duration(milliseconds: 600), () {
+            if (mounted) TasteProfileSheet.show(context, dismissible: true);
+          });
+        }
       }
     }
 
@@ -205,82 +213,165 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: _showMap,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                onChanged: _onSearchQueryChanged,
-                autofocus: true,
-                style: Theme.of(context).textTheme.bodyLarge,
-                decoration: InputDecoration(
-                  hintText: 'Restaurant suchen…',
-                  hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.4)),
-                  border: InputBorder.none,
-                ),
-              )
-            : Text("Explore", style: Theme.of(context).textTheme.titleLarge),
-        backgroundColor: _showMap
-            ? Colors.transparent
-            : Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: _isSearching
-            ? IconButton(
-                icon: Icon(Icons.adaptive.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    _isSearching = false;
-                    _searchController.clear();
-                    _searchFocusNode.unfocus();
-                    _visibleRestaurants = List.from(_allRestaurants);
-                    _generateMarkers();
-                  });
-                },
-              )
-            : null,
-        actions: [
-          if (!_isSearching)
-            IconButton(
-              icon: const Icon(CupertinoIcons.search),
-              onPressed: () {
-                setState(() {
+    final theme = Theme.of(context);
+
+    // ─── List mode: standard AppBar ───
+    if (!_showMap) {
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          title: _isSearching
+              ? TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  onChanged: _onSearchQueryChanged,
+                  autofocus: true,
+                  style: theme.textTheme.bodyLarge,
+                  decoration: InputDecoration(
+                    hintText: 'Restaurant suchen…',
+                    hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                    border: InputBorder.none,
+                  ),
+                )
+              : Text("Explore", style: theme.textTheme.titleLarge),
+          backgroundColor: theme.scaffoldBackgroundColor,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: _isSearching
+              ? IconButton(
+                  icon: Icon(Icons.adaptive.arrow_back),
+                  onPressed: _closeSearch,
+                )
+              : null,
+          actions: [
+            if (!_isSearching)
+              IconButton(
+                icon: const Icon(CupertinoIcons.search),
+                onPressed: () => setState(() {
                   _isSearching = true;
                   _selectedCategory = 'Alle';
-                });
-              },
+                }),
+              ),
+            IconButton(
+              icon: const Icon(CupertinoIcons.map),
+              onPressed: () => setState(() => _showMap = true),
             ),
-          IconButton(
-            icon: Icon(
-                _showMap ? CupertinoIcons.list_bullet : CupertinoIcons.map),
-            onPressed: () {
-              setState(() => _showMap = !_showMap);
-            },
-          )
-        ],
-      ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            Positioned.fill(child: _buildListView()),
+            Positioned(top: 0, left: 0, right: 0, child: _buildCategories()),
+          ],
+        ),
+      );
+    }
+
+    // ─── Map mode: no AppBar, floating pill bar ───
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          Positioned.fill(
-            child: _showMap ? _buildMapStack() : _buildListView(),
-          ),
+          Positioned.fill(child: _buildMapStack()),
+          // Floating pill bar
           Positioned(
-            top: _showMap
-                ? MediaQuery.of(context).padding.top + kToolbarHeight
-                : 0,
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 16,
+            right: 16,
+            child: _buildMapPillBar(theme),
+          ),
+          // Category chips below the pill bar
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 64,
             left: 0,
             right: 0,
             child: _buildCategories(),
           ),
         ],
       ),
+    );
+  }
+
+  void _closeSearch() {
+    setState(() {
+      _isSearching = false;
+      _searchController.clear();
+      _searchFocusNode.unfocus();
+      _visibleRestaurants = List.from(_allRestaurants);
+      _generateMarkers();
+    });
+  }
+
+  Widget _buildMapPillBar(ThemeData theme) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: _isSearching
+          ? Row(
+              children: [
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(Icons.adaptive.arrow_back,
+                      size: 20, color: theme.colorScheme.onSurface),
+                  onPressed: _closeSearch,
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    onChanged: _onSearchQueryChanged,
+                    autofocus: true,
+                    style: theme.textTheme.bodyMedium,
+                    decoration: InputDecoration(
+                      hintText: 'Restaurant suchen…',
+                      hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.4)),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+            )
+          : Row(
+              children: [
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(CupertinoIcons.search,
+                      size: 20, color: theme.colorScheme.onSurface),
+                  onPressed: () => setState(() {
+                    _isSearching = true;
+                    _selectedCategory = 'Alle';
+                  }),
+                ),
+                const Spacer(),
+                Text("Explore",
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                IconButton(
+                  icon: Icon(CupertinoIcons.list_bullet,
+                      size: 20, color: theme.colorScheme.onSurface),
+                  onPressed: () => setState(() => _showMap = false),
+                ),
+                const SizedBox(width: 4),
+              ],
+            ),
     );
   }
 

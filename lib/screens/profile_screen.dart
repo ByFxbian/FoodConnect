@@ -16,7 +16,6 @@ import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/widgets/follow_button.dart';
 import 'package:lottie/lottie.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class ProfileScreen extends StatefulWidget {
@@ -450,35 +449,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  Future<void> _navigateToRestaurantFromNotification(
-      String? restaurantId) async {
-    if (restaurantId == null || restaurantId.isEmpty) {
-      print("Keine Restaurant-ID für Navigation vorhanden.");
-      return;
-    }
-    print("Navigiere zur Karte für Restaurant: $restaurantId");
-    try {
-      Map<String, dynamic>? restaurantData =
-          await dbService.getRestaurantById(restaurantId);
-      if (restaurantData != null &&
-          restaurantData['latitude'] != null &&
-          restaurantData['longitude'] != null) {
-        LatLng targetLocation =
-            LatLng(restaurantData['latitude'], restaurantData['longitude']);
-        if (mounted) {
-          context.go('/explore', extra: {
-            'targetLocation': targetLocation,
-            'selectedRestaurantId': restaurantId,
-          });
-        }
-      } else {
-        print("Restaurant-Daten für Navigation nicht gefunden.");
-      }
-    } catch (e) {
-      print("🔥 Fehler bei Navigation zum Restaurant: $e");
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     String? userId = _auth.currentUser?.uid;
@@ -526,21 +496,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
               String type = notification['type'] ?? '';
 
-              if (type == 'follow') {
-                String? actorName = notification['actorName'];
-                String? actorImageUrl = notification['actorImageUrl'];
-                String? actorId = notification['actorId'];
-                Timestamp? timestamp = notification['timestamp'];
+              // Shared fields
+              String? actorName = notification['actorName'];
+              String? actorImageUrl = notification['actorImageUrl'];
+              String? actorId = notification['actorId'];
+              Timestamp? timestamp = notification['timestamp'];
+              bool isRead = notification['isRead'] ?? false;
 
-                String timeAgoString = "unbekannt";
-                if (timestamp != null) {
+              String timeAgoString = "";
+              if (timestamp != null) {
+                try {
                   timeAgoString =
                       timeago.format(timestamp.toDate(), locale: 'de_short');
+                } catch (_) {
+                  timeAgoString = "";
                 }
+              }
 
+              // ── Follow notification ──
+              if (type == 'follow') {
                 if (actorName == null || actorId == null) {
-                  return ListTile(
-                      title: Text("Ungültige Follower-Benachrichtigung"));
+                  return const SizedBox.shrink();
                 }
 
                 return InkWell(
@@ -548,157 +524,158 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     _markAsread(doc.id);
                     _navigateToUser(actorId);
                   },
-                  child: Padding(
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 12.0),
+                        horizontal: 16.0, vertical: 14.0),
+                    decoration: BoxDecoration(
+                      color: isRead
+                          ? Colors.transparent
+                          : Theme.of(context)
+                              .primaryColor
+                              .withValues(alpha: 0.06),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withValues(alpha: 0.1),
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundImage: (actorImageUrl != null &&
-                                  actorImageUrl.isNotEmpty)
-                              ? ResizeImage(NetworkImage(actorImageUrl),
-                                  height: 420, policy: ResizeImagePolicy.fit)
-                              : ResizeImage(
-                                  AssetImage("assets/icons/default_avatar.png"),
-                                  height: 420,
-                                  policy:
-                                      ResizeImagePolicy.fit) as ImageProvider,
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              style: DefaultTextStyle.of(context).style,
-                              children: <TextSpan>[
-                                TextSpan(
-                                    text: actorName,
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                TextSpan(text: ' folgt dir jetzt.'),
-                                TextSpan(
-                                  text: timeAgoString,
-                                  style: TextStyle(
-                                      color: Colors.grey[600], fontSize: 13),
-                                ),
-                              ],
-                            ),
+                        GestureDetector(
+                          onTap: () => _navigateToUser(actorId),
+                          child: CircleAvatar(
+                            radius: 24,
+                            backgroundImage: (actorImageUrl != null &&
+                                    actorImageUrl.isNotEmpty)
+                                ? ResizeImage(NetworkImage(actorImageUrl),
+                                    height: 420, policy: ResizeImagePolicy.fit)
+                                : ResizeImage(
+                                        AssetImage(
+                                            "assets/icons/default_avatar.png"),
+                                        height: 420,
+                                        policy: ResizeImagePolicy.fit)
+                                    as ImageProvider,
                           ),
                         ),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              RichText(
+                                text: TextSpan(
+                                  style: DefaultTextStyle.of(context).style,
+                                  children: <TextSpan>[
+                                    TextSpan(
+                                        text: actorName,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                    const TextSpan(text: ' folgt dir jetzt.'),
+                                  ],
+                                ),
+                              ),
+                              if (timeAgoString.isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Text(
+                                  timeAgoString,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.5)),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
                         SizedBox(
                           width: 90,
                           height: 35,
-                          child: FollowButton(
-                            targetUserId: actorId,
-                          ),
+                          child: FollowButton(targetUserId: actorId),
                         ),
                       ],
                     ),
                   ),
                 );
-              } else if (type == 'review') {
-                String? actorName =
-                    notification['actorName']; // Name des Reviewers
-                String? actorImageUrl =
-                    notification['actorImageUrl']; // Bild des Reviewers
-                String? actorId = notification[
-                    'actorId']; // ID des Reviewers (falls benötigt)
-                String? title = notification[
-                    'title']; // Sollte enthalten "X hat Y bewertet"
-                String? body = notification[
-                    'body']; // Sollte enthalten "Wurde mit Z Sternen bewertet"
-                Timestamp? timestamp = notification['timestamp'];
-                bool isRead = notification['isRead'] ?? false;
-                String? restaurantId = notification['relevantId'];
+              }
 
-                String timeAgoString = "";
-                if (timestamp != null) {
-                  try {
-                    timeAgoString =
-                        timeago.format(timestamp.toDate(), locale: 'de_short');
-                  } catch (e) {
-                    timeAgoString = "?";
-                  } // Fallback
-                }
-
-                return InkWell(
-                  onTap: () {
-                    _markAsread(doc.id);
-                    _navigateToRestaurantFromNotification(
-                        restaurantId); // Navigiere zum Restaurant
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 12.0),
-                    child: Row(
-                      children: [
-                        // Bild des Reviewers
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundImage: (actorImageUrl != null &&
-                                  actorImageUrl.isNotEmpty)
-                              ? NetworkImage(actorImageUrl)
-                              : null,
-                          child:
-                              (actorImageUrl == null || actorImageUrl.isEmpty)
-                                  ? Icon(Icons.person, size: 24)
-                                  : null,
-                        ),
-                        SizedBox(width: 12),
-                        // Text (Titel, Body, Zeit)
-                        Expanded(
-                          child: Column(
-                            // Titel und Body/Zeit untereinander
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+              // ── Generic fallback ──
+              return InkWell(
+                onTap: () => _markAsread(doc.id),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 14.0),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withValues(alpha: 0.1),
+                        width: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        child: Icon(Icons.notifications_outlined,
+                            color: Theme.of(context).colorScheme.onSurface),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              notification['title'] ?? 'Benachrichtigung',
+                              style: TextStyle(
+                                  fontWeight: isRead
+                                      ? FontWeight.normal
+                                      : FontWeight.bold),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if ((notification['body'] ?? '').isNotEmpty ||
+                                timeAgoString.isNotEmpty) ...[
+                              const SizedBox(height: 3),
                               Text(
-                                title ??
-                                    "Neue Bewertung", // Verwende den gespeicherten Titel
-                                style: TextStyle(
-                                    fontWeight: isRead
-                                        ? FontWeight.normal
-                                        : FontWeight.bold),
-                                maxLines: 2, // Max 2 Zeilen für Titel
-                                overflow:
-                                    TextOverflow.ellipsis, // ... wenn länger
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                "${body ?? ''} • $timeAgoString", // Kombiniere Body und Zeit
-                                style: TextStyle(
-                                    color: isRead
-                                        ? Colors.grey[600]
-                                        : Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.color
-                                            ?.withValues(alpha: 0.8),
-                                    fontSize: 13),
+                                [
+                                  if ((notification['body'] ?? '').isNotEmpty)
+                                    notification['body'],
+                                  if (timeAgoString.isNotEmpty) timeAgoString,
+                                ].join(' • '),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.5)),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ],
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                );
-              } else {
-                return ListTile(
-                  leading: Icon(Icons.notifications_none),
-                  title: Text(
-                      notification['title'] ?? 'Unbekannte Benachrichtigung'),
-                  subtitle: Text(notification['body'] ?? ''),
-                );
-              }
-
-              /*return ListTile(
-                title: Text(notification['title'] ?? "Benachrichtigung"),
-                subtitle: Text(notification['body'] ?? ""),
-                trailing: Text(notification['timestamp']?.toDate().toString() ?? ""),
-              );*/
+                ),
+              );
             },
           );
         },
