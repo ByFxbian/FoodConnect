@@ -345,22 +345,10 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
               )
             : GestureDetector(
                 onTap: _startInlineRename,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(_listName,
-                          style: theme.textTheme.titleLarge,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(CupertinoIcons.pencil,
-                        size: 16,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-                  ],
-                ),
+                child: Text(_listName,
+                    style: theme.textTheme.titleLarge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
               ),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,

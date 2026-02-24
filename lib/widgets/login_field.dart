@@ -3,55 +3,79 @@ import 'package:flutter/material.dart';
 class LoginField extends StatelessWidget {
   final String hintText;
   final TextEditingController controller;
-  // ignore: use_super_parameters
+  final bool obscureText;
+  final TextInputType? keyboardType;
+  final Widget? suffixIcon;
+  final ValueChanged<String>? onChanged;
+  final TextCapitalization textCapitalization;
+
   const LoginField({
-    Key? key,
+    super.key,
     required this.hintText,
     required this.controller,
-  }) : super(key: key);
-
-  bool isFieldPassword(String text) {
-    if (text == "Passwort") {
-      return true;
-    } else {
-      return false;
-    }
-  }
+    this.obscureText = false,
+    this.keyboardType,
+    this.suffixIcon,
+    this.onChanged,
+    this.textCapitalization = TextCapitalization.none,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(
-        maxWidth: 400,
+    final theme = Theme.of(context);
+
+    // Auto-detect: if hintText contains "Passwort" → obscure by default
+    final shouldObscure = obscureText ||
+        (hintText.toLowerCase().contains('passwort') && suffixIcon == null);
+
+    return TextFormField(
+      style: TextStyle(
+        color: theme.colorScheme.onSurface,
+        fontSize: 16,
       ),
-      child: TextFormField(
-        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-        cursorColor: Theme.of(context).primaryColor,
-        controller: controller,
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.all(27),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.outline,
-              width: 1, // Reduced width for cleaner look
-            ),
-            borderRadius: BorderRadius.circular(10),
+      cursorColor: theme.primaryColor,
+      controller: controller,
+      obscureText: shouldObscure,
+      keyboardType: keyboardType ??
+          (hintText.toLowerCase().contains('mail')
+              ? TextInputType.emailAddress
+              : TextInputType.text),
+      onChanged: onChanged,
+      textCapitalization: textCapitalization,
+      decoration: InputDecoration(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        filled: true,
+        fillColor:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.3),
+            width: 1,
           ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-              color: Theme.of(context).primaryColor,
-              width: 2,
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          hintText: hintText,
-          hintStyle: TextStyle(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(14),
         ),
-        obscureText: isFieldPassword(hintText),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: theme.primaryColor,
+            width: 1.5,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: theme.colorScheme.error,
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        hintText: hintText,
+        hintStyle: TextStyle(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
+        suffixIcon: suffixIcon,
       ),
     );
   }

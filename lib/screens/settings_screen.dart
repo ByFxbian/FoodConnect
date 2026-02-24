@@ -317,7 +317,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _signOut() async {
     await FirebaseAuth.instance.signOut();
-    Navigator.pop(context);
+    if (mounted) context.go('/login');
   }
 
   void _confirmDeleteAccount() {

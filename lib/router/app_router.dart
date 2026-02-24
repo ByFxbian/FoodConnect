@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:foodconnect/router/auth_listenable.dart';
 import 'package:foodconnect/screens/home_screen.dart';
 import 'package:foodconnect/screens/lists_screen.dart';
 import 'package:foodconnect/screens/list_detail_screen.dart';
@@ -22,6 +23,7 @@ class AppRouter {
   static final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/explore',
+    refreshListenable: AuthNotifier(),
     redirect: (context, state) {
       final bool loggedIn = FirebaseAuth.instance.currentUser != null;
       final bool isAuthRoute = state.matchedLocation == '/login' ||
