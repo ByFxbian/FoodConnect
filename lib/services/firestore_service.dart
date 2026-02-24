@@ -521,4 +521,185 @@ class FirestoreService {
         .doc(listId)
         .update({'coverUrl': coverUrl});
   }
+
+  // ─── List Sharing ─────────────────────────────────────────────
+
+  /// Get mutual follows (users who follow me AND I follow them)
+  Future<List<Map<String, dynamic>>> getMutuals(String userId) async {
+    // Get everyone I follow
+    final followingSnap =
+        await _db.collection('users').doc(userId).collection('following').get();
+    final followingIds = followingSnap.docs.map((d) => d.id).toSet();
+
+    // Get my followers
+    final followersSnap =
+        await _db.collection('users').doc(userId).collection('followers').get();
+    final followerIds = followersSnap.docs.map((d) => d.id).toSet();
+
+    // Intersection = mutuals
+    final mutualIds = followingIds.intersection(followerIds);
+
+    if (mutualIds.isEmpty) return [];
+
+    // Fetch user details for each mutual
+    List<Map<String, dynamic>> mutuals = [];
+    for (final uid in mutualIds) {
+      final userDoc = await _db.collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        mutuals.add({
+          'uid': uid,
+          'name': data['name'] ?? 'Nutzer',
+          'photoUrl': data['photoUrl'] ?? '',
+          'username': data['username'] ?? '',
+        });
+      }
+    }
+    return mutuals;
+  }
+
+  /// Share a list with another user (mutual)
+  Future<void> shareListWithUser({
+    required String ownerUserId,
+    required String listId,
+    required String targetUserId,
+    required String listName,
+    bool canEdit = false,
+  }) async {
+    // Get owner info for display
+    final ownerDoc = await _db.collection('users').doc(ownerUserId).get();
+    final data = ownerDoc.data() ?? {};
+    final ownerName = data['name'] ?? 'Ein Nutzer';
+    final ownerImageUrl = data['photoUrl'] ?? '';
+
+    // Add to target user's sharedLists subcollection
+    await _db
+        .collection('users')
+        .doc(targetUserId)
+        .collection('sharedLists')
+        .doc('${ownerUserId}_$listId') // deterministic ID
+        .set({
+      'listId': listId,
+      'ownerId': ownerUserId,
+      'ownerName': ownerName,
+      'ownerPhotoUrl': ownerImageUrl,
+      'listName': listName,
+      'canEdit': canEdit,
+      'sharedAt': FieldValue.serverTimestamp(),
+    });
+
+    // Also track sharedWith on the origin list
+    await _db
+        .collection('users')
+        .doc(ownerUserId)
+        .collection('lists')
+        .doc(listId)
+        .update({
+      'sharedWith': FieldValue.arrayUnion([targetUserId]),
+    });
+
+    // Send notification
+    await _notiLogger.logNotificationInDatabase(
+      title: '$ownerName hat eine Liste mit dir geteilt',
+      body: '„$listName" — tippe zum Anschauen',
+      recipientUserId: targetUserId,
+      type: 'list_shared',
+      actorId: ownerUserId,
+      actorName: ownerName,
+      actorImageUrl: ownerImageUrl,
+      relevantId: listId,
+    );
+  }
+
+  /// Remove a shared list from my collection (leave)
+  Future<void> leaveSharedList(String userId, String sharedDocId) async {
+    // Read the doc first so we can clean up the sharedWith array
+    final sharedDoc = await _db
+        .collection('users')
+        .doc(userId)
+        .collection('sharedLists')
+        .doc(sharedDocId)
+        .get();
+
+    if (sharedDoc.exists) {
+      final data = sharedDoc.data() as Map<String, dynamic>;
+      final ownerId = data['ownerId'] as String?;
+      final listId = data['listId'] as String?;
+
+      // Remove from sharedWith on origin list
+      if (ownerId != null && listId != null) {
+        await _db
+            .collection('users')
+            .doc(ownerId)
+            .collection('lists')
+            .doc(listId)
+            .update({
+          'sharedWith': FieldValue.arrayRemove([userId]),
+        });
+      }
+    }
+
+    // Delete the shared list entry
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('sharedLists')
+        .doc(sharedDocId)
+        .delete();
+  }
+
+  /// Unshare a list (called by the owner)
+  Future<void> unshareListFromUser({
+    required String ownerUserId,
+    required String listId,
+    required String targetUserId,
+  }) async {
+    // Remove from target's sharedLists
+    await _db
+        .collection('users')
+        .doc(targetUserId)
+        .collection('sharedLists')
+        .doc('${ownerUserId}_$listId')
+        .delete();
+
+    // Remove from sharedWith array
+    await _db
+        .collection('users')
+        .doc(ownerUserId)
+        .collection('lists')
+        .doc(listId)
+        .update({
+      'sharedWith': FieldValue.arrayRemove([targetUserId]),
+    });
+  }
+
+  /// Stream shared lists for a user
+  Stream<List<Map<String, dynamic>>> streamSharedLists(String userId) {
+    return _db
+        .collection('users')
+        .doc(userId)
+        .collection('sharedLists')
+        .orderBy('sharedAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['docId'] = doc.id;
+        return data;
+      }).toList();
+    });
+  }
+
+  /// Get users a list is shared with
+  Future<List<String>> getSharedUsers(String userId, String listId) async {
+    final listDoc = await _db
+        .collection('users')
+        .doc(userId)
+        .collection('lists')
+        .doc(listId)
+        .get();
+    if (!listDoc.exists) return [];
+    final data = listDoc.data() as Map<String, dynamic>;
+    return List<String>.from(data['sharedWith'] ?? []);
+  }
 }

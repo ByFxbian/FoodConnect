@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/widgets/restaurant_detail_sheet.dart';
+import 'package:foodconnect/widgets/share_list_sheet.dart';
 import 'package:foodconnect/widgets/skeleton_card.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
@@ -267,6 +268,17 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                 onTap: () {
                   Navigator.pop(ctx);
                   _uploadCustomCover();
+                },
+              ),
+              ListTile(
+                leading: Icon(Platform.isIOS
+                    ? CupertinoIcons.paperplane
+                    : Icons.share_outlined),
+                title: const Text('Liste teilen'),
+                subtitle: const Text('Mit Mutuals teilen'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ShareListSheet.show(context, widget.listId, _listName);
                 },
               ),
               const Divider(),

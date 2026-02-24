@@ -31,29 +31,135 @@ class _ListsScreenState extends State<ListsScreen> {
       ),
       body: user == null
           ? const Center(child: Text("Nicht eingeloggt"))
-          : StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _firestoreService.streamUserLists(user!.uid),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator.adaptive());
-                }
+          : SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ─── Meine Listen ───
+                  StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: _firestoreService.streamUserLists(user!.uid),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const SizedBox(
+                          height: 200,
+                          child: Center(
+                              child: CircularProgressIndicator.adaptive()),
+                        );
+                      }
+                      final userLists = snapshot.data ?? [];
+                      if (userLists.isEmpty) return _buildEmptyState();
+                      return _buildListsGrid(userLists);
+                    },
+                  ),
 
-                if (snapshot.hasError) {
-                  return Center(
-                      child: Text(
-                          "Ein Fehler ist aufgetreten: ${snapshot.error}"));
-                }
+                  // ─── Geteilte Listen ───
+                  StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: _firestoreService.streamSharedLists(user!.uid),
+                    builder: (context, sharedSnap) {
+                      final sharedLists = sharedSnap.data ?? [];
+                      if (sharedLists.isEmpty) return const SizedBox.shrink();
 
-                final userLists = snapshot.data ?? [];
-
-                if (userLists.isEmpty) {
-                  return _buildEmptyState();
-                }
-
-                return _buildListsGrid(userLists);
-              },
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'Geteilte Listen',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'Listen, die andere mit dir geteilt haben',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outline),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ...sharedLists
+                              .map((shared) => _buildSharedListTile(shared)),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
+    );
+  }
+
+  Widget _buildSharedListTile(Map<String, dynamic> shared) {
+    final theme = Theme.of(context);
+    final ownerName = shared['ownerName'] ?? 'Nutzer';
+    final listName = shared['listName'] ?? 'Liste';
+    final ownerPhoto = shared['ownerPhotoUrl'] as String?;
+    final canEdit = shared['canEdit'] ?? false;
+    final docId = shared['docId'] as String;
+
+    return Dismissible(
+      key: ValueKey(docId),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) {
+        _firestoreService.leaveSharedList(user!.uid, docId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('„$listName" entfernt')),
+        );
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.close, color: Colors.white),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        leading: CircleAvatar(
+          radius: 22,
+          backgroundImage: ownerPhoto != null && ownerPhoto.isNotEmpty
+              ? NetworkImage(ownerPhoto)
+              : null,
+          child: ownerPhoto == null || ownerPhoto.isEmpty
+              ? const Icon(Icons.person, size: 20)
+              : null,
+        ),
+        title: Text(listName,
+            style: theme.textTheme.bodyLarge
+                ?.copyWith(fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          'von $ownerName${canEdit ? ' • Bearbeitbar' : ''}',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.outline),
+        ),
+        trailing: Icon(CupertinoIcons.chevron_right,
+            size: 16, color: theme.colorScheme.outline),
+        onTap: () {
+          // Navigate to the shared list (owner's list)
+          context.push('/lists/${shared['listId']}', extra: {
+            'name': listName,
+            'id': shared['listId'],
+            'ownerId': shared['ownerId'],
+            'isShared': true,
+            'canEdit': canEdit,
+          });
+        },
+      ),
     );
   }
 
@@ -205,7 +311,9 @@ class _ListsScreenState extends State<ListsScreen> {
 
   Widget _buildListsGrid(List<Map<String, dynamic>> userLists) {
     return GridView.builder(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 120),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 16,

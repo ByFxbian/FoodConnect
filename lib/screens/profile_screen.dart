@@ -639,6 +639,97 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 );
               }
 
+              // ── List shared notification ──
+              if (type == 'list_shared') {
+                final listId = notification['relevantId'] as String?;
+                return InkWell(
+                  onTap: () {
+                    _markAsread(doc.id);
+                    if (listId != null && actorId != null) {
+                      context.push('/lists/$listId', extra: {
+                        'id': listId,
+                        'ownerId': actorId,
+                        'isShared': true,
+                        'canEdit': false,
+                      });
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 14.0),
+                    decoration: BoxDecoration(
+                      color: isRead
+                          ? Colors.transparent
+                          : Theme.of(context)
+                              .primaryColor
+                              .withValues(alpha: 0.06),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withValues(alpha: 0.1),
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundImage: (actorImageUrl != null &&
+                                  actorImageUrl.isNotEmpty)
+                              ? NetworkImage(actorImageUrl)
+                              : null,
+                          child: actorImageUrl == null || actorImageUrl.isEmpty
+                              ? const Icon(Icons.person)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              RichText(
+                                text: TextSpan(
+                                  style: DefaultTextStyle.of(context).style,
+                                  children: <TextSpan>[
+                                    TextSpan(
+                                        text: actorName ?? 'Jemand',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                    const TextSpan(
+                                        text:
+                                            ' hat eine Liste mit dir geteilt.'),
+                                  ],
+                                ),
+                              ),
+                              if (timeAgoString.isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Text(
+                                  timeAgoString,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.5)),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(Icons.bookmark,
+                            color: Theme.of(context).primaryColor, size: 24),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
               // ── Generic fallback ──
               return InkWell(
                 onTap: () => _markAsread(doc.id),
