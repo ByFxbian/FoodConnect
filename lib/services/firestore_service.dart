@@ -388,16 +388,31 @@ class FirestoreService {
 
     if (onlyPublic) {
       query = query.where('isPublic', isEqualTo: true);
+    } else {
+      query = query.orderBy('createdAt', descending: true);
     }
 
-    QuerySnapshot querySnapshot =
-        await query.orderBy('createdAt', descending: true).get();
+    QuerySnapshot querySnapshot = await query.get();
 
-    return querySnapshot.docs.map((doc) {
+    final results = querySnapshot.docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
       data['id'] = doc.id;
       return data;
     }).toList();
+
+    // Client-side sort for onlyPublic (avoids composite index)
+    if (onlyPublic) {
+      results.sort((a, b) {
+        final aTime = a['createdAt'] as Timestamp?;
+        final bTime = b['createdAt'] as Timestamp?;
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return 1;
+        if (bTime == null) return -1;
+        return bTime.compareTo(aTime);
+      });
+    }
+
+    return results;
   }
 
   Stream<List<Map<String, dynamic>>> streamUserLists(String userId,

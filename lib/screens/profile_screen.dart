@@ -9,6 +9,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/follower_list_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
+import 'package:foodconnect/screens/search_screen.dart';
 import 'package:foodconnect/screens/settings_screen.dart';
 
 import 'package:foodconnect/services/database_service.dart';
@@ -118,6 +119,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(
+                Platform.isIOS
+                    ? CupertinoIcons.person_add
+                    : Icons.person_search,
+                color: Theme.of(context).colorScheme.onSurface,
+                size: 26),
+            tooltip: 'Nutzer suchen',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SearchScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(
                 Platform.isIOS ? CupertinoIcons.bell : Icons.notifications),

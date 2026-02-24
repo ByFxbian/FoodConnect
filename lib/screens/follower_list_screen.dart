@@ -37,8 +37,7 @@ class FollowerListScreen extends StatelessWidget {
             .collection('users')
             .doc(userId)
             .collection(isFollowing ? 'following' : 'followers')
-            .orderBy('followedAt', descending: true)
-            .limit(30)
+            .limit(50)
             .get(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
