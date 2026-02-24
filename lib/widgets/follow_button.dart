@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
 
 class FollowButton extends StatefulWidget {
   final String targetUserId;
@@ -57,9 +58,7 @@ class _FollowButtonState extends State<FollowButton> {
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        AppSnackBar.error(context, 'Fehler beim Folgen/Entfolgen.');
       }
     }
   }

@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
+import 'package:foodconnect/services/app_logger.dart';
 
 class TasteProfileScreen extends StatefulWidget {
   final String userId;
@@ -168,11 +170,10 @@ class _TasteProfileScreenState extends State<TasteProfileScreen> {
         }
       }
     } catch (e) {
-      print("Fehler beim Speichern des Geschmacksprofils: $e");
+      AppLogger().error('TasteProfile', 'Fehler beim Speichern', error: e);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Fehler beim Speichern."),
-          backgroundColor: Colors.red));
+      AppSnackBar.error(
+          context, 'Fehler beim Speichern des Geschmacksprofils.');
     }
   }
 

@@ -10,6 +10,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/services/notification_service.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
+import 'package:foodconnect/services/app_logger.dart';
 import 'package:foodconnect/widgets/taste_profile_sheet.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -137,26 +139,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       if (value) {
-        print("Einstellungen: Versuche Token zu speichern...");
+        AppLogger().info('Settings', 'Versuche Token zu speichern...');
         await NotificationService.saveTokenToFirestore();
       } else {
-        print("Einstellungen: Lösche Token...");
+        AppLogger().info('Settings', 'Lösche Token...');
         await NotificationService.deleteTokenFromFirestore();
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                "Benachrichtigungseinstellung ${value ? 'aktiviert' : 'deaktiviert'}."),
-            duration: Duration(seconds: 2)),
-      );
+      AppSnackBar.success(context,
+          'Benachrichtigungen ${value ? 'aktiviert' : 'deaktiviert'}.');
     } catch (e) {
-      print("Fehler beim Umschalten der Benachrichtigungen: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text("Fehler beim Speichern der Einstellung."),
-            backgroundColor: Colors.red),
-      );
+      AppLogger().error(
+          'Settings', 'Fehler beim Umschalten der Benachrichtigungen',
+          error: e);
+      AppSnackBar.error(context, 'Fehler beim Speichern der Einstellung.');
     }
   }
 

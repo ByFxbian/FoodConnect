@@ -9,12 +9,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:foodconnect/services/database_service.dart';
+import 'package:foodconnect/services/firestore_service.dart';
 
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:foodconnect/utils/match_calculator.dart';
 import 'package:foodconnect/widgets/restaurant_detail_sheet.dart';
 import 'package:foodconnect/widgets/skeleton_card.dart';
 import 'package:foodconnect/widgets/taste_profile_sheet.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -109,7 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    final restaurants = await _dbService.getAllRestaurants();
+    var restaurants = await _dbService.getAllRestaurants();
+
+    // Fallback: if SQLite is empty (e.g. first login), fetch from Firestore
+    if (restaurants.isEmpty) {
+      await FirestoreService().fetchAndStoreRestaurants();
+      restaurants = await _dbService.getAllRestaurants();
+    }
 
     if (!mounted) return;
 
@@ -164,9 +172,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _generateMarkers();
 
       if (_visibleRestaurants.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Keine Restaurants für '$category' gefunden."),
-            duration: Duration(seconds: 1)));
+        AppSnackBar.info(
+            context, 'Keine Restaurants für \'$category\' gefunden.');
       } else {
         if (_pageController.hasClients) _pageController.jumpToPage(0);
       }

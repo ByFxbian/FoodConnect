@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/widgets/save_to_list_sheet.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
 import 'package:geocoding/geocoding.dart';
 
 class RestaurantDetailSheet extends StatefulWidget {
@@ -169,9 +170,8 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
                                 SaveToListSheet.show(
                                     context, widget.restaurantData['id']);
                               } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text("ID nicht gefunden")));
+                                AppSnackBar.error(
+                                    context, 'Restaurant-ID nicht gefunden.');
                               }
                             },
                             icon: const Icon(CupertinoIcons.bookmark),

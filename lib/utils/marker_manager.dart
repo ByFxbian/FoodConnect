@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 // Import hinzugefügt
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
 
 class MarkerManager {
   static final MarkerManager _instance = MarkerManager._internal();
@@ -463,7 +464,7 @@ class __MarkerPanelContentState extends State<_MarkerPanelContent> {
                                 if (widget.restaurantData['id'] != null) {
                                   SaveToListSheet.show(context, widget.restaurantData['id']);
                                 } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("ID nicht gefunden")));
+                                  AppSnackBar.error(context, 'Restaurant-ID nicht gefunden.');
                                 }
                               },
                               icon: Icon(CupertinoIcons.bookmark),

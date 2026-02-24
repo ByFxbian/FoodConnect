@@ -14,6 +14,8 @@ import 'package:foodconnect/screens/settings_screen.dart';
 
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
+import 'package:foodconnect/services/app_logger.dart';
 import 'package:foodconnect/widgets/follow_button.dart';
 import 'package:lottie/lottie.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -77,13 +79,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       await user?.sendEmailVerification();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("E-Mail-Bestätigung erneut gesendet!")),
-      );
-      //Future.delayed(Duration(seconds: 10));
+      AppSnackBar.success(context, 'E-Mail-Bestätigung erneut gesendet!');
       await FirestoreService().updateEmailVerificationStatus();
     } catch (e) {
-      print("Fehler beim Senden: $e");
+      AppLogger().error(
+          'Profile', 'Fehler beim Senden der Verifizierungs-E-Mail',
+          error: e);
     }
   }
 

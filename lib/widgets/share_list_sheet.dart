@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
 
 /// Bottom sheet for sharing a list with mutuals.
 class ShareListSheet extends StatefulWidget {
@@ -79,12 +80,8 @@ class _ShareListSheetState extends State<ShareListSheet> {
 
     if (mounted) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Liste mit ${_selectedUserIds.length} ${_selectedUserIds.length == 1 ? "Person" : "Personen"} geteilt'),
-        ),
-      );
+      AppSnackBar.success(context,
+          'Liste mit ${_selectedUserIds.length} ${_selectedUserIds.length == 1 ? "Person" : "Personen"} geteilt');
     }
   }
 

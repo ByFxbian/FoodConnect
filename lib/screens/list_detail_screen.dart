@@ -6,9 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
 import 'package:foodconnect/widgets/restaurant_detail_sheet.dart';
 import 'package:foodconnect/widgets/share_list_sheet.dart';
 import 'package:foodconnect/widgets/skeleton_card.dart';
+import 'package:foodconnect/widgets/add_restaurant_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -198,15 +200,11 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
       final url = await ref.getDownloadURL();
       await _firestoreService.updateListCoverUrl(_userId, widget.listId, url);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cover-Bild aktualisiert')),
-        );
+        AppSnackBar.success(context, 'Cover-Bild aktualisiert');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e'), backgroundColor: Colors.red),
-        );
+        AppSnackBar.error(context, 'Fehler beim Hochladen des Cover-Bildes.');
       }
     }
   }
@@ -307,20 +305,23 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     HapticFeedback.mediumImpact();
     _firestoreService.removeRestaurantFromList(_userId, widget.listId, restId);
 
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${rest['name'] ?? 'Restaurant'} entfernt'),
-        action: SnackBarAction(
-          label: 'Rückgängig',
-          onPressed: () {
-            _firestoreService.addRestaurantToList(
-                _userId, widget.listId, restId);
-            setState(() => _restaurants.insert(index, rest));
-          },
-        ),
-      ),
+    AppSnackBar.withUndo(
+      context,
+      '${rest['name'] ?? 'Restaurant'} entfernt',
+      onUndo: () {
+        _firestoreService.addRestaurantToList(_userId, widget.listId, restId);
+        setState(() => _restaurants.insert(index, rest));
+      },
     );
+  }
+
+  void _openAddRestaurant() async {
+    final existingIds = _restaurants.map((r) => r['id'] as String).toList();
+    final didAdd =
+        await AddRestaurantSheet.show(context, widget.listId, existingIds);
+    if (didAdd == true) {
+      _fetchRestaurants();
+    }
   }
 
   @override
@@ -378,11 +379,28 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.bookmark_border,
-                          size: 56, color: theme.colorScheme.outline),
+                          size: 56,
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.3)),
                       const SizedBox(height: 12),
-                      Text("Noch keine Restaurants.",
-                          style: theme.textTheme.bodyLarge
-                              ?.copyWith(color: theme.colorScheme.outline)),
+                      Text('Noch keine Restaurants.',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.5))),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: _openAddRestaurant,
+                        icon: const Icon(CupertinoIcons.plus, size: 18),
+                        label: const Text('Restaurant hinzufügen'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
                     ],
                   ),
                 )
@@ -390,8 +408,32 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                   onRefresh: _fetchRestaurants,
                   child: ListView.builder(
                     padding: const EdgeInsets.only(top: 10, bottom: 120),
-                    itemCount: _restaurants.length,
+                    itemCount: _restaurants.length + 1, // +1 for add button
                     itemBuilder: (context, index) {
+                      // ─── Add button as last item ───
+                      if (index == _restaurants.length) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          child: OutlinedButton.icon(
+                            onPressed: _openAddRestaurant,
+                            icon: Icon(CupertinoIcons.plus,
+                                size: 18, color: theme.primaryColor),
+                            label: Text('Restaurant hinzufügen',
+                                style: TextStyle(
+                                    color: theme.primaryColor,
+                                    fontWeight: FontWeight.w600)),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                  color: theme.primaryColor
+                                      .withValues(alpha: 0.4)),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        );
+                      }
                       final rest = _restaurants[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),

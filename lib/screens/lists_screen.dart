@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
 
 class ListsScreen extends StatefulWidget {
   const ListsScreen({super.key});
@@ -18,6 +20,68 @@ class _ListsScreenState extends State<ListsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final user = FirebaseAuth.instance.currentUser;
 
+  void _showCreateListDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text('Neue Liste',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              hintText: 'Name der Liste',
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Abbrechen',
+                  style: TextStyle(
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isEmpty) return;
+                Navigator.pop(ctx);
+                HapticFeedback.lightImpact();
+                await _firestoreService.createList(user!.uid, name);
+                if (mounted) {
+                  AppSnackBar.success(context, 'Liste "$name" erstellt');
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.primaryColor,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Erstellen',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,6 +92,13 @@ class _ListsScreenState extends State<ListsScreen> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(CupertinoIcons.plus_circle_fill, size: 28),
+            color: Theme.of(context).primaryColor,
+            onPressed: _showCreateListDialog,
+          ),
+        ],
       ),
       body: user == null
           ? const Center(child: Text("Nicht eingeloggt"))
@@ -114,9 +185,7 @@ class _ListsScreenState extends State<ListsScreen> {
       direction: DismissDirection.endToStart,
       onDismissed: (_) {
         _firestoreService.leaveSharedList(user!.uid, docId);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('„$listName" entfernt')),
-        );
+        AppSnackBar.info(context, '„$listName“ entfernt');
       },
       background: Container(
         alignment: Alignment.centerRight,

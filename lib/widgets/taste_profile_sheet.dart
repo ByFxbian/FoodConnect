@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
 
 /// A beautiful, editorial-style bottom sheet for setting up or editing the
 /// user's taste profile: favourite cuisines, price range, and dietary preference.
@@ -103,9 +104,8 @@ class _TasteProfileSheetState extends State<TasteProfileSheet> {
     } catch (e) {
       setState(() => _isSaving = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e'), backgroundColor: Colors.red),
-        );
+        AppSnackBar.error(
+            context, 'Fehler beim Speichern des Geschmacksprofils.');
       }
     }
   }
