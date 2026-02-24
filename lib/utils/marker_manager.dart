@@ -357,7 +357,6 @@ class __MarkerPanelContentState extends State<_MarkerPanelContent> {
   bool _isLoading = true;
   Map<String, dynamic>? _details;
   String? _address;
-  List<Map<String, dynamic>> _reviews = [];
   double _finalRating = 0.0;
 
   @override
@@ -370,20 +369,10 @@ class __MarkerPanelContentState extends State<_MarkerPanelContent> {
     try {
       final detailsFuture = widget.firestoreService.fetchRestaurantDetails(widget.restaurantData['id']);
       final addressFuture = widget.markerManager.getAddressFromLatLng(widget.restaurantData['latitude'], widget.restaurantData['longitude']);
-      final reviewsFuture = widget.firestoreService.getReviewsForRestaurant(widget.restaurantData['id']);
-      double initialRating = double.tryParse(widget.restaurantData['rating']?.toString() ?? "0.0") ?? 0.0;
 
       _details = await detailsFuture;
       _address = await addressFuture;
-      _reviews = await reviewsFuture;
-
-      double averageRating = await widget.firestoreService.calculateAverageRating(widget.restaurantData['id']);
-
-      if (_reviews.isNotEmpty) {
-        _finalRating = (initialRating * 0.5 + averageRating * 0.5);
-      } else {
-        _finalRating = initialRating;
-      }
+      _finalRating = double.tryParse(widget.restaurantData['rating']?.toString() ?? '0.0') ?? 0.0;
     } catch (e) {
       print("Fehler beim Laden der Marker-Panel-Daten: $e");
     } finally {
@@ -402,35 +391,7 @@ class __MarkerPanelContentState extends State<_MarkerPanelContent> {
     });
   }
 
-  void _showRatingDialogHelper() {
-    Navigator.pop(context);
-    Future.delayed(Duration(milliseconds: 100), () {
-      showDialog(
-        context: navigatorKey.currentContext!,
-        builder: (BuildContext dialogContext) {
-          return RatingDialog(
-            restaurantId: widget.restaurantData['id'],
-            onRatingSubmitted: (rating, comment) async {
-              final String userId = FirebaseAuth.instance.currentUser!.uid;
-              await widget.markerManager._loadUserData(userId);
-              final String userName = widget.markerManager.userData?['name'] ?? "Unbekannter Nutzer";
-              final String userProfileUrl = widget.markerManager.userData?['photoUrl'] ?? "";
-              try {
-                 await widget.firestoreService.addReview(widget.restaurantData['id'], rating, comment, userId, userName, userProfileUrl);
-                 ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-                    SnackBar(content: Text("Bewertung erfolgreich gespeichert!"), backgroundColor: Colors.green,)
-                 );
-              } catch (e) {
-                  ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-                    SnackBar(content: Text("Fehler: ${e.toString()}"), backgroundColor: Colors.red)
-                  );
-              }
-            },
-          );
-        },
-      );
-    });
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -546,70 +507,7 @@ class __MarkerPanelContentState extends State<_MarkerPanelContent> {
                           SizedBox(height: 24),
                         ],
 
-                        // Ratings Section
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Bewertungen", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                            TextButton(
-                              onPressed: _showRatingDialogHelper,
-                              child: Text("Bewerten", style: TextStyle(fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        
-                        if (_reviews.isNotEmpty) ...[
-                          Column(
-                            children: _reviews.map((review) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => _navigateToUserProfileHelper(review['userId']),
-                                      child: CircleAvatar(
-                                        radius: 20,
-                                        backgroundImage: review['userProfileUrl'] != null && review['userProfileUrl'].isNotEmpty
-                                          ? NetworkImage(review['userProfileUrl'])
-                                          : null,
-                                        child: (review['userProfileUrl'] == null || review['userProfileUrl'].isEmpty)
-                                          ? Icon(Icons.person, size: 20)
-                                          : null,
-                                      ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(review['userName'] ?? 'Unbekannt', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.star_rounded, size: 16, color: Theme.of(context).primaryColor),
-                                                  SizedBox(width: 2),
-                                                  Text("${review['rating']}", style: Theme.of(context).textTheme.labelSmall),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 4),
-                                          Text(review['comment'] ?? '', style: Theme.of(context).textTheme.bodyMedium),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ] else ...[
-                          Text("Noch keine Bewertungen vorhanden.", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.outline)),
-                        ],
+
                       ],
                     ),
                   ),

@@ -41,6 +41,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _mapStyleString;
   late PageController _pageController;
 
+  // Search state
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+
   String _selectedCategory = "Alle";
   final List<String> _categories = [
     "Alle",
@@ -62,6 +67,13 @@ class _HomeScreenState extends State<HomeScreen> {
     _pageController = PageController(viewportFraction: 0.9);
     _loadMapStyle();
     _initData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _loadMapStyle() async {
@@ -103,6 +115,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _filterRestaurants(String category) {
     setState(() {
       _selectedCategory = category;
+      // clear search when switching categories
+      if (_isSearching) {
+        _isSearching = false;
+        _searchController.clear();
+        _searchFocusNode.unfocus();
+      }
       if (category == "Alle") {
         _visibleRestaurants = List.from(_allRestaurants);
       } else if (category == "Top Match") {
@@ -113,7 +131,6 @@ class _HomeScreenState extends State<HomeScreen> {
           return scoreB.compareTo(scoreA); // Descending
         });
       } else if (category == "Geöffnet") {
-        // Dummy logic for 'Geöffnet': show all for now, or those explictly open
         _visibleRestaurants =
             _allRestaurants.where((r) => r['isOpenNow'] ?? true).toList();
       } else if (category == "Günstig") {
@@ -122,13 +139,11 @@ class _HomeScreenState extends State<HomeScreen> {
           return price == "€" || price == "Inexpensive";
         }).toList();
         if (_visibleRestaurants.isEmpty) {
-          // Fallback if no exact cheap matches
           _visibleRestaurants = _allRestaurants
               .where((r) => !(r['priceLevel'] ?? "").toString().contains("€€€"))
               .toList();
         }
       } else {
-        // Suche in Cuisine Strings
         _visibleRestaurants = _allRestaurants
             .where((r) => (r['cuisines'] ?? "")
                 .toString()
@@ -139,15 +154,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _generateMarkers();
 
-      // Wenn Filter leer, zeige Feedback (optional)
       if (_visibleRestaurants.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text("Keine Restaurants für '$category' gefunden."),
             duration: Duration(seconds: 1)));
       } else {
-        // Reset PageView
         if (_pageController.hasClients) _pageController.jumpToPage(0);
       }
+    });
+  }
+
+  void _onSearchQueryChanged(String query) {
+    final q = query.trim().toLowerCase();
+    setState(() {
+      if (q.isEmpty) {
+        _visibleRestaurants = List.from(_allRestaurants);
+      } else {
+        _visibleRestaurants = _allRestaurants.where((r) {
+          final name = (r['name'] ?? '').toString().toLowerCase();
+          final dishes = (r['lowercaseDishes'] as List?)?.cast<String>() ?? [];
+          final cuisines = (r['cuisines'] ?? '').toString().toLowerCase();
+          return name.contains(q) ||
+              dishes.any((d) => d.contains(q)) ||
+              cuisines.contains(q);
+        }).toList();
+      }
+      _generateMarkers();
+      if (_pageController.hasClients) _pageController.jumpToPage(0);
     });
   }
 
@@ -176,13 +209,54 @@ class _HomeScreenState extends State<HomeScreen> {
       extendBodyBehindAppBar: _showMap,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text("Explore", style: Theme.of(context).textTheme.titleLarge),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                onChanged: _onSearchQueryChanged,
+                autofocus: true,
+                style: Theme.of(context).textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  hintText: 'Restaurant suchen…',
+                  hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.4)),
+                  border: InputBorder.none,
+                ),
+              )
+            : Text("Explore", style: Theme.of(context).textTheme.titleLarge),
         backgroundColor: _showMap
             ? Colors.transparent
             : Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
+        leading: _isSearching
+            ? IconButton(
+                icon: Icon(Icons.adaptive.arrow_back),
+                onPressed: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchController.clear();
+                    _searchFocusNode.unfocus();
+                    _visibleRestaurants = List.from(_allRestaurants);
+                    _generateMarkers();
+                  });
+                },
+              )
+            : null,
         actions: [
+          if (!_isSearching)
+            IconButton(
+              icon: const Icon(CupertinoIcons.search),
+              onPressed: () {
+                setState(() {
+                  _isSearching = true;
+                  _selectedCategory = 'Alle';
+                });
+              },
+            ),
           IconButton(
             icon: Icon(
                 _showMap ? CupertinoIcons.list_bullet : CupertinoIcons.map),

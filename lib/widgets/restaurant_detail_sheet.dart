@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:foodconnect/services/firestore_service.dart';
-import 'package:foodconnect/widgets/rating_dialog.dart';
-import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/widgets/save_to_list_sheet.dart';
-import 'package:go_router/go_router.dart';
 import 'package:geocoding/geocoding.dart';
 
 class RestaurantDetailSheet extends StatefulWidget {
@@ -31,7 +27,6 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
   bool _isLoading = true;
   Map<String, dynamic>? _details;
   String? _address;
-  List<Map<String, dynamic>> _reviews = [];
   double _finalRating = 0.0;
 
   final FirestoreService firestoreService = FirestoreService();
@@ -63,24 +58,12 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
       final addressFuture = _getAddressFromLatLng(
           widget.restaurantData['latitude'],
           widget.restaurantData['longitude']);
-      final reviewsFuture =
-          firestoreService.getReviewsForRestaurant(widget.restaurantData['id']);
-      double initialRating = double.tryParse(
-              widget.restaurantData['rating']?.toString() ?? "0.0") ??
-          0.0;
 
       _details = await detailsFuture;
       _address = await addressFuture;
-      _reviews = await reviewsFuture;
-
-      double averageRating = await firestoreService
-          .calculateAverageRating(widget.restaurantData['id']);
-
-      if (_reviews.isNotEmpty) {
-        _finalRating = (initialRating * 0.5 + averageRating * 0.5);
-      } else {
-        _finalRating = initialRating;
-      }
+      _finalRating = double.tryParse(
+              widget.restaurantData['rating']?.toString() ?? '0.0') ??
+          0.0;
     } catch (e) {
       debugPrint("Fehler beim Laden der Marker-Panel-Daten: $e");
     } finally {
@@ -90,62 +73,6 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
         });
       }
     }
-  }
-
-  void _navigateToUserProfileHelper(String userId) {
-    Navigator.pop(context);
-    Future.delayed(const Duration(milliseconds: 50), () {
-      if (!mounted) return;
-      if (userId == FirebaseAuth.instance.currentUser?.uid) {
-        context.go('/profile');
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => UserProfileScreen(userId: userId),
-          ),
-        );
-      }
-    });
-  }
-
-  void _showRatingDialogHelper() {
-    Navigator.pop(context);
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          return RatingDialog(
-            restaurantId: widget.restaurantData['id'],
-            onRatingSubmitted: (rating, comment) async {
-              final user = FirebaseAuth.instance.currentUser;
-              if (user == null) return;
-              final String userId = user.uid;
-
-              const String userName = "Nutzer";
-              const String userProfileUrl = "";
-              try {
-                await firestoreService.addReview(widget.restaurantData['id'],
-                    rating, comment, userId, userName, userProfileUrl);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text("Bewertung erfolgreich gespeichert!"),
-                    backgroundColor: Colors.green,
-                  ));
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text("Fehler: ${e.toString()}"),
-                      backgroundColor: Colors.red));
-                }
-              }
-            },
-          );
-        },
-      );
-    });
   }
 
   @override
@@ -305,109 +232,6 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
                         Text(_details!['description'],
                             style: Theme.of(context).textTheme.bodyMedium),
                         const SizedBox(height: 24),
-                      ],
-
-                      // Ratings Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text("Bewertungen",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
-                          TextButton(
-                            onPressed: _showRatingDialogHelper,
-                            child: const Text("Bewerten",
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-
-                      if (_reviews.isNotEmpty) ...[
-                        Column(
-                          children: _reviews.map((review) {
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 8.0),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () => _navigateToUserProfileHelper(
-                                        review['userId']),
-                                    child: CircleAvatar(
-                                      radius: 20,
-                                      backgroundImage:
-                                          review['userProfileUrl'] != null &&
-                                                  review['userProfileUrl']
-                                                      .isNotEmpty
-                                              ? NetworkImage(
-                                                  review['userProfileUrl'])
-                                              : null,
-                                      child: (review['userProfileUrl'] ==
-                                                  null ||
-                                              review['userProfileUrl'].isEmpty)
-                                          ? const Icon(Icons.person, size: 20)
-                                          : null,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                                review['userName'] ??
-                                                    'Unbekannt',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleSmall
-                                                    ?.copyWith(
-                                                        fontWeight:
-                                                            FontWeight.bold)),
-                                            Row(
-                                              children: [
-                                                Icon(Icons.star_rounded,
-                                                    size: 16,
-                                                    color: Theme.of(context)
-                                                        .primaryColor),
-                                                const SizedBox(width: 2),
-                                                Text("${review['rating']}",
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .labelSmall),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(review['comment'] ?? '',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ] else ...[
-                        Text("Noch keine Bewertungen vorhanden.",
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.outline)),
                       ],
                     ],
                   ),
