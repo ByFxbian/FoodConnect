@@ -13,6 +13,7 @@ import 'package:foodconnect/screens/settings_screen.dart';
 
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
+import 'package:foodconnect/widgets/follow_button.dart';
 import 'package:lottie/lottie.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;

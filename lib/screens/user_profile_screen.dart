@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/follower_list_screen.dart';
+import 'package:foodconnect/widgets/follow_button.dart';
 import 'package:go_router/go_router.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:lottie/lottie.dart';
@@ -49,8 +50,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         .get();
 
     if (userDoc.exists) {
+      final data = userDoc.data() as Map<String, dynamic>;
       setState(() {
-        userData = userDoc.data() as Map<String, dynamic>;
+        userData = data;
+        // Read denormalized counts from user doc
+        followerCount = (data['followerCount'] as num?)?.toInt() ?? 0;
+        followingCount = (data['followingCount'] as num?)?.toInt() ?? 0;
         isLoading = false;
       });
     } else {
@@ -64,29 +69,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _loadFollowCounts() async {
     int followers = await _firestoreService.getFollowerCount(widget.userId);
     int following = await _firestoreService.getFollowingCount(widget.userId);
-    setState(() {
-      followerCount = followers;
-      followingCount = following;
-    });
+    if (mounted) {
+      setState(() {
+        followerCount = followers;
+        followingCount = following;
+      });
+    }
   }
 
   Future<void> _checkFollowingStatus() async {
     bool following = await _firestoreService.isFollowingUser(widget.userId);
-    setState(() {
-      isFollowing = following;
-    });
-  }
-
-  Future<void> _toggleFollow() async {
-    if (isFollowing) {
-      await _firestoreService.unfollowUser(widget.userId);
-    } else {
-      await _firestoreService.followUser(widget.userId);
+    if (mounted) {
+      setState(() {
+        isFollowing = following;
+      });
     }
-    await _loadFollowCounts();
-    setState(() {
-      isFollowing = !isFollowing;
-    });
   }
 
   @override
@@ -96,172 +93,156 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back,
+          icon: Icon(Icons.adaptive.arrow_back,
               color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          userData?['name'] ?? "Unbekannter Nutzer",
+          userData?['name'] ?? "",
           key: ValueKey(userData?['name']),
-          style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 22,
-              fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
         ),
         centerTitle: true,
       ),
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: isLoading
-                ? Center(
-                    child: /*CircularProgressIndicator()*/
-                        Lottie.asset('assets/animations/loading.json'))
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ..._buildProfileInfo(),
-                      SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Column(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              FollowerListScreen(
-                                                  userId: widget.userId,
-                                                  isFollowing: false)));
-                                },
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      followerCount.toString(),
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                      ),
-                                    ),
-                                    Text(
-                                      "Follower",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.7),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            ],
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: isLoading
+                  ? Center(
+                      child: Lottie.asset('assets/animations/loading.json'))
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 16),
+                        // Avatar
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outline
+                                  .withValues(alpha: 0.2),
+                              width: 1,
+                            ),
+                            image: DecorationImage(
+                              fit: BoxFit.cover,
+                              image: userData?['photoUrl'] != null &&
+                                      userData?['photoUrl'] != ""
+                                  ? NetworkImage(userData?['photoUrl'])
+                                  : const AssetImage(
+                                          "assets/icons/default_avatar.png")
+                                      as ImageProvider,
+                            ),
                           ),
-                          SizedBox(width: 20),
-                          Column(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              FollowerListScreen(
-                                                  userId: widget.userId,
-                                                  isFollowing: true)));
-                                },
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      followingCount.toString(),
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
-                                      ),
-                                    ),
-                                    Text(
-                                      "Folgt",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.7),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            ],
+                        ),
+                        const SizedBox(height: 24),
+                        // Name
+                        Text(
+                          userData?['name'] ?? "Unbekannter Nutzer",
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Follow Button
+                        if (currentUser != null &&
+                            currentUser!.uid != widget.userId)
+                          SizedBox(
+                            width: 140,
+                            child: FollowButton(
+                              targetUserId: widget.userId,
+                              onToggled: _loadFollowCounts,
+                            ),
                           ),
+                        const SizedBox(height: 32),
+                        // Stats row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildStatItem(
+                              count: followerCount,
+                              label: "Follower",
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FollowerListScreen(
+                                      userId: widget.userId,
+                                      isFollowing: false),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 40),
+                            _buildStatItem(
+                              count: followingCount,
+                              label: "Folgt",
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FollowerListScreen(
+                                      userId: widget.userId, isFollowing: true),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 40),
+                        if (userLists.isNotEmpty) ...[
+                          _buildUserListsSection(),
+                          const SizedBox(height: 30),
                         ],
-                      ),
-                      SizedBox(height: 30),
-                      if (userLists.isNotEmpty) ...[
-                        _buildUserListsSection(),
-                        SizedBox(height: 30),
+                        const SizedBox(height: 120),
                       ],
-                      SizedBox(height: 120),
-                    ],
-                  ),
+                    ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  List<Widget> _buildProfileInfo() {
-    return [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildStatItem({
+    required int count,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
         children: [
-          // TODO: Bild zum Anklicken & Zoomen machen wie bei Instagram.
-          CircleAvatar(
-            radius: 60,
-            backgroundImage:
-                userData?['photoUrl'] != null && userData?['photoUrl'] != ""
-                    ? ResizeImage(NetworkImage(userData?['photoUrl']),
-                        height: 420, policy: ResizeImagePolicy.fit)
-                    : ResizeImage(AssetImage("assets/icons/default_avatar.png"),
-                        height: 420,
-                        policy: ResizeImagePolicy.fit) as ImageProvider,
+          Text(
+            count.toString(),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
           ),
-          SizedBox(width: 15),
-          ElevatedButton(
-            onPressed: _toggleFollow,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isFollowing
-                  ? Theme.of(context).colorScheme.secondary
-                  : Theme.of(context).colorScheme.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-            child: Text(
-              isFollowing ? "Entfolgen" : "Folgen",
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                ),
           ),
         ],
       ),
-    ];
+    );
   }
 
   Widget _buildUserListsSection() {
@@ -270,17 +251,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       children: [
         Text(
           "Öffentliche Listen",
-          style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
         ),
-        Divider(color: Theme.of(context).colorScheme.primary),
-        SizedBox(height: 8),
+        const SizedBox(height: 16),
         SizedBox(
-          height: 120, // Height for horizontal list
+          height: 140,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            clipBehavior: Clip.none,
             itemCount: userLists.length,
             itemBuilder: (context, index) {
               final list = userLists[index];
@@ -289,32 +270,42 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   context.push('/lists/${list['id']}', extra: list);
                 },
                 child: Container(
-                  width: 140,
-                  margin: EdgeInsets.only(right: 12),
-                  padding: EdgeInsets.all(12),
+                  width: 130,
+                  margin: const EdgeInsets.only(right: 16),
                   decoration: BoxDecoration(
-                    color:
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                        color: Theme.of(context).colorScheme.outlineVariant),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.format_list_bulleted,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Icon(
+                          Icons.bookmark_border,
                           color: Theme.of(context).colorScheme.primary,
-                          size: 32),
-                      SizedBox(height: 8),
-                      Text(
-                        list['name'] ?? 'Unbenannte Liste',
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                    ],
+                          size: 28,
+                        ),
+                        Text(
+                          list['name'] ?? 'Unbenannte Liste',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.2,
+                                  ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );

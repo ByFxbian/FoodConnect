@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/noti_service.dart';
 // ignore: unused_import
@@ -21,10 +21,8 @@ class FirestoreService {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
     if (currentUserId == targetUserId) return;
 
-    DocumentSnapshot userDoc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(currentUserId)
-        .get();
+    DocumentSnapshot userDoc =
+        await _db.collection("users").doc(currentUserId).get();
 
     bool emailVerified = userDoc["emailVerified"] ?? false;
     if (!emailVerified) {
@@ -35,26 +33,45 @@ class FirestoreService {
       );
     }
 
-    // Add to current user's following list
-    await _db
-        .collection("users")
-        .doc(currentUserId)
-        .collection("following")
-        .doc(targetUserId)
-        .set({});
-
-    // Add to target user's followers list
-    await _db
-        .collection("users")
-        .doc(targetUserId)
-        .collection("followers")
-        .doc(currentUserId)
-        .set({});
-
     final actorData = userDoc.data() as Map<String, dynamic>;
     String actorName = actorData["name"] ?? "Ein Nutzer";
     String actorImageUrl = actorData["photoUrl"] ?? "";
 
+    final batch = _db.batch();
+
+    // Add to current user's following list
+    batch.set(
+      _db
+          .collection("users")
+          .doc(currentUserId)
+          .collection("following")
+          .doc(targetUserId),
+      {'followedAt': FieldValue.serverTimestamp()},
+    );
+
+    // Add to target user's followers list
+    batch.set(
+      _db
+          .collection("users")
+          .doc(targetUserId)
+          .collection("followers")
+          .doc(currentUserId),
+      {'followedAt': FieldValue.serverTimestamp()},
+    );
+
+    // Increment denormalized counters
+    batch.update(
+      _db.collection("users").doc(currentUserId),
+      {'followingCount': FieldValue.increment(1)},
+    );
+    batch.update(
+      _db.collection("users").doc(targetUserId),
+      {'followerCount': FieldValue.increment(1)},
+    );
+
+    await batch.commit();
+
+    // Send notification (outside batch — non-critical)
     await _notiLogger.logNotificationInDatabase(
         title: "$actorName folgt dir jetzt!",
         body: "Tippe, um sein/ihr Profil zu besuchen.",
@@ -69,21 +86,37 @@ class FirestoreService {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
     if (currentUserId == targetUserId) return;
 
+    final batch = _db.batch();
+
     // Remove from current user's following list
-    await _db
-        .collection("users")
-        .doc(currentUserId)
-        .collection("following")
-        .doc(targetUserId)
-        .delete();
+    batch.delete(
+      _db
+          .collection("users")
+          .doc(currentUserId)
+          .collection("following")
+          .doc(targetUserId),
+    );
 
     // Remove from target user's followers list
-    await _db
-        .collection("users")
-        .doc(targetUserId)
-        .collection("followers")
-        .doc(currentUserId)
-        .delete();
+    batch.delete(
+      _db
+          .collection("users")
+          .doc(targetUserId)
+          .collection("followers")
+          .doc(currentUserId),
+    );
+
+    // Decrement denormalized counters
+    batch.update(
+      _db.collection("users").doc(currentUserId),
+      {'followingCount': FieldValue.increment(-1)},
+    );
+    batch.update(
+      _db.collection("users").doc(targetUserId),
+      {'followerCount': FieldValue.increment(-1)},
+    );
+
+    await batch.commit();
   }
 
   Future<void> updateEmailVerificationStatus() async {
@@ -116,12 +149,24 @@ class FirestoreService {
   }
 
   Future<int> getFollowerCount(String userId) async {
+    final userDoc = await _db.collection("users").doc(userId).get();
+    final data = userDoc.data();
+    if (data != null && data['followerCount'] != null) {
+      return (data['followerCount'] as num).toInt();
+    }
+    // Fallback for un-migrated users
     final followersQuery =
         await _db.collection("users").doc(userId).collection("followers").get();
     return followersQuery.docs.length;
   }
 
   Future<int> getFollowingCount(String userId) async {
+    final userDoc = await _db.collection("users").doc(userId).get();
+    final data = userDoc.data();
+    if (data != null && data['followingCount'] != null) {
+      return (data['followingCount'] as num).toInt();
+    }
+    // Fallback for un-migrated users
     final followingQuery =
         await _db.collection("users").doc(userId).collection("following").get();
     return followingQuery.docs.length;
@@ -406,66 +451,5 @@ class FirestoreService {
         .update({
       'restaurantIds': FieldValue.arrayRemove([restaurantId]),
     });
-  }
-}
-
-class FollowButton extends StatefulWidget {
-  final String targetUserId;
-
-  // ignore: use_super_parameters
-  FollowButton({required this.targetUserId, Key? key}) : super(key: key);
-
-  @override
-  State<FollowButton> createState() => _FollowButtonState();
-}
-
-class _FollowButtonState extends State<FollowButton> {
-  bool isFollowing = false;
-  final FirestoreService _firestoreService = FirestoreService();
-
-  @override
-  void initState() {
-    super.initState();
-    _checkFollowingStatus();
-  }
-
-  Future<void> _checkFollowingStatus() async {
-    bool following =
-        await _firestoreService.isFollowingUser(widget.targetUserId);
-    setState(() {
-      isFollowing = following;
-    });
-  }
-
-  Future<void> _toggleFollow() async {
-    if (isFollowing) {
-      await _firestoreService.unfollowUser(widget.targetUserId);
-    } else {
-      await _firestoreService.followUser(widget.targetUserId);
-    }
-    setState(() {
-      isFollowing = !isFollowing;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 200),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: isFollowing ? Colors.grey[300] : Colors.blue,
-      ),
-      child: TextButton(
-        onPressed: _toggleFollow,
-        child: Text(
-          isFollowing ? "Entfolgt" : "Folgen",
-          style: TextStyle(
-            color: isFollowing ? Colors.black : Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
   }
 }
