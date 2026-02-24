@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/widgets/restaurant_detail_sheet.dart';
+import 'package:foodconnect/widgets/skeleton_card.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -290,6 +292,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     final restId = rest['id'] as String;
 
     setState(() => _restaurants.removeAt(index));
+    HapticFeedback.mediumImpact();
     _firestoreService.removeRestaurantFromList(_userId, widget.listId, restId);
 
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -360,7 +363,15 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator.adaptive())
+          ? ListView.builder(
+              padding: const EdgeInsets.only(top: 10, bottom: 120),
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: 4,
+              itemBuilder: (_, __) => const Padding(
+                padding: EdgeInsets.only(bottom: 16),
+                child: SkeletonListItemCard(),
+              ),
+            )
           : _restaurants.isEmpty
               ? Center(
                   child: Column(
@@ -375,32 +386,35 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                     ],
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.only(top: 10, bottom: 120),
-                  itemCount: _restaurants.length,
-                  itemBuilder: (context, index) {
-                    final rest = _restaurants[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Dismissible(
-                        key: ValueKey(rest['id']),
-                        direction: DismissDirection.endToStart,
-                        onDismissed: (_) => _removeRestaurant(rest, index),
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 24),
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(16),
+              : RefreshIndicator(
+                  onRefresh: _fetchRestaurants,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 10, bottom: 120),
+                    itemCount: _restaurants.length,
+                    itemBuilder: (context, index) {
+                      final rest = _restaurants[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Dismissible(
+                          key: ValueKey(rest['id']),
+                          direction: DismissDirection.endToStart,
+                          onDismissed: (_) => _removeRestaurant(rest, index),
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 24),
+                            margin: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(Icons.delete_outline,
+                                color: Colors.white, size: 28),
                           ),
-                          child: const Icon(Icons.delete_outline,
-                              color: Colors.white, size: 28),
+                          child: _buildCard(rest),
                         ),
-                        child: _buildCard(rest),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
     );
   }

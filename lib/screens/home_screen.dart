@@ -13,6 +13,7 @@ import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:foodconnect/utils/match_calculator.dart';
 import 'package:foodconnect/widgets/restaurant_detail_sheet.dart';
+import 'package:foodconnect/widgets/skeleton_card.dart';
 import 'package:foodconnect/widgets/taste_profile_sheet.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -477,7 +478,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildListView() {
     if (_isLoading) {
-      return Center(child: CircularProgressIndicator.adaptive());
+      return ListView.builder(
+        padding: EdgeInsets.only(top: 70, bottom: 120),
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 5,
+        itemBuilder: (_, __) => const Padding(
+          padding: EdgeInsets.only(bottom: 16),
+          child: SkeletonRestaurantCard(),
+        ),
+      );
     }
     if (_visibleRestaurants.isEmpty) {
       return Center(

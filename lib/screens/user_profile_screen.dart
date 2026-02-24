@@ -6,6 +6,7 @@ import 'package:foodconnect/widgets/follow_button.dart';
 import 'package:go_router/go_router.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:lottie/lottie.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String userId;
@@ -22,7 +23,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool isFollowing = false;
   int followerCount = 0;
   int followingCount = 0;
-  List<Map<String, dynamic>> userLists = [];
   final FirestoreService _firestoreService = FirestoreService();
   User? currentUser = FirebaseAuth.instance.currentUser;
 
@@ -268,6 +268,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             itemCount: lists.length,
             itemBuilder: (context, index) {
               final list = lists[index];
+              final coverUrl = list['coverUrl'] as String?;
+              final hasCover = coverUrl != null && coverUrl.isNotEmpty;
+
               return GestureDetector(
                 onTap: () {
                   context.push('/lists/${list['id']}', extra: list);
@@ -286,29 +289,60 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       width: 1,
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Icon(
-                          Icons.bookmark_border,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 28,
-                        ),
-                        Text(
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: hasCover
+                            ? CachedNetworkImage(
+                                imageUrl: coverUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                placeholder: (_, __) => Container(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
+                                ),
+                                errorWidget: (_, __, ___) => Container(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
+                                  child: Center(
+                                    child: Icon(Icons.bookmark_border,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        size: 28),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                child: Center(
+                                  child: Icon(Icons.bookmark_border,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                      size: 28),
+                                ),
+                              ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Text(
                           list['name'] ?? 'Unbenannte Liste',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     height: 1.2,
                                   ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               );

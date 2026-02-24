@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 
@@ -52,6 +53,7 @@ class _SaveToListSheetState extends State<SaveToListSheet> {
   }
 
   Future<void> _toggleRestaurantInList(Map<String, dynamic> list) async {
+    HapticFeedback.selectionClick();
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 

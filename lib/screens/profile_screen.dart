@@ -16,6 +16,7 @@ import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/widgets/follow_button.dart';
 import 'package:lottie/lottie.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class ProfileScreen extends StatefulWidget {
@@ -31,7 +32,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool isLoading = true;
   int followerCount = 0;
   int followingCount = 0;
-  List<Map<String, dynamic>> userLists = [];
   final FirestoreService _firestoreService = FirestoreService();
 
   @override
@@ -373,6 +373,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildListCard(Map<String, dynamic> list) {
+    final coverUrl = list['coverUrl'] as String?;
+    final hasCover = coverUrl != null && coverUrl.isNotEmpty;
+
     return GestureDetector(
       onTap: () {
         context.push('/lists/${list['id']}', extra: list);
@@ -388,28 +391,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: 1,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(
-                Icons.bookmark_border,
-                color: Theme.of(context).colorScheme.primary,
-                size: 28,
-              ),
-              Text(
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cover area
+            Expanded(
+              child: hasCover
+                  ? CachedNetworkImage(
+                      imageUrl: coverUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      placeholder: (_, __) => Container(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                      ),
+                      errorWidget: (_, __, ___) => Container(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        child: Center(
+                          child: Icon(Icons.bookmark_border,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 28),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: Center(
+                        child: Icon(Icons.bookmark_border,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 28),
+                      ),
+                    ),
+            ),
+            // Name label
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Text(
                 list['name'] ?? 'Unbenannte Liste',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       height: 1.2,
                     ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

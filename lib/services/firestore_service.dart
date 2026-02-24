@@ -421,15 +421,31 @@ class FirestoreService {
 
     if (onlyPublic) {
       query = query.where('isPublic', isEqualTo: true);
+    } else {
+      query = query.orderBy('createdAt', descending: true);
     }
 
-    return query.orderBy('createdAt', descending: true).snapshots().map(
+    return query.snapshots().map(
       (snapshot) {
-        return snapshot.docs.map((doc) {
+        final results = snapshot.docs.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
           data['id'] = doc.id;
           return data;
         }).toList();
+
+        // Client-side sort for onlyPublic (avoids composite index)
+        if (onlyPublic) {
+          results.sort((a, b) {
+            final aTime = a['createdAt'] as Timestamp?;
+            final bTime = b['createdAt'] as Timestamp?;
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return 1;
+            if (bTime == null) return -1;
+            return bTime.compareTo(aTime);
+          });
+        }
+
+        return results;
       },
     );
   }

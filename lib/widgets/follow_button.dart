@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 
 class FollowButton extends StatefulWidget {
@@ -38,6 +39,7 @@ class _FollowButtonState extends State<FollowButton> {
   }
 
   Future<void> _toggleFollow() async {
+    HapticFeedback.lightImpact();
     setState(() => isLoading = true);
     try {
       if (isFollowing) {
