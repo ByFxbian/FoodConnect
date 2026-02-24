@@ -467,4 +467,42 @@ class FirestoreService {
       'restaurantIds': FieldValue.arrayRemove([restaurantId]),
     });
   }
+
+  Future<void> renameList(String userId, String listId, String newName) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('lists')
+        .doc(listId)
+        .update({'name': newName});
+  }
+
+  Future<void> toggleListVisibility(
+      String userId, String listId, bool isPublic) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('lists')
+        .doc(listId)
+        .update({'isPublic': isPublic});
+  }
+
+  Future<void> deleteList(String userId, String listId) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('lists')
+        .doc(listId)
+        .delete();
+  }
+
+  Future<void> updateListCoverUrl(
+      String userId, String listId, String coverUrl) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('lists')
+        .doc(listId)
+        .update({'coverUrl': coverUrl});
+  }
 }
