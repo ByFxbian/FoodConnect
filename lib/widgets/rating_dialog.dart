@@ -6,11 +6,12 @@ class RatingDialog extends StatefulWidget {
   final Function(double, String) onRatingSubmitted; // Hinzugefügter Callback
 
   // ignore: use_super_parameters
-  const RatingDialog({Key? key, required this.restaurantId, required this.onRatingSubmitted}) : super(key: key); // Hinzugefügter Callback
+  const RatingDialog(
+      {Key? key, required this.restaurantId, required this.onRatingSubmitted})
+      : super(key: key); // Hinzugefügter Callback
 
-  
   @override
-  _RatingDialogState createState() => _RatingDialogState();
+  State<RatingDialog> createState() => _RatingDialogState();
 }
 
 class _RatingDialogState extends State<RatingDialog> {
@@ -31,7 +32,8 @@ class _RatingDialogState extends State<RatingDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20.0),
       ),
-      title: Text('Restaurant bewerten', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+      title: Text('Restaurant bewerten',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
       backgroundColor: Theme.of(context).colorScheme.surface,
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -55,10 +57,15 @@ class _RatingDialogState extends State<RatingDialog> {
             maxLines: 3,
             decoration: InputDecoration(
               hintText: 'Optional: Schreibe eine Bewertung',
-              hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              hintStyle:
+                  TextStyle(color: Theme.of(context).colorScheme.onSurface),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10.0),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                borderSide: BorderSide(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.5)),
               ),
             ),
           ),
@@ -67,14 +74,18 @@ class _RatingDialogState extends State<RatingDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Abbrechen', style: TextStyle(color: Theme.of(context).colorScheme.onSurface),),
+          child: Text(
+            'Abbrechen',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+          ),
         ),
         ElevatedButton(
           onPressed: _submitRating,
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           child: Text('Senden'),
         ),

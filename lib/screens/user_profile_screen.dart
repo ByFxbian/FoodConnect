@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/follower_list_screen.dart';
-import 'package:foodconnect/screens/main_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:intl/intl.dart';
@@ -11,13 +11,13 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'package:timeago/timeago.dart' as timeago;
 
-class UserProfileScreen extends StatefulWidget{
+class UserProfileScreen extends StatefulWidget {
   final String userId;
 
-  UserProfileScreen({ required this.userId});
+  UserProfileScreen({required this.userId});
 
   @override
-  _UserProfileScreenState createState() => _UserProfileScreenState();
+  State<UserProfileScreen> createState() => _UserProfileScreenState();
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
@@ -77,32 +77,23 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Future<void> _loadUserReviews() async {
-    List<Map<String, dynamic>> reviews = await _firestoreService.getUserReviews(widget.userId);
+    List<Map<String, dynamic>> reviews =
+        await _firestoreService.getUserReviews(widget.userId);
     setState(() {
       userReviews = reviews;
     });
   }
 
   Future<void> _toggleFollow() async {
-    if(isFollowing) {
+    if (isFollowing) {
       await _firestoreService.unfollowUser(widget.userId);
     } else {
       await _firestoreService.followUser(widget.userId);
-    }   
-     await _loadFollowCounts();
+    }
+    await _loadFollowCounts();
     setState(() {
       isFollowing = !isFollowing;
     });
-  }  
-
-  String _pixelateEmail(String email) {
-    if (!email.contains("@")) return email;
-    List<String> parts = email.split("@");
-    String domain = parts.last;
-    String pixelated = parts.first.length > 3
-        ? "${parts.first.substring(0, 3)}***"
-        : "***";
-    return "$pixelated@$domain";
   }
 
   @override
@@ -113,7 +104,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+          icon: Icon(Icons.arrow_back,
+              color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -131,7 +123,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: isLoading
-                ? Center(child: /*CircularProgressIndicator()*/ Lottie.asset('assets/animations/loading.json'))
+                ? Center(
+                    child: /*CircularProgressIndicator()*/
+                        Lottie.asset('assets/animations/loading.json'))
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,8 +139,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             children: [
                               GestureDetector(
                                 onTap: () {
-                                  Navigator.push(context, 
-                                  MaterialPageRoute(builder: (context) => FollowerListScreen(userId: widget.userId, isFollowing: false)));
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              FollowerListScreen(
+                                                  userId: widget.userId,
+                                                  isFollowing: false)));
                                 },
                                 child: Column(
                                   children: [
@@ -155,7 +154,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).colorScheme.onSurface,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
                                       ),
                                     ),
                                     Text(
@@ -178,8 +179,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             children: [
                               GestureDetector(
                                 onTap: () {
-                                  Navigator.push(context, 
-                                  MaterialPageRoute(builder: (context) => FollowerListScreen(userId: widget.userId, isFollowing: true)));
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              FollowerListScreen(
+                                                  userId: widget.userId,
+                                                  isFollowing: true)));
                                 },
                                 child: Column(
                                   children: [
@@ -188,7 +194,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).colorScheme.onSurface,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
                                       ),
                                     ),
                                     Text(
@@ -228,18 +236,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           // TODO: Bild zum Anklicken & Zoomen machen wie bei Instagram.
           CircleAvatar(
             radius: 60,
-            backgroundImage: userData?['photoUrl'] != null &&
-                    userData?['photoUrl'] != ""
-                ? ResizeImage(NetworkImage(userData?['photoUrl']), height: 420, policy: ResizeImagePolicy.fit)
-                : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 420, policy: ResizeImagePolicy.fit) as ImageProvider,
+            backgroundImage:
+                userData?['photoUrl'] != null && userData?['photoUrl'] != ""
+                    ? ResizeImage(NetworkImage(userData?['photoUrl']),
+                        height: 420, policy: ResizeImagePolicy.fit)
+                    : ResizeImage(AssetImage("assets/icons/default_avatar.png"),
+                        height: 420,
+                        policy: ResizeImagePolicy.fit) as ImageProvider,
           ),
           SizedBox(width: 15),
           ElevatedButton(
             onPressed: _toggleFollow,
             style: ElevatedButton.styleFrom(
               backgroundColor: isFollowing
-                ? Theme.of(context).colorScheme.secondary
-                : Theme.of(context).colorScheme.primary,
+                  ? Theme.of(context).colorScheme.secondary
+                  : Theme.of(context).colorScheme.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
               ),
@@ -278,14 +289,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             "Keine Bewertungen vorhanden.",
             style: TextStyle(
                 fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6)),
           ),
         ...displayedReviews.map((review) {
           Timestamp? timestamp = review['timestamp'];
           String timeAgoString = "";
-          if(timestamp != null) {
+          if (timestamp != null) {
             try {
-              timeAgoString = timeago.format(timestamp.toDate(), locale: 'de_short');
+              timeAgoString =
+                  timeago.format(timestamp.toDate(), locale: 'de_short');
             } catch (e) {
               print("Fehler beim Formatieren des Zeitstempels: $e");
               timeAgoString = DateFormat('dd.MM.yy').format(timestamp.toDate());
@@ -296,8 +311,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             leading: CircleAvatar(
               backgroundImage: userData?['photoUrl'] != null &&
                       userData?['photoUrl'] != ""
-                  ? ResizeImage(NetworkImage(userData?['photoUrl']), height: 140, policy: ResizeImagePolicy.fit)
-                  : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 140, policy: ResizeImagePolicy.fit) as ImageProvider,
+                  ? ResizeImage(NetworkImage(userData?['photoUrl']),
+                      height: 140, policy: ResizeImagePolicy.fit)
+                  : ResizeImage(AssetImage("assets/icons/default_avatar.png"),
+                      height: 140,
+                      policy: ResizeImagePolicy.fit) as ImageProvider,
             ),
             title: Text(review['restaurantName'] ?? 'Unbekanntes Restaurant'),
             subtitle: Text("${review['rating']} ⭐: ${review['comment']}",
@@ -305,13 +323,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             trailing: Text(timeAgoString.isNotEmpty ? " • $timeAgoString" : ""),
             onTap: () => _navigateToRestaurant(review["restaurantId"]),
           );
-        }).toList(),
-          if (userReviews.length > 5)
+        }),
+        if (userReviews.length > 5)
           TextButton(
             onPressed: () => setState(() => showAllReviews = !showAllReviews),
             child: Text(showAllReviews ? "Weniger anzeigen" : "Mehr anzeigen"),
           ),
-         /*=> ListTile(
+        /*=> ListTile(
               leading: CircleAvatar(
                 backgroundImage: userData?['photoUrl'] != null &&
                     userData?['photoUrl'] != ""
@@ -328,20 +346,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   void _navigateToRestaurant(String restaurant) async {
-    Map<String, dynamic>? restaurantData = await _databaseService.getRestaurantById(restaurant);
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MainScreen(
-          initialPage: 0,
-          targetLocation: LatLng(
-            restaurantData?['latitude'],
-            restaurantData?['longitude'],
-          ),
-          selectedRestaurantId: restaurant,
+    Map<String, dynamic>? restaurantData =
+        await _databaseService.getRestaurantById(restaurant);
+    if (mounted) {
+      context.go('/explore', extra: {
+        'targetLocation': LatLng(
+          restaurantData?['latitude'],
+          restaurantData?['longitude'],
         ),
-      ),
-    );
+        'selectedRestaurantId': restaurant,
+      });
+    }
   }
 
   Widget _buildTasteProfileSection(Map<String, dynamic>? tasteProfile) {
@@ -361,7 +376,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             "Keine Informationen vorhanden.",
             style: TextStyle(
                 fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.6)),
           ),
         ],
       );
@@ -380,7 +398,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         Divider(color: Theme.of(context).colorScheme.primary),
         ...tasteProfile.entries.map((entry) {
           return _buildTasteProfileRow(_mapKeyToLabel(entry.key), entry.value);
-        // ignore: unnecessary_to_list_in_spreads
+          // ignore: unnecessary_to_list_in_spreads
         }).toList(),
       ],
     );

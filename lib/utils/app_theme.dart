@@ -31,8 +31,7 @@ class AppTheme {
         primary: primary,
         secondary: primaryDark,
         surface: surface,
-        onSurface: textPrimary,
-        background: background
+        onSurface: textPrimary
       ),
 
       cardTheme: CardTheme(

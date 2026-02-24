@@ -4,15 +4,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:foodconnect/screens/login_screen.dart';
-import 'package:foodconnect/screens/taste_profile_screen.dart';
 import 'package:foodconnect/widgets/gradient_button.dart';
+import 'package:go_router/go_router.dart';
 import 'package:foodconnect/widgets/login_field.dart';
 
 class SignUpScreen extends StatefulWidget {
   static route() => MaterialPageRoute(
-    builder: (context) => const SignUpScreen(),
-  );
+        builder: (context) => const SignUpScreen(),
+      );
   const SignUpScreen({super.key});
 
   @override
@@ -30,7 +29,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool isLoading = false;
 
   final RegExp passwordRegex = RegExp(
-    r'^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()])[A-Za-z\d!@#$%^&*()]{8,}$');
+      r'^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()])[A-Za-z\d!@#$%^&*()]{8,}$');
 
   Map<String, bool> passwordCriteria = {
     "Mindestens 8 Zeichen": false,
@@ -70,8 +69,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       isLoading = true;
     });
     try {
-      
-      if(usernameController.text.trim().isEmpty) {
+      if (usernameController.text.trim().isEmpty) {
         setState(() {
           isLoading = false;
           errorMessage = "Bitte gib einen Nutzernamen ein.";
@@ -79,8 +77,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         return;
       }
 
-      bool userNameExists = await checkIfUsernameExists(usernameController.text.trim());
-      if(userNameExists) {
+      bool userNameExists =
+          await checkIfUsernameExists(usernameController.text.trim());
+      if (userNameExists) {
         setState(() {
           isLoading = false;
           errorMessage = "Dieser Nutzername ist bereits vergeben.";
@@ -88,31 +87,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
         return;
       }
 
-      final userCredential = 
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim(),
-        );
+      final userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
 
-        await userCredential.user?.sendEmailVerification();
+      await userCredential.user?.sendEmailVerification();
 
-        await FirebaseFirestore.instance.collection("users").doc(userCredential.user?.uid).set({
-          "id": userCredential.user?.uid,
-          "name": usernameController.text.trim(),
-          "lowercaseName": usernameController.text.trim().toLowerCase(),
-          "email": emailController.text.trim(),
-          "photoUrl": "",
-          "emailVerified": false,
-        });
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(userCredential.user?.uid)
+          .set({
+        "id": userCredential.user?.uid,
+        "name": usernameController.text.trim(),
+        "lowercaseName": usernameController.text.trim().toLowerCase(),
+        "email": emailController.text.trim(),
+        "photoUrl": "",
+        "emailVerified": false,
+      });
 
-        print("Nutzer erfolgreich erstellt & in Firestore gespeichert");
-        setState(() {
-          isLoading = false;
-        });
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => TasteProfileScreen(userId: userCredential.user!.uid)),
-        );
+      print("Nutzer erfolgreich erstellt & in Firestore gespeichert");
+      setState(() {
+        isLoading = false;
+      });
+
+      if (!mounted) return;
+
+      if (mounted) context.go('/explore');
     } on FirebaseException catch (e) {
       print(e.message);
       setState(() {
@@ -124,9 +126,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<bool> checkIfUsernameExists(String username) async {
     final querySnapshot = await FirebaseFirestore.instance
-      .collection("users")
-      .where("name", isEqualTo: username)
-      .get();
+        .collection("users")
+        .where("name", isEqualTo: username)
+        .get();
     return querySnapshot.docs.isNotEmpty;
   }
 
@@ -147,7 +149,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-              LoginField(hintText: 'Nutzername', controller: usernameController),
+              LoginField(
+                  hintText: 'Nutzername', controller: usernameController),
               const SizedBox(height: 15),
               LoginField(hintText: 'Email', controller: emailController),
               const SizedBox(height: 15),
@@ -155,7 +158,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               _buildPasswordField(),
               _buildPasswordCriteria(),
               const SizedBox(height: 15),
-              if(errorMessage != null) 
+              if (errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Text(
@@ -163,28 +166,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: const TextStyle(color: Colors.red, fontSize: 14),
                   ),
                 ),
-              isLoading ? GradientButton(pressAction: emptyFunction, buttonLabel: "Registrieren")
-              : GradientButton(pressAction: createUserWithEmailAndPassword, buttonLabel: "Registrieren"),
+              isLoading
+                  ? GradientButton(
+                      pressAction: emptyFunction, buttonLabel: "Registrieren")
+                  : GradientButton(
+                      pressAction: createUserWithEmailAndPassword,
+                      buttonLabel: "Registrieren"),
               const SizedBox(height: 15),
               const Text(
                 'oder',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 15),
               GestureDetector(
                 onTap: () {
-                  Navigator.pushReplacement(context, LoginScreen.route());
+                  context.go('/login');
                 },
                 child: RichText(
                   text: TextSpan(
                     text: 'Melde dich an',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                   ),
                 ),
               ),
@@ -207,27 +211,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
         obscureText: !isPasswordVisible,
         onChanged: validatePassword,
         decoration: InputDecoration(
-          contentPadding: EdgeInsets.all(27),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: isPasswordValid ? Colors.green : Colors.red),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          hintText: "Passwort",
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: isPasswordValid ? Colors.green : Colors.red),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          suffixIcon: IconButton(
-            icon: Icon(Platform.isIOS ? (isPasswordVisible ? CupertinoIcons.eye : CupertinoIcons.eye_slash) :
-              (isPasswordVisible ? Icons.visibility : Icons.visibility_off)
+            contentPadding: EdgeInsets.all(27),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(
+                  color: isPasswordValid ? Colors.green : Colors.red),
+              borderRadius: BorderRadius.circular(10),
             ),
-            onPressed: () {
-              setState(() {
-                isPasswordVisible = !isPasswordVisible;
-              });
-            },
-          )
-        ),
+            hintText: "Passwort",
+            border: OutlineInputBorder(
+              borderSide: BorderSide(
+                  color: isPasswordValid ? Colors.green : Colors.red),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(Platform.isIOS
+                  ? (isPasswordVisible
+                      ? CupertinoIcons.eye
+                      : CupertinoIcons.eye_slash)
+                  : (isPasswordVisible
+                      ? Icons.visibility
+                      : Icons.visibility_off)),
+              onPressed: () {
+                setState(() {
+                  isPasswordVisible = !isPasswordVisible;
+                });
+              },
+            )),
       ),
     );
   }
@@ -243,7 +252,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 padding: EdgeInsets.all(3),
               ),
               Icon(
-                Platform.isIOS ? (entry.value ? CupertinoIcons.check_mark_circled : CupertinoIcons.xmark_circle) : (entry.value ? Icons.check_circle : Icons.cancel),
+                Platform.isIOS
+                    ? (entry.value
+                        ? CupertinoIcons.check_mark_circled
+                        : CupertinoIcons.xmark_circle)
+                    : (entry.value ? Icons.check_circle : Icons.cancel),
                 color: entry.value ? Colors.green : Colors.red,
                 size: 18,
               ),

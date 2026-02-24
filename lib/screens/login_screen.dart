@@ -8,14 +8,15 @@ import 'package:foodconnect/main.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
 import 'package:foodconnect/screens/username_selection_screen.dart';
 import 'package:foodconnect/widgets/gradient_button.dart';
+import 'package:go_router/go_router.dart';
 import 'package:foodconnect/widgets/login_field.dart';
 import 'package:foodconnect/widgets/social_button.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginScreen extends StatefulWidget {
   static route() => MaterialPageRoute(
-    builder: (context) => const LoginScreen(),
-  );
+        builder: (context) => const LoginScreen(),
+      );
   const LoginScreen({super.key});
 
   @override
@@ -35,9 +36,9 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-   Future<void> emptyFunction() async {
+  Future<void> emptyFunction() async {
     return;
-   }
+  }
 
   Future<void> loginWithEmailAndPassword() async {
     setState(() {
@@ -45,36 +46,33 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       final userCredential =
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim(),
-        );
-        
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection("users")
           .doc(userCredential.user?.uid)
           .get();
 
-        if(userDoc.exists) {
-          print("Nutzer geladen: ${userDoc["name"]}");
+      if (userDoc.exists) {
+        print("Nutzer geladen: ${userDoc["name"]}");
 
-          if(mounted) {
-            setState(() {
-              isLoading = false;
-            });
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => AuthWrapper()),
-            );
-          }
-        } else {
-           setState(() {
-              isLoading = false;
-            });
-          print("Fehler: Nutzer nicht in Firestore gefunden.");
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+          await initializeAppData();
+          if (mounted) context.go('/explore');
         }
-
-    } on FirebaseException catch(e) {
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        print("Fehler: Nutzer nicht in Firestore gefunden.");
+      }
+    } on FirebaseException catch (e) {
       setState(() {
         isLoading = false;
       });
@@ -86,13 +84,19 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final appleProvider = AppleAuthProvider();
 
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithProvider(appleProvider);
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithProvider(appleProvider);
       final User? user = userCredential.user;
 
-      if(user!=null) {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+      if (user != null) {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid)
+            .get();
 
-        if(!userDoc.exists) {
+        if (!mounted) return;
+
+        if (!userDoc.exists) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -100,10 +104,8 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => AuthWrapper()), 
-          );
+          await initializeAppData();
+          if (mounted) context.go('/explore');
         }
       }
     } catch (e) {
@@ -114,21 +116,28 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> loginWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if(googleUser == null) return;
+      if (googleUser == null) return;
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
       final User? user = userCredential.user;
 
-      if(user!=null) {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+      if (user != null) {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid)
+            .get();
 
-        if(!userDoc.exists) {
+        if (!mounted) return;
+
+        if (!userDoc.exists) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -136,10 +145,8 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => AuthWrapper()), 
-          );
+          await initializeAppData();
+          if (mounted) context.go('/explore');
         }
       }
     } catch (e) {
@@ -158,14 +165,13 @@ class _LoginScreenState extends State<LoginScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("Gib deine E-MailAdresse ein, um dein Passwort zurückzusetzen."),
+              Text(
+                  "Gib deine E-MailAdresse ein, um dein Passwort zurückzusetzen."),
               SizedBox(height: 10),
               TextField(
                 controller: resetEmailController,
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: "E-Mail Adresse"
-                ),
+                    border: OutlineInputBorder(), hintText: "E-Mail Adresse"),
               ),
             ],
           ),
@@ -180,11 +186,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   await FirebaseAuth.instance.sendPasswordResetEmail(
                     email: resetEmailController.text.trim(),
                   );
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Passwort-Reset E-Mail gesendet!"), backgroundColor: Colors.green),
+                    SnackBar(
+                        content: Text("Passwort-Reset E-Mail gesendet!"),
+                        backgroundColor: Colors.green),
                   );
                 } catch (e) {
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text("Fehler: Überprüfe die E-Mail-Adresse."),
@@ -212,23 +222,24 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text(
                 'Food Connect',
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 50,
-                  color: Colors.white
-                ),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 50,
+                    color: Colors.white),
               ),
               const SizedBox(height: 30),
-              SocialButton(iconPath: 'assets/svgs/g_logo.svg', label: 'Weiter mit Google', onTap: loginWithGoogle),
-              if(Platform.isIOS)
-                const SizedBox(height: 15),
-                SocialButton(iconPath: 'assets/svgs/a_logo.svg', label: 'Weiter mit Apple', onTap: loginWithApple),
+              SocialButton(
+                  iconPath: 'assets/svgs/g_logo.svg',
+                  label: 'Weiter mit Google',
+                  onTap: loginWithGoogle),
+              if (Platform.isIOS) const SizedBox(height: 15),
+              SocialButton(
+                  iconPath: 'assets/svgs/a_logo.svg',
+                  label: 'Weiter mit Apple',
+                  onTap: loginWithApple),
               const SizedBox(height: 15),
               const Text(
                 'oder',
-                style: TextStyle(
-                  fontSize: 17,
-                  color: Colors.grey
-                ),
+                style: TextStyle(fontSize: 17, color: Colors.grey),
               ),
               const SizedBox(height: 15),
               LoginField(hintText: 'Email', controller: emailController),
@@ -242,15 +253,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              isLoading ? GradientButton(pressAction: emptyFunction, buttonLabel: "Wird angemeldet...")
-              : GradientButton(pressAction: loginWithEmailAndPassword, buttonLabel: "Anmelden"),
+              isLoading
+                  ? GradientButton(
+                      pressAction: emptyFunction,
+                      buttonLabel: "Wird angemeldet...")
+                  : GradientButton(
+                      pressAction: loginWithEmailAndPassword,
+                      buttonLabel: "Anmelden"),
               const SizedBox(height: 15),
               const Text(
                 'oder',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 15),
               GestureDetector(
@@ -261,9 +274,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   text: TextSpan(
                     text: 'Erstelle einen neuen Account',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white
-                    ),
+                        fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ),
               ),

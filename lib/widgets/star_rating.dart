@@ -10,7 +10,7 @@ class StarRating extends StatefulWidget {
   StarRating({this.rating = 0.0, this.onRatingChanged, this.size = 30.0});
 
   @override
-  _StarRatingState createState() => _StarRatingState();
+  State<StarRating> createState() => _StarRatingState();
 }
 
 class _StarRatingState extends State<StarRating> {
@@ -46,14 +46,15 @@ class _StarRatingState extends State<StarRating> {
     return GestureDetector(
       onTap: () {
         final RenderBox box = context.findRenderObject() as RenderBox;
-        final localOffset = box.globalToLocal(Offset(box.size.width / 10, box.size.height/2));
+        final localOffset =
+            box.globalToLocal(Offset(box.size.width / 10, box.size.height / 2));
         double starWidth = box.size.width / 5;
-        double newRating = (localOffset.dx + (index*starWidth)) / starWidth;
+        double newRating = (localOffset.dx + (index * starWidth)) / starWidth;
 
         newRating = (newRating * 2).round() / 2;
         setState(() {
-            _currentRating = newRating.clamp(index.toDouble(), index + 1.0);
-            widget.onRatingChanged?.call(_currentRating);
+          _currentRating = newRating.clamp(index.toDouble(), index + 1.0);
+          widget.onRatingChanged?.call(_currentRating);
         });
       },
       onHorizontalDragUpdate: (details) {

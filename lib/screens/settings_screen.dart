@@ -7,20 +7,21 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:foodconnect/main.dart';
+import 'package:go_router/go_router.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/services/notification_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:foodconnect/main.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback onUsernameChanged;
 
-  SettingsScreen({required this.onUsernameChanged});  
+  SettingsScreen({required this.onUsernameChanged});
 
   @override
-  _SettingsScreenState createState() => _SettingsScreenState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
@@ -31,7 +32,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool notificationsEnabled = false;
 
   bool userNotificationsEnabled = true;
-  bool _isLoadingPreferences = true;
 
   @override
   void initState() {
@@ -42,12 +42,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadUserNotificationPreference() async {
     if (!mounted) return;
-    setState(() { _isLoadingPreferences = true; });
+    if (!mounted) return;
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
       try {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid)
+            .get();
         bool isEnabled = true; // Standardwert
         if (userDoc.exists && userDoc.data() != null) {
           var data = userDoc.data() as Map<String, dynamic>;
@@ -67,14 +70,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       } finally {
         if (mounted) {
-          setState(() { _isLoadingPreferences = false; });
+          setState(() {});
         }
       }
     } else {
       if (mounted) {
         setState(() {
           userNotificationsEnabled = true;
-          _isLoadingPreferences = false;
         });
       }
     }
@@ -82,54 +84,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadProfileImage() async {
     User? user = FirebaseAuth.instance.currentUser;
-    if(user != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
-      if(userDoc.exists) {
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .get();
+      if (userDoc.exists) {
         setState(() {
           _profileImageUrl = userDoc["photoUrl"];
         });
       }
     }
   }
-
-  Future<void> _loadNotificationPreference() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if(user!=null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
-      if(userDoc.exists && userDoc.data() != null) {
-        var data = userDoc.data() as Map<String, dynamic>;
-
-        setState(() {
-          notificationsEnabled = data.containsKey("notificationToken") && data["notificationToken"] != "";
-        });
-      }
-    }
-  }
-
-  /*Future<void> _toggleNotifications(bool value) async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if(user==null) return;
-
-    if(value) {
-      NotificationSettings settings = await FirebaseMessaging.instance.requestPermission();
-      if(settings.authorizationStatus == AuthorizationStatus.authorized) {
-        String? token = await FirebaseMessaging.instance.getToken();
-        if(token!=null) {
-          await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
-            "notificationToken": token,
-          });
-        } 
-      }
-    } else {
-      await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
-        "notificationToken": FieldValue.delete(),
-      });
-    }
-
-    setState(() {
-      notificationsEnabled = value;
-    });
-  }*/
 
   /*Future<void> _toggleNotifications(bool value) async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -159,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _toggleNotifications(bool value) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    
+
     try {
       await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
         'userNotificationsEnabled': value,
@@ -175,45 +141,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
         print("Einstellungen: Versuche Token zu speichern...");
         await NotificationService.saveTokenToFirestore();
       } else {
-         print("Einstellungen: Lösche Token...");
+        print("Einstellungen: Lösche Token...");
         await NotificationService.deleteTokenFromFirestore();
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Benachrichtigungseinstellung ${value ? 'aktiviert' : 'deaktiviert'}."), duration: Duration(seconds: 2)),
+        SnackBar(
+            content: Text(
+                "Benachrichtigungseinstellung ${value ? 'aktiviert' : 'deaktiviert'}."),
+            duration: Duration(seconds: 2)),
       );
     } catch (e) {
       print("Fehler beim Umschalten der Benachrichtigungen: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Fehler beim Speichern der Einstellung."), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text("Fehler beim Speichern der Einstellung."),
+            backgroundColor: Colors.red),
       );
     }
-
   }
 
   Future<bool> checkIfUsernameExists(String username) async {
     final querySnapshot = await FirebaseFirestore.instance
-      .collection("users")
-      .where("name", isEqualTo: username)
-      .get();
+        .collection("users")
+        .where("name", isEqualTo: username)
+        .get();
     return querySnapshot.docs.isNotEmpty;
   }
 
   void _updateUsername() async {
     User? user = FirebaseAuth.instance.currentUser;
-    if(user != null && _userNameController.text.isNotEmpty) {
-      bool userNameExists = await checkIfUsernameExists(_userNameController.text.trim());
+    if (user != null && _userNameController.text.isNotEmpty) {
+      bool userNameExists =
+          await checkIfUsernameExists(_userNameController.text.trim());
       if (userNameExists) {
         _showConfirmationPopup("Benutzername ist vergeben", false);
         return;
       }
-      await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .update({
         "name": _userNameController.text.trim(),
         "lowercaseName": _userNameController.text.trim().toLowerCase(),
       });
 
-
-      await FirestoreService().updateUsernameInReviews(user.uid, _userNameController.text.trim());
+      await FirestoreService()
+          .updateUsernameInReviews(user.uid, _userNameController.text.trim());
 
       widget.onUsernameChanged();
       _showConfirmationPopup("Benutzername aktualisiert", true);
@@ -222,19 +196,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _pickAndUploadImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
-    if(pickedFile == null) return;
+    if (pickedFile == null) return;
 
     File file = File(pickedFile.path);
     User? user = FirebaseAuth.instance.currentUser;
 
-    if(user!=null) {
+    if (user != null) {
       String filePath = "profile_images/${user.uid}.jpg";
-      UploadTask uploadTask = FirebaseStorage.instance.ref().child(filePath).putFile(file);
+      UploadTask uploadTask =
+          FirebaseStorage.instance.ref().child(filePath).putFile(file);
 
       TaskSnapshot snapshot = await uploadTask;
       String downloadUrl = await snapshot.ref.getDownloadURL();
 
-      await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .update({
         "photoUrl": downloadUrl,
       });
 
@@ -248,40 +226,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showImageSourceDialog() {
     showModalBottomSheet(
-      context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Platform.isIOS ? CupertinoIcons.camera : Icons.camera_alt, color: Theme.of(context).colorScheme.primary),
-                title: Text("Kamera verwenden"),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickAndUploadImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: Icon(Platform.isIOS ? CupertinoIcons.collections : Icons.photo_library),
-                title: Text("Galerie öffnen"),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickAndUploadImage(ImageSource.gallery);
-                },
-              )
-            ],
-          ),
-        );
-      }
-    );
+        context: context,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) {
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(
+                      Platform.isIOS ? CupertinoIcons.camera : Icons.camera_alt,
+                      color: Theme.of(context).colorScheme.primary),
+                  title: Text("Kamera verwenden"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAndUploadImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Platform.isIOS
+                      ? CupertinoIcons.collections
+                      : Icons.photo_library),
+                  title: Text("Galerie öffnen"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAndUploadImage(ImageSource.gallery);
+                  },
+                )
+              ],
+            ),
+          );
+        });
   }
- 
+
   void _showConfirmationPopup(String message, bool passed) {
     showModalBottomSheet(
       context: context,
@@ -295,12 +276,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              passed ? Icon(Platform.isIOS ? CupertinoIcons.check_mark_circled : Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 40) :
-                Icon(Platform.isIOS ? CupertinoIcons.xmark_circle : Icons.close_outlined, color: Theme.of(context).colorScheme.primary, size: 40),
+              passed
+                  ? Icon(
+                      Platform.isIOS
+                          ? CupertinoIcons.check_mark_circled
+                          : Icons.check_circle,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 40)
+                  : Icon(
+                      Platform.isIOS
+                          ? CupertinoIcons.xmark_circle
+                          : Icons.close_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 40),
               SizedBox(height: 10),
               Text(
                 message,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 10),
@@ -309,7 +304,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
                 child: Text("OK"),
               )
@@ -330,7 +326,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text("Konto löschen"),
-        content: Text("Bist du sicher, dass du dein Konto dauerhaft löschen möchtest?"),
+        content: Text(
+            "Bist du sicher, dass du dein Konto dauerhaft löschen möchtest?"),
         alignment: Alignment.center,
         actions: [
           TextButton(
@@ -352,10 +349,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _deleteAccount() async {
     try {
       await FirebaseAuth.instance.currentUser?.delete();
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => AuthWrapper()), 
-        (route) => false
-      );
+      if (mounted) context.go('/login');
     } on FirebaseException catch (e) {
       print("Fehler beim Löschen des Accounts: $e");
 
@@ -378,7 +372,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       if (providerId == EmailAuthProvider.PROVIDER_ID) {
-        final TextEditingController passwordController = TextEditingController();
+        final TextEditingController passwordController =
+            TextEditingController();
 
         final bool? confirmed = await showDialog<bool>(
           context: context,
@@ -390,8 +385,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: InputDecoration(hintText: "Dein Passwort"),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text("Abbrechen")),
-              ElevatedButton(onPressed: () => Navigator.of(context).pop(true), child: Text("Bestätigen & Löschen")),
+              TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text("Abbrechen")),
+              ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text("Bestätigen & Löschen")),
             ],
           ),
         );
@@ -405,14 +404,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           await user.reauthenticateWithCredential(credential);
           _deleteAccount();
         }
-      } else if (AppleAuthProvider.PROVIDER_ID ==providerId) {
-        await FirebaseAuth.instance.currentUser?.reauthenticateWithProvider(AppleAuthProvider());
+      } else if (AppleAuthProvider.PROVIDER_ID == providerId) {
+        await FirebaseAuth.instance.currentUser
+            ?.reauthenticateWithProvider(AppleAuthProvider());
         _deleteAccount();
       } else if (GoogleAuthProvider().providerId == providerId) {
-        await FirebaseAuth.instance.currentUser?.reauthenticateWithProvider(GoogleAuthProvider());
+        await FirebaseAuth.instance.currentUser
+            ?.reauthenticateWithProvider(GoogleAuthProvider());
         _deleteAccount();
       }
-
     } catch (e) {
       print("Fehler beim Reauthentifizieren und Löschen des Accounts: $e");
     }
@@ -428,10 +428,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.adaptive.arrow_back, color: Theme.of(context).colorScheme.onSurface),
+          icon: Icon(Icons.adaptive.arrow_back,
+              color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text("Einstellungen", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+        title: Text("Einstellungen",
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -443,9 +445,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   CircleAvatar(
                     radius: 60,
-                    backgroundImage: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                        ? ResizeImage(NetworkImage(_profileImageUrl!), height: 420, policy: ResizeImagePolicy.fit)
-                        : ResizeImage(AssetImage("assets/icons/default_avatar.png"), height: 420, policy: ResizeImagePolicy.fit) as ImageProvider,
+                    backgroundImage:
+                        _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                            ? ResizeImage(NetworkImage(_profileImageUrl!),
+                                height: 420, policy: ResizeImagePolicy.fit)
+                            : ResizeImage(
+                                AssetImage("assets/icons/default_avatar.png"),
+                                height: 420,
+                                policy: ResizeImagePolicy.fit) as ImageProvider,
                   ),
                   Positioned(
                     bottom: 0,
@@ -455,7 +462,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: CircleAvatar(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         radius: 20,
-                        child: Icon(Platform.isIOS ? CupertinoIcons.camera : Icons.camera_alt, color: Colors.white, size: 20),
+                        child: Icon(
+                            Platform.isIOS
+                                ? CupertinoIcons.camera
+                                : Icons.camera_alt,
+                            color: Colors.white,
+                            size: 20),
                       ),
                     ),
                   ),
@@ -464,7 +476,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             SizedBox(height: 20),
             SwitchListTile.adaptive(
-              title: Text("Dark Mode", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              title: Text("Dark Mode",
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface)),
               value: themeProvider.themeMode == ThemeMode.dark,
               onChanged: (_) {
                 themeProvider.toggleTheme();
@@ -472,34 +486,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
               activeColor: Theme.of(context).colorScheme.primary,
             ),
             SwitchListTile.adaptive(
-              title: Text("Push-Benachrichtigungen", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              title: Text("Push-Benachrichtigungen",
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface)),
               value: userNotificationsEnabled,
               onChanged: _toggleNotifications,
               activeColor: Theme.of(context).colorScheme.primary,
             ),
             ListTile(
-              title: Text("Benutzernamen ändern", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-              trailing: Icon(Platform.isIOS ? CupertinoIcons.pencil : Icons.edit, color: Theme.of(context).colorScheme.onSurface),
+              title: Text("Benutzernamen ändern",
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface)),
+              trailing: Icon(
+                  Platform.isIOS ? CupertinoIcons.pencil : Icons.edit,
+                  color: Theme.of(context).colorScheme.onSurface),
               onTap: () {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: Text("Neuen Benutzernamen eingeben", style: TextStyle(color: Theme.of(context).colorScheme.onSurface),),
+                    title: Text(
+                      "Neuen Benutzernamen eingeben",
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface),
+                    ),
                     content: TextField(
                       controller: _userNameController,
-                      decoration: InputDecoration(hintText: "Neuer Benutzername"),
+                      decoration:
+                          InputDecoration(hintText: "Neuer Benutzername"),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: Text("Abbrechen", style: TextStyle(color: Theme.of(context).colorScheme.onSurface),),
+                        child: Text(
+                          "Abbrechen",
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface),
+                        ),
                       ),
                       TextButton(
                         onPressed: () {
                           _updateUsername();
                           Navigator.of(context).pop();
                         },
-                        child: Text("Speichern", style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                        child: Text("Speichern",
+                            style: TextStyle(
+                                color:
+                                    Theme.of(context).colorScheme.onSurface)),
                       ),
                     ],
                   ),
@@ -507,11 +539,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             ListTile(
-              title: Text("Abmelden", style: TextStyle(color: Colors.redAccent)),
+              title:
+                  Text("Abmelden", style: TextStyle(color: Colors.redAccent)),
               onTap: _signOut,
             ),
             ListTile(
-              title: Text("Konto löschen", style: TextStyle(color: Colors.redAccent)),
+              title: Text("Konto löschen",
+                  style: TextStyle(color: Colors.redAccent)),
               onTap: _confirmDeleteAccount,
             ),
           ],

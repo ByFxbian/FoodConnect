@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:foodconnect/utils/Palette.dart';
+import 'package:foodconnect/utils/palette.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SocialButton extends StatelessWidget {
@@ -34,7 +34,8 @@ class SocialButton extends StatelessWidget {
         ),
       ),
       style: TextButton.styleFrom(
-        padding: EdgeInsets.symmetric(vertical: 30, horizontal: horizontalPadding),
+        padding:
+            EdgeInsets.symmetric(vertical: 30, horizontal: horizontalPadding),
         shape: RoundedRectangleBorder(
           side: const BorderSide(
             color: Palette.darkBorderColor,

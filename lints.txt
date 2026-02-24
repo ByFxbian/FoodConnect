@@ -1,0 +1,5 @@
+﻿Analyzing FoodConnect...                                        
+
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\home_screen.dart:208:52 - deprecated_member_use
+warning - Unused import: 'package:flutter_local_notifications/flutter_local_notifications.dart' - lib\services\notification_service.dart:6:8 - unused_import
+

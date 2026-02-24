@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:foodconnect/utils/Palette.dart';
+import 'package:foodconnect/utils/palette.dart';
 
 class GradientButton extends StatelessWidget {
   final Future<void> Function() pressAction;
@@ -17,11 +17,7 @@ class GradientButton extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Palette.gradient1,
-            Palette.gradient2,
-            Palette.gradient3
-          ],
+          colors: [Palette.gradient1, Palette.gradient2, Palette.gradient3],
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
         ),
@@ -29,7 +25,7 @@ class GradientButton extends StatelessWidget {
       ),
       child: ElevatedButton(
         onPressed: () async {
-          if(!context.mounted) return;
+          if (!context.mounted) return;
           await pressAction();
         },
         style: ElevatedButton.styleFrom(
@@ -40,10 +36,7 @@ class GradientButton extends StatelessWidget {
         child: Text(
           buttonLabel,
           style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 17,
-            color: Colors.white
-          ),
+              fontWeight: FontWeight.w600, fontSize: 17, color: Colors.white),
         ),
       ),
     );

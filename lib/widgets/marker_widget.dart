@@ -21,7 +21,7 @@ class MarkerWidget {
     required this.id,
     required this.name,
     required this.position,
-    required this.iconPath, 
+    required this.iconPath,
     required this.description,
     required this.openingHours,
     required this.rating,
@@ -43,7 +43,8 @@ class MarkerWidget {
   }
 
   Future<Marker> toMarker(BuildContext context) async {
-    final BitmapDescriptor icon = BitmapDescriptor.fromBytes(await _loadAssetIconBytes("assets/icons/mapicon.png", 115));
+    final BitmapDescriptor icon = BitmapDescriptor.bytes(
+        await _loadAssetIconBytes("assets/icons/mapicon.png", 115));
 
     return Marker(
       markerId: MarkerId(id),
@@ -58,8 +59,8 @@ class MarkerWidget {
   void showMarkerPanel() async {
     print("🟢 Marker Panel für $name wird geöffnet!");
 
-    String address = await getAddressFromLatLng(position.latitude, position.longitude);
-
+    String address =
+        await getAddressFromLatLng(position.latitude, position.longitude);
 
     showModalBottomSheet(
       context: parentContext,
@@ -84,7 +85,8 @@ class MarkerWidget {
                   children: [
                     Text(
                       name,
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 8),
                     Text(
@@ -95,45 +97,52 @@ class MarkerWidget {
                     Center(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(iconPath, height: 100, errorBuilder: (context, error, stackTrace) {
-                          return Image.asset("assets/icons/mapicon.png", height: 100);
+                        child: Image.network(iconPath, height: 100,
+                            errorBuilder: (context, error, stackTrace) {
+                          return Image.asset("assets/icons/mapicon.png",
+                              height: 100);
                         }),
                       ),
                     ),
                     SizedBox(height: 16),
-                  if (description.isNotEmpty) ...[
-                    Text(
-                      "📌 Beschreibung",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    Text(description, style: TextStyle(fontSize: 16)),
-                    SizedBox(height: 16),
-                  ],
-                  if (address.isNotEmpty) ...[
-                    Text(
-                      "📍 Adresse",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    Text(address, style: TextStyle(fontSize: 16)),
-                    SizedBox(height: 16),
-                  ],
-                  if (openingHours.isNotEmpty) ...[
-                    Text(
-                      "🕒 Öffnungszeiten",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: _formatOpeningHours(openingHours),
-                    ),
-                    SizedBox(height: 16),
-                  ],
-                  if (rating.isNotEmpty) ...[
-                    Text(
-                      "⭐ Bewertung",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    Text("${rating.toString()} / 5.0", style: TextStyle(fontSize: 16)),
+                    if (description.isNotEmpty) ...[
+                      Text(
+                        "📌 Beschreibung",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Text(description, style: TextStyle(fontSize: 16)),
+                      SizedBox(height: 16),
+                    ],
+                    if (address.isNotEmpty) ...[
+                      Text(
+                        "📍 Adresse",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Text(address, style: TextStyle(fontSize: 16)),
+                      SizedBox(height: 16),
+                    ],
+                    if (openingHours.isNotEmpty) ...[
+                      Text(
+                        "🕒 Öffnungszeiten",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: _formatOpeningHours(openingHours),
+                      ),
+                      SizedBox(height: 16),
+                    ],
+                    if (rating.isNotEmpty) ...[
+                      Text(
+                        "⭐ Bewertung",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Text("${rating.toString()} / 5.0",
+                          style: TextStyle(fontSize: 16)),
                     ],
                   ],
                 ),
@@ -158,9 +167,9 @@ class MarkerWidget {
 
     List<Widget> formattedHours = [];
     List<String> lines = openingHours.split(" | ");
-    for(var line in lines) {
+    for (var line in lines) {
       List<String> parts = line.split(": ");
-      if(parts.length == 2) {
+      if (parts.length == 2) {
         String day = daysMap[parts[0]] ?? parts[0];
         String time = _convertTo24HourFormat(parts[1]);
 
@@ -180,7 +189,8 @@ class MarkerWidget {
 
   static String _convertTo24HourFormat(String timeRange) {
     return timeRange.replaceAllMapped(
-      RegExp(r'(\d{1,2}):(\d{2})\s?(AM|PM)\s?[–-]\s?(\d{1,2}):(\d{2})\s?(AM|PM)'),
+      RegExp(
+          r'(\d{1,2}):(\d{2})\s?(AM|PM)\s?[–-]\s?(\d{1,2}):(\d{2})\s?(AM|PM)'),
       (Match m) {
         int startHour = int.parse(m[1]!);
         String startMinute = m[2]!;
@@ -210,31 +220,38 @@ class MarkerWidget {
   }
 
   // ignore: unused_element
-  static Future<BitmapDescriptor> _getCustomIcon(String assetPath, {int width = 115}) async {
-    if(assetPath.startsWith("http") || assetPath.startsWith("https")) {
+  static Future<BitmapDescriptor> _getCustomIcon(String assetPath,
+      {int width = 115}) async {
+    if (assetPath.startsWith("http") || assetPath.startsWith("https")) {
       try {
         final http.Response response = await http.get(Uri.parse(assetPath));
         if (response.statusCode == 200) {
           final Uint8List bytes = response.bodyBytes;
-          ui.Codec codec = await ui.instantiateImageCodec(bytes, targetWidth: width);
+          ui.Codec codec =
+              await ui.instantiateImageCodec(bytes, targetWidth: width);
           ui.FrameInfo fi = await codec.getNextFrame();
-          ByteData? resizedData = await fi.image.toByteData(format: ui.ImageByteFormat.png);
+          ByteData? resizedData =
+              await fi.image.toByteData(format: ui.ImageByteFormat.png);
 
-          return BitmapDescriptor.fromBytes(resizedData!.buffer.asUint8List());
+          return BitmapDescriptor.bytes(resizedData!.buffer.asUint8List());
         }
       } catch (e) {
         print("Fehler beim Laden des Icons: $e");
       }
     }
 
-    return BitmapDescriptor.fromBytes(await _loadAssetIconBytes("assets/icons/mapicon.png", width));
+    return BitmapDescriptor.bytes(
+        await _loadAssetIconBytes("assets/icons/mapicon.png", width));
   }
 
-  static Future<Uint8List> _loadAssetIconBytes(String assetPath, int width) async {
+  static Future<Uint8List> _loadAssetIconBytes(
+      String assetPath, int width) async {
     ByteData data = await rootBundle.load(assetPath);
-    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
+        targetWidth: width);
     ui.FrameInfo fi = await codec.getNextFrame();
-    ByteData? resizedData = await fi.image.toByteData(format: ui.ImageByteFormat.png);
+    ByteData? resizedData =
+        await fi.image.toByteData(format: ui.ImageByteFormat.png);
     return resizedData!.buffer.asUint8List();
   }
 }

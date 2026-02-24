@@ -1,16 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:foodconnect/screens/main_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class TasteProfileScreen extends StatefulWidget {
   final String userId;
   final Map<String, dynamic>? initialProfileData;
 
-  TasteProfileScreen({ required this.userId, this.initialProfileData});
+  TasteProfileScreen({required this.userId, this.initialProfileData});
 
   @override
   // ignore: library_private_types_in_public_api
-  _TasteProfileScreenState createState() => _TasteProfileScreenState();
+  State<TasteProfileScreen> createState() => _TasteProfileScreenState();
 }
 
 class _TasteProfileScreenState extends State<TasteProfileScreen> {
@@ -19,21 +19,64 @@ class _TasteProfileScreenState extends State<TasteProfileScreen> {
   bool isEditMode = false;
 
   final Map<String, int> keyToIndex = {
-     "favoriteCuisine": 0,
-     "dietType": 1,
-     "spiceLevel": 2,
-     "allergies": 3,
-     "favoriteTaste": 4,
+    "favoriteCuisine": 0,
+    "dietType": 1,
+    "spiceLevel": 2,
+    "allergies": 3,
+    "favoriteTaste": 4,
   };
 
   final List<Map<String, dynamic>> questions = [
-     {'key': "favoriteCuisine", 'question': 'Was ist deine Lieblingsküche?', 'options': ['Italienisch', 'Asiatisch', 'Amerikanisch', 'Indisch', 'Mexikanisch', 'Andere', 'Keine Präferenz']},
-     {'key': "dietType", 'question': 'Welche Ernährungsweise bevorzugst du?', 'options': ['Allesesser', 'Vegetarisch', 'Vegan', 'Pescatarisch', 'Flexitarisch', 'Andere', 'Keine spezielle']},
-     {'key': "spiceLevel", 'question': 'Wie scharf magst du dein Essen?', 'options': ['Mild', 'Leicht scharf', 'Scharf', 'Sehr scharf', 'Egal']},
-     {'key': "allergies", 'question': 'Hast du Allergien oder Unverträglichkeiten?', 'options': ['Keine', 'Laktose', 'Gluten', 'Nüsse', 'Meeresfrüchte', 'Soja', 'Andere']},
-     {'key': "favoriteTaste", 'question': 'Welche Geschmacksrichtung bevorzugst du?', 'options': ['Süß', 'Salzig', 'Sauer', 'Bitter', 'Umami', 'Egal']}
+    {
+      'key': "favoriteCuisine",
+      'question': 'Was ist deine Lieblingsküche?',
+      'options': [
+        'Italienisch',
+        'Asiatisch',
+        'Amerikanisch',
+        'Indisch',
+        'Mexikanisch',
+        'Andere',
+        'Keine Präferenz'
+      ]
+    },
+    {
+      'key': "dietType",
+      'question': 'Welche Ernährungsweise bevorzugst du?',
+      'options': [
+        'Allesesser',
+        'Vegetarisch',
+        'Vegan',
+        'Pescatarisch',
+        'Flexitarisch',
+        'Andere',
+        'Keine spezielle'
+      ]
+    },
+    {
+      'key': "spiceLevel",
+      'question': 'Wie scharf magst du dein Essen?',
+      'options': ['Mild', 'Leicht scharf', 'Scharf', 'Sehr scharf', 'Egal']
+    },
+    {
+      'key': "allergies",
+      'question': 'Hast du Allergien oder Unverträglichkeiten?',
+      'options': [
+        'Keine',
+        'Laktose',
+        'Gluten',
+        'Nüsse',
+        'Meeresfrüchte',
+        'Soja',
+        'Andere'
+      ]
+    },
+    {
+      'key': "favoriteTaste",
+      'question': 'Welche Geschmacksrichtung bevorzugst du?',
+      'options': ['Süß', 'Salzig', 'Sauer', 'Bitter', 'Umami', 'Egal']
+    }
   ];
-
 
   /*final List<Map<String, dynamic>> questions = [
     {
@@ -61,10 +104,11 @@ class _TasteProfileScreenState extends State<TasteProfileScreen> {
   @override
   void initState() {
     super.initState();
-    if(widget.initialProfileData != null && widget.initialProfileData!.isNotEmpty) {
+    if (widget.initialProfileData != null &&
+        widget.initialProfileData!.isNotEmpty) {
       isEditMode = true;
       widget.initialProfileData!.forEach((key, value) {
-        if(keyToIndex.containsKey(key) && value is String) {
+        if (keyToIndex.containsKey(key) && value is String) {
           answers[keyToIndex[key]!] = value;
         }
       });
@@ -103,26 +147,32 @@ class _TasteProfileScreenState extends State<TasteProfileScreen> {
       );
     }*/
     try {
-       await FirebaseFirestore.instance.collection("users").doc(widget.userId).set({
-         "tasteProfile": profileToSave,
-       }, SetOptions(merge: true));
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(widget.userId)
+          .set({
+        "tasteProfile": profileToSave,
+      }, SetOptions(merge: true));
 
-       if (currentStep < questions.length - 1) {
-         setState(() {
-           currentStep++;
-         });
-       } else {
-         if (isEditMode) {
-           if(mounted) Navigator.pop(context);
-         } else {
-           if(mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MainScreen()));
-         }
-       }
+      if (currentStep < questions.length - 1) {
+        setState(() {
+          currentStep++;
+        });
+      } else {
+        if (isEditMode) {
+          if (mounted) Navigator.pop(context);
+        } else {
+          if (mounted) {
+            context.go('/explore');
+          }
+        }
+      }
     } catch (e) {
-       print("Fehler beim Speichern des Geschmacksprofils: $e");
-       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Fehler beim Speichern."), backgroundColor: Colors.red)
-       );
+      print("Fehler beim Speichern des Geschmacksprofils: $e");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Fehler beim Speichern."),
+          backgroundColor: Colors.red));
     }
   }
 
@@ -135,16 +185,17 @@ class _TasteProfileScreenState extends State<TasteProfileScreen> {
 
     return Scaffold(
       appBar: isEditMode
-      ? AppBar(
-          title: Text('Profil bearbeiten (${currentStep + 1}/${questions.length})'),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-              icon: Icon(Icons.adaptive.arrow_back),
-              onPressed: () => Navigator.pop(context),
-            ),
-        )
-      : null,
+          ? AppBar(
+              title: Text(
+                  'Profil bearbeiten (${currentStep + 1}/${questions.length})'),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.adaptive.arrow_back),
+                onPressed: () => Navigator.pop(context),
+              ),
+            )
+          : null,
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
@@ -190,18 +241,29 @@ class _TasteProfileScreenState extends State<TasteProfileScreen> {
                     child: ElevatedButton(
                       onPressed: () => _saveAnswer(option),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary.withValues(alpha: 0.7),
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                          minimumSize: Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: isSelected
-                                ? BorderSide(color: Colors.white, width: 2)
-                                : BorderSide.none,
-                          ),
-                          elevation: isSelected ? 4 : 2,
+                        backgroundColor: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context)
+                                .colorScheme
+                                .secondary
+                                .withValues(alpha: 0.7),
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
+                        minimumSize: Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: isSelected
+                              ? BorderSide(color: Colors.white, width: 2)
+                              : BorderSide.none,
+                        ),
+                        elevation: isSelected ? 4 : 2,
                       ),
-                      child: Text(option, style: TextStyle(fontSize: 16, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                      child: Text(option,
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal)),
                     ),
                   );
                 }).toList(),
@@ -214,7 +276,8 @@ class _TasteProfileScreenState extends State<TasteProfileScreen> {
                 child: LinearProgressIndicator(
                   value: (currentStep + 1) / questions.length,
                   backgroundColor: Colors.white30, // Oder Theme-Farbe
-                  color: Theme.of(context).colorScheme.primary, // Oder Theme-Farbe
+                  color:
+                      Theme.of(context).colorScheme.primary, // Oder Theme-Farbe
                   minHeight: 10,
                 ),
               ),

@@ -19,15 +19,19 @@ class FirestoreService {
 
   Future<void> followUser(String targetUserId) async {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    if(currentUserId == targetUserId) return;
+    if (currentUserId == targetUserId) return;
 
-    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(currentUserId).get();
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUserId)
+        .get();
 
     bool emailVerified = userDoc["emailVerified"] ?? false;
     if (!emailVerified) {
       throw FirebaseException(
         plugin: "Firestore",
-        message: "Bitte bestätige zuerst deine E-Mail-Adresse, bevor du Nutzern folgen kannst!",
+        message:
+            "Bitte bestätige zuerst deine E-Mail-Adresse, bevor du Nutzern folgen kannst!",
       );
     }
 
@@ -36,9 +40,9 @@ class FirestoreService {
         .collection("users")
         .doc(currentUserId)
         .collection("following")
-        .doc(targetUserId) 
+        .doc(targetUserId)
         .set({});
-    
+
     // Add to target user's followers list
     await _db
         .collection("users")
@@ -52,14 +56,13 @@ class FirestoreService {
     String actorImageUrl = actorData["photoUrl"] ?? "";
 
     await _notiLogger.logNotificationInDatabase(
-      title: "$actorName folgt dir jetzt!",
-      body: "Tippe, um sein/ihr Profil zu besuchen.",
-      recipientUserId: targetUserId,
-      type: 'follow',
-      actorId: currentUserId,
-      actorName: actorName,
-      actorImageUrl: actorImageUrl
-    );
+        title: "$actorName folgt dir jetzt!",
+        body: "Tippe, um sein/ihr Profil zu besuchen.",
+        recipientUserId: targetUserId,
+        type: 'follow',
+        actorId: currentUserId,
+        actorName: actorName,
+        actorImageUrl: actorImageUrl);
   }
 
   Future<void> unfollowUser(String targetUserId) async {
@@ -67,10 +70,20 @@ class FirestoreService {
     if (currentUserId == targetUserId) return;
 
     // Remove from current user's following list
-    await _db.collection("users").doc(currentUserId).collection("following").doc(targetUserId).delete();
-    
+    await _db
+        .collection("users")
+        .doc(currentUserId)
+        .collection("following")
+        .doc(targetUserId)
+        .delete();
+
     // Remove from target user's followers list
-    await _db.collection("users").doc(targetUserId).collection("followers").doc(currentUserId).delete();
+    await _db
+        .collection("users")
+        .doc(targetUserId)
+        .collection("followers")
+        .doc(currentUserId)
+        .delete();
   }
 
   Future<void> updateEmailVerificationStatus() async {
@@ -79,7 +92,10 @@ class FirestoreService {
       await user.reload();
       bool emailVerified = user.emailVerified;
 
-      await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .update({
         "emailVerified": emailVerified,
       });
     }
@@ -87,10 +103,9 @@ class FirestoreService {
 
   Future<bool> isFollowingUser(String targetUserId) async {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    
+
     // Check if the current user is following the target user by checking for a document in the following subcollection.
-    final followingDoc = await 
-    _db
+    final followingDoc = await _db
         .collection("users")
         .doc(currentUserId)
         .collection("following")
@@ -101,12 +116,14 @@ class FirestoreService {
   }
 
   Future<int> getFollowerCount(String userId) async {
-    final followersQuery = await _db.collection("users").doc(userId).collection("followers").get();
+    final followersQuery =
+        await _db.collection("users").doc(userId).collection("followers").get();
     return followersQuery.docs.length;
   }
 
   Future<int> getFollowingCount(String userId) async {
-    final followingQuery = await _db.collection("users").doc(userId).collection("following").get();
+    final followingQuery =
+        await _db.collection("users").doc(userId).collection("following").get();
     return followingQuery.docs.length;
   }
 
@@ -114,7 +131,8 @@ class FirestoreService {
     return await dbService.getAllRestaurants();
   }
 
-  Future<List<Map<String, dynamic>>> getMarkersInBounds(LatLngBounds bounds) async {
+  Future<List<Map<String, dynamic>>> getMarkersInBounds(
+      LatLngBounds bounds) async {
     return await dbService.getRestaurantsInBounds(
       bounds.southwest.latitude,
       bounds.southwest.longitude,
@@ -126,7 +144,7 @@ class FirestoreService {
   Future<Map<String, dynamic>?> fetchPlaceDetails(String placeId) async {
     DocumentSnapshot doc = await _db.collection('markers').doc(placeId).get();
 
-    if(doc.exists) {
+    if (doc.exists) {
       return doc.data() as Map<String, dynamic>;
     }
     return null;
@@ -137,14 +155,16 @@ class FirestoreService {
         .collection('restaurantReviews')
         .where('userId', isEqualTo: userId)
         .get();
-    
+
     List<Map<String, dynamic>> reviews = [];
 
     for (var doc in querySnapshot.docs) {
       Map<String, dynamic> reviewData = doc.data() as Map<String, dynamic>;
-      DocumentSnapshot restaurantDoc = await _db.collection('markers').doc(reviewData['restaurantId']).get();
+      DocumentSnapshot restaurantDoc =
+          await _db.collection('markers').doc(reviewData['restaurantId']).get();
       if (restaurantDoc.exists) {
-        reviewData['restaurantName'] = restaurantDoc['name'] ?? "Unbekanntes Restaurant";
+        reviewData['restaurantName'] =
+            restaurantDoc['name'] ?? "Unbekanntes Restaurant";
       } else {
         reviewData['restaurantName'] = "Unbekanntes Restaurant";
       }
@@ -155,7 +175,8 @@ class FirestoreService {
 
   Future<void> fetchAndStoreRestaurants() async {
     print("⚡ Lade Daten aus Firestore und speichere sie in SQLite...");
-    QuerySnapshot querySnapshot = await _db.collection('restaurantDetails').get();
+    QuerySnapshot querySnapshot =
+        await _db.collection('restaurantDetails').get();
 
     await dbService.clearDatabase();
 
@@ -173,14 +194,17 @@ class FirestoreService {
         "openingHours": data["openingHours"] ?? [],
       });
 
-      await dbService.setRestaurantRating(data["id"], double.tryParse(data["rating"].toString()) ?? 0.0);
+      await dbService.setRestaurantRating(
+          data["id"], double.tryParse(data["rating"].toString()) ?? 0.0);
     }
 
     print("✅ Firestore-Daten wurden in SQLite gespeichert!");
   }
 
-  Future<Map<String, dynamic>?> fetchRestaurantDetails(String restaurantId) async {
-    DocumentSnapshot doc = await _db.collection("restaurantDetails").doc(restaurantId).get();
+  Future<Map<String, dynamic>?> fetchRestaurantDetails(
+      String restaurantId) async {
+    DocumentSnapshot doc =
+        await _db.collection("restaurantDetails").doc(restaurantId).get();
 
     if (doc.exists) {
       return doc.data() as Map<String, dynamic>;
@@ -197,30 +221,34 @@ class FirestoreService {
     return querySnapshot.docs.isNotEmpty;
   }
 
-  Future<void> updateUsernameInReviews(String userId, String newUsername) async {
+  Future<void> updateUsernameInReviews(
+      String userId, String newUsername) async {
     QuerySnapshot querySnapshot = await _db
-      .collection("restaurantReviews")
-      .where('userId', isEqualTo: userId)
-      .get();
+        .collection("restaurantReviews")
+        .where('userId', isEqualTo: userId)
+        .get();
 
-    for(var doc in querySnapshot.docs) {
+    for (var doc in querySnapshot.docs) {
       doc.reference.update({"userName": newUsername});
     }
   }
 
-  Future<void> addReview(String restaurantId, double rating, String comment, String userId, String userName, String userProfileUrl) async {
+  Future<void> addReview(String restaurantId, double rating, String comment,
+      String userId, String userName, String userProfileUrl) async {
     if (await hasUserReviewed(restaurantId, userId)) {
       print("⚠️ Nutzer hat dieses Restaurant bereits bewertet.");
       return;
     }
 
-    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection("users").doc(userId).get();
+    DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance.collection("users").doc(userId).get();
 
     bool emailVerified = userDoc["emailVerified"] ?? false;
     if (!emailVerified) {
       throw FirebaseException(
         plugin: "Firestore",
-        message: "Bitte bestätige zuerst deine E-Mail-Adresse bevor du bewerten kannst!",
+        message:
+            "Bitte bestätige zuerst deine E-Mail-Adresse bevor du bewerten kannst!",
       );
     }
 
@@ -234,13 +262,15 @@ class FirestoreService {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    Map<String, dynamic>? restaurantData = await dbService.getRestaurantById(restaurantId);
+    Map<String, dynamic>? restaurantData =
+        await dbService.getRestaurantById(restaurantId);
     String restaurantName = restaurantData?["name"] ?? "ein Restaurant";
 
-    QuerySnapshot followerSnapshot = await _db.collection("users").doc(userId).collection("followers").get();
+    QuerySnapshot followerSnapshot =
+        await _db.collection("users").doc(userId).collection("followers").get();
     for (var doc in followerSnapshot.docs) {
       String followerId = doc.id;
-     /* NotificationService.sendNotification(
+      /* NotificationService.sendNotification(
         recipientUserId: followerId,
         title: "$userName hat ein Restaurant bewertet!",
         body: "Es wurde mit $rating Sternen bewertet.",
@@ -252,21 +282,19 @@ class FirestoreService {
         recipientUserId: followerId
       );*/
       await _notiLogger.logNotificationInDatabase(
-        title: "$userName hat ein $restaurantName bewertet!",
-        body: "Es wurde mit $rating Sternen bewertet.",
-        recipientUserId: followerId,
-        type: 'review',
-        actorId: userId,
-        actorName: userName,
-        actorImageUrl: userProfileUrl,
-        relevantId: restaurantId
-      );
+          title: "$userName hat ein $restaurantName bewertet!",
+          body: "Es wurde mit $rating Sternen bewertet.",
+          recipientUserId: followerId,
+          type: 'review',
+          actorId: userId,
+          actorName: userName,
+          actorImageUrl: userProfileUrl,
+          relevantId: restaurantId);
     }
-
   }
 
   Future<int> getUserReviewCount(String userId) async {
-    if(userId.isEmpty) return 0;
+    if (userId.isEmpty) return 0;
     try {
       AggregateQuerySnapshot snapshot = await _db
           .collection('restaurantReviews')
@@ -281,16 +309,20 @@ class FirestoreService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getReviewsForRestaurant(String restaurantId) async {
+  Future<List<Map<String, dynamic>>> getReviewsForRestaurant(
+      String restaurantId) async {
     QuerySnapshot querySnapshot = await _db
         .collection('restaurantReviews')
         .where('restaurantId', isEqualTo: restaurantId)
         .get();
-    return querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    return querySnapshot.docs
+        .map((doc) => doc.data() as Map<String, dynamic>)
+        .toList();
   }
 
   Future<double> calculateAverageRating(String restaurantId) async {
-    List<Map<String, dynamic>> reviews = await getReviewsForRestaurant(restaurantId);
+    List<Map<String, dynamic>> reviews =
+        await getReviewsForRestaurant(restaurantId);
     if (reviews.isEmpty) return 0.0;
     double sum = 0;
     for (var review in reviews) {
@@ -311,7 +343,7 @@ class FollowButton extends StatefulWidget {
   FollowButton({required this.targetUserId, Key? key}) : super(key: key);
 
   @override
-  _FollowButtonState createState() => _FollowButtonState();
+  State<FollowButton> createState() => _FollowButtonState();
 }
 
 class _FollowButtonState extends State<FollowButton> {
@@ -325,14 +357,15 @@ class _FollowButtonState extends State<FollowButton> {
   }
 
   Future<void> _checkFollowingStatus() async {
-    bool following = await _firestoreService.isFollowingUser(widget.targetUserId);
+    bool following =
+        await _firestoreService.isFollowingUser(widget.targetUserId);
     setState(() {
       isFollowing = following;
     });
   }
 
   Future<void> _toggleFollow() async {
-    if(isFollowing) {
+    if (isFollowing) {
       await _firestoreService.unfollowUser(widget.targetUserId);
     } else {
       await _firestoreService.followUser(widget.targetUserId);

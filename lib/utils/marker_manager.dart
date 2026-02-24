@@ -1,23 +1,10 @@
-
-
 // ignore_for_file: unused_local_variable
 
 import 'dart:ui' as ui;
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import hinzugefügt
+// Import hinzugefügt
 import 'package:flutter/services.dart';
-import 'package:foodconnect/main.dart';
-import 'package:foodconnect/screens/main_screen.dart';
-import 'package:foodconnect/screens/user_profile_screen.dart';
-import 'package:foodconnect/services/database_service.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:foodconnect/services/firestore_service.dart'; // Import hinzugefügt
-import 'package:foodconnect/widgets/rating_dialog.dart';
-import 'package:intl/intl.dart';
+// Import hinzugefügt
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
-import 'package:timeago/timeago.dart' as timeago;
 
 class MarkerManager {
   static final MarkerManager _instance = MarkerManager._internal();
@@ -28,33 +15,31 @@ class MarkerManager {
   BitmapDescriptor? highlightedIcon;
 
   Future<void> loadCustomIcons() async {
-    if(customIcon != null) return;
+    if (customIcon != null) return;
 
     try {
-      customIcon = await _bitmapDescriptorFromAssetBytes(
-        'assets/icons/mapicon.png',
-        50
-      );
+      customIcon =
+          await _bitmapDescriptorFromAssetBytes('assets/icons/mapicon.png', 50);
 
-      highlightedIcon = await _bitmapDescriptorFromAssetBytes(
-        'assets/icons/mapicon.png',
-        70
-      );
+      highlightedIcon =
+          await _bitmapDescriptorFromAssetBytes('assets/icons/mapicon.png', 70);
     } catch (e) {
       print("Fehler beim Laden der Icons: $e");
     }
   }
 
-  Future<BitmapDescriptor> _bitmapDescriptorFromAssetBytes(String path, int width) async {
+  Future<BitmapDescriptor> _bitmapDescriptorFromAssetBytes(
+      String path, int width) async {
     final ByteData data = await rootBundle.load(path);
-    final ui.Codec codec = await ui.instantiateImageCodec(
-      data.buffer.asUint8List(),
-      targetWidth: width
-    );
+    final ui.Codec codec = await ui
+        .instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
     final ui.FrameInfo fi = await codec.getNextFrame();
-    final ByteData? byteData = await fi.image.toByteData(format: ui.ImageByteFormat.png);
+    final ByteData? byteData =
+        await fi.image.toByteData(format: ui.ImageByteFormat.png);
 
-    if(byteData == null) throw Exception("Bild konnte nicht konvertiert werden.");
+    if (byteData == null) {
+      throw Exception("Bild konnte nicht konvertiert werden.");
+    }
 
     return BitmapDescriptor.bytes(byteData.buffer.asUint8List());
   }
@@ -321,13 +306,9 @@ class MarkerManager {
 
   void _navigateToUserProfile(String userId, BuildContext context) async {
     if(userId == FirebaseAuth.instance.currentUser!.uid) {
-      await Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MainScreen(
-          initialPage: 2,
-        ),
-      ));
+      if (context.mounted) {
+        context.go('/profile');
+      }
     } else {
       await Navigator.push(
         context,

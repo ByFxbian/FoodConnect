@@ -17,10 +17,10 @@ class HomeScreen extends StatefulWidget {
   final LatLng? targetLocation;
   final String? selectedRestaurantId;
 
-  const HomeScreen({Key? key, this.targetLocation, this.selectedRestaurantId}) : super(key: key);
+  const HomeScreen({super.key, this.targetLocation, this.selectedRestaurantId});
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
   // AIzaSyA6KNBT7_34B_1ibmPvArMOVfvjrbXTx6E IOS
   // AIzaSyAdoiyJg_cGgmKrrsLJeBxsqcWXf0knLqA Android
 }
@@ -33,13 +33,20 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _allRestaurants = [];
   List<Map<String, dynamic>> _visibleRestaurants = [];
   Map<String, dynamic> _userProfile = {};
-  
+
   bool _isLoading = true;
   String? _mapStyleString;
   late PageController _pageController;
 
   String _selectedCategory = "Alle";
-  final List<String> _categories = ["Alle", "Top Match", "Geöffnet", "Günstig", "Italienisch", "Asiatisch"];
+  final List<String> _categories = [
+    "Alle",
+    "Top Match",
+    "Geöffnet",
+    "Günstig",
+    "Italienisch",
+    "Asiatisch"
+  ];
 
   static const CameraPosition _initialPositin = CameraPosition(
     target: LatLng(48.2082, 16.3738),
@@ -56,7 +63,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadMapStyle() async {
     try {
-      String style = await rootBundle.loadString('assets/map_styles/map_style_dark.json');
+      String style =
+          await rootBundle.loadString('assets/map_styles/map_style_dark.json');
       setState(() {
         _mapStyleString = style;
       });
@@ -67,16 +75,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _initData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if(user != null) {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      if(mounted && doc.exists) {
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (mounted && doc.exists) {
         _userProfile = doc.data()?['tasteProfile'] ?? {};
-      } 
+      }
     }
 
     final restaurants = await _dbService.getAllRestaurants();
 
-    if(!mounted) return;
+    if (!mounted) return;
 
     setState(() {
       _allRestaurants = restaurants;
@@ -97,46 +108,45 @@ class _HomeScreenState extends State<HomeScreen> {
           return MatchCalculator.calculate(_userProfile, r) >= 80;
         }).toList();
       } else if (category == "Günstig") {
-        _visibleRestaurants = _allRestaurants.where((r) => 
-          (r['priceLevel'] ?? "").toString().contains("€") && 
-          !(r['priceLevel'] ?? "").toString().contains("€€€")
-        ).toList();
+        _visibleRestaurants = _allRestaurants
+            .where((r) =>
+                (r['priceLevel'] ?? "").toString().contains("€") &&
+                !(r['priceLevel'] ?? "").toString().contains("€€€"))
+            .toList();
       } else {
         // Suche in Cuisine Strings
-        _visibleRestaurants = _allRestaurants.where((r) => 
-          (r['cuisines'] ?? "").toString().contains(category)
-        ).toList();
+        _visibleRestaurants = _allRestaurants
+            .where((r) => (r['cuisines'] ?? "").toString().contains(category))
+            .toList();
       }
-      
+
       _generateMarkers();
-      
+
       // Wenn Filter leer, zeige Feedback (optional)
       if (_visibleRestaurants.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Keine Restaurants für '$category' gefunden."), duration: Duration(seconds: 1))
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text("Keine Restaurants für '$category' gefunden."),
+            duration: Duration(seconds: 1)));
       } else {
         // Reset PageView
         if (_pageController.hasClients) _pageController.jumpToPage(0);
       }
     });
   }
-  
+
   void _generateMarkers() {
     _markers = _visibleRestaurants.map((rest) {
       return Marker(
         markerId: MarkerId(rest['id']),
         position: LatLng(rest['latitude'] ?? 48.0, rest['longitude'] ?? 16.0),
         // Wir nutzen hier Standard-Marker eingefärbt, bis MarkerManager 100% steht
-        icon: MarkerManager().customIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        icon: MarkerManager().customIcon ??
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
         onTap: () {
           final index = _visibleRestaurants.indexOf(rest);
           if (index != -1 && _pageController.hasClients) {
-            _pageController.animateToPage(
-              index, 
-              duration: 500.ms, 
-              curve: Curves.easeOutExpo
-            );
+            _pageController.animateToPage(index,
+                duration: 500.ms, curve: Curves.easeOutExpo);
           }
         },
       );
@@ -152,24 +162,25 @@ class _HomeScreenState extends State<HomeScreen> {
           // 1. Google Map
           // Wenn Style noch nicht geladen ist, zeigen wir kurz Schwarz, um den "Flash" zu vermeiden
           GoogleMap(
-                initialCameraPosition: _initialPositin,
-                markers: _markers,
-                // HIER IST DER FIX: Style direkt im Widget setzen!
-                style: _mapStyleString, 
-                zoomControlsEnabled: false,
-                myLocationEnabled: true,
-                myLocationButtonEnabled: false,
-                compassEnabled: false,
-                mapToolbarEnabled: false,
-                onMapCreated: (controller) {
-                  if (!_controller.isCompleted) {
-                    _controller.complete(controller);
-                    if (widget.targetLocation != null) {
-                      controller.animateCamera(CameraUpdate.newLatLngZoom(widget.targetLocation!, 16));
-                    }
-                  }
-                },
-              ),
+            initialCameraPosition: _initialPositin,
+            markers: _markers,
+            // HIER IST DER FIX: Style direkt im Widget setzen!
+            style: _mapStyleString,
+            zoomControlsEnabled: false,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            compassEnabled: false,
+            mapToolbarEnabled: false,
+            onMapCreated: (controller) {
+              if (!_controller.isCompleted) {
+                _controller.complete(controller);
+                if (widget.targetLocation != null) {
+                  controller.animateCamera(
+                      CameraUpdate.newLatLngZoom(widget.targetLocation!, 16));
+                }
+              }
+            },
+          ),
 
           // 2. Kategorien (Oben)
           SafeArea(
@@ -189,26 +200,34 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () => _filterRestaurants(cat),
                       child: AnimatedContainer(
                         duration: 200.ms,
-                        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.primary : AppTheme.surface.withOpacity(0.95),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: isSelected ? AppTheme.primary : AppTheme.surfaceHighlight,
-                            width: 1
-                          ),
-                          boxShadow: [
-                            if(!isSelected) BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0,4))
-                          ]
-                        ),
+                            color: isSelected
+                                ? AppTheme.primary
+                                : AppTheme.surface.withValues(alpha: 0.95),
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(
+                                color: isSelected
+                                    ? AppTheme.primary
+                                    : AppTheme.surfaceHighlight,
+                                width: 1),
+                            boxShadow: [
+                              if (!isSelected)
+                                BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 8,
+                                    offset: Offset(0, 4))
+                            ]),
                         alignment: Alignment.center,
                         child: Text(
                           cat,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : AppTheme.textSecondary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13
-                          ),
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppTheme.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13),
                         ),
                       ),
                     ),
@@ -231,7 +250,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: _visibleRestaurants.length,
                 onPageChanged: (index) {
                   final rest = _visibleRestaurants[index];
-                  _controller.future.then((c) => c.animateCamera(CameraUpdate.newLatLng(LatLng(rest['latitude'], rest['longitude']))));
+                  _controller.future.then((c) => c.animateCamera(
+                      CameraUpdate.newLatLng(
+                          LatLng(rest['latitude'], rest['longitude']))));
                 },
                 itemBuilder: (context, index) {
                   return _buildCard(_visibleRestaurants[index]);
@@ -245,8 +266,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCard(Map<String, dynamic> rest) {
     final matchScore = MatchCalculator.calculate(_userProfile, rest);
-    final imageUrl = rest['photoUrl'] != null && rest['photoUrl'].isNotEmpty 
-        ? rest['photoUrl'] 
+    final imageUrl = rest['photoUrl'] != null && rest['photoUrl'].isNotEmpty
+        ? rest['photoUrl']
         : "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1000&auto=format&fit=crop";
 
     return Container(
@@ -255,7 +276,9 @@ class _HomeScreenState extends State<HomeScreen> {
         color: AppTheme.surface, // Solid Zinc
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.surfaceHighlight), // Subtiler Rand
-        boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -270,24 +293,38 @@ class _HomeScreenState extends State<HomeScreen> {
                 CachedNetworkImage(
                   imageUrl: imageUrl,
                   fit: BoxFit.cover,
-                  placeholder: (_,__) => Container(color: AppTheme.surfaceHighlight),
-                  errorWidget: (_,__,___) => Container(color: AppTheme.surfaceHighlight, child: Icon(Icons.restaurant)),
+                  placeholder: (_, __) =>
+                      Container(color: AppTheme.surfaceHighlight),
+                  errorWidget: (_, __, ___) => Container(
+                      color: AppTheme.surfaceHighlight,
+                      child: Icon(Icons.restaurant)),
                 ),
                 Positioned(
-                  top: 8, right: 8,
+                  top: 8,
+                  right: 8,
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: matchScore > 80 ? Colors.green : AppTheme.primary)
-                    ),
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: matchScore > 80
+                                ? Colors.green
+                                : AppTheme.primary)),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text("$matchScore%", style: TextStyle(color: matchScore > 80 ? Colors.green : AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text("$matchScore%",
+                            style: TextStyle(
+                                color: matchScore > 80
+                                    ? Colors.green
+                                    : AppTheme.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12)),
                         SizedBox(width: 4),
-                        Text("Match", style: TextStyle(color: Colors.white, fontSize: 12)),
+                        Text("Match",
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -306,16 +343,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(rest['name'] ?? "Restaurant", style: Theme.of(context).textTheme.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(rest['name'] ?? "Restaurant",
+                          style: Theme.of(context).textTheme.titleLarge,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
                       SizedBox(height: 4),
-                      Text("${rest['cuisines'] ?? 'Essen'} • ${rest['priceLevel'] ?? '€€'}", style: Theme.of(context).textTheme.bodyMedium),
+                      Text(
+                          "${rest['cuisines'] ?? 'Essen'} • ${rest['priceLevel'] ?? '€€'}",
+                          style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                   Row(
                     children: [
-                      Icon(Icons.star_rounded, color: AppTheme.primary, size: 18),
+                      Icon(Icons.star_rounded,
+                          color: AppTheme.primary, size: 18),
                       SizedBox(width: 4),
-                      Text("${rest['rating'] ?? 0.0}", style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                      Text("${rest['rating'] ?? 0.0}",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary)),
                     ],
                   )
                 ],
