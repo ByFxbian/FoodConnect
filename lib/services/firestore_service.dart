@@ -355,6 +355,25 @@ class FirestoreService {
     }).toList();
   }
 
+  Stream<List<Map<String, dynamic>>> streamUserLists(String userId,
+      {bool onlyPublic = false}) {
+    Query query = _db.collection('users').doc(userId).collection('lists');
+
+    if (onlyPublic) {
+      query = query.where('isPublic', isEqualTo: true);
+    }
+
+    return query.orderBy('createdAt', descending: true).snapshots().map(
+      (snapshot) {
+        return snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+      },
+    );
+  }
+
   Future<void> createList(String userId, String listName,
       {List<String> restaurantIds = const []}) async {
     await _db.collection('users').doc(userId).collection('lists').add({

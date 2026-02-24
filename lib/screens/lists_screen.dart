@@ -12,38 +12,7 @@ class ListsScreen extends StatefulWidget {
 
 class _ListsScreenState extends State<ListsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
-  bool _isLoading = true;
-  List<Map<String, dynamic>> _userLists = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchLists();
-  }
-
-  Future<void> _fetchLists() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-      return;
-    }
-    try {
-      final lists = await _firestoreService.getUserLists(user.uid);
-      if (mounted) {
-        setState(() {
-          _userLists = lists;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error fetching lists: $e");
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
+  final user = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -56,11 +25,31 @@ class _ListsScreenState extends State<ListsScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator.adaptive())
-          : _userLists.isEmpty
-              ? _buildEmptyState()
-              : _buildListsGrid(),
+      body: user == null
+          ? const Center(child: Text("Nicht eingeloggt"))
+          : StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _firestoreService.streamUserLists(user!.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                      child: CircularProgressIndicator.adaptive());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                      child: Text(
+                          "Ein Fehler ist aufgetreten: ${snapshot.error}"));
+                }
+
+                final userLists = snapshot.data ?? [];
+
+                if (userLists.isEmpty) {
+                  return _buildEmptyState();
+                }
+
+                return _buildListsGrid(userLists);
+              },
+            ),
     );
   }
 
@@ -97,7 +86,7 @@ class _ListsScreenState extends State<ListsScreen> {
     );
   }
 
-  Widget _buildListsGrid() {
+  Widget _buildListsGrid(List<Map<String, dynamic>> userLists) {
     return GridView.builder(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 120),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -106,9 +95,9 @@ class _ListsScreenState extends State<ListsScreen> {
         mainAxisSpacing: 16,
         childAspectRatio: 0.85,
       ),
-      itemCount: _userLists.length,
+      itemCount: userLists.length,
       itemBuilder: (context, index) {
-        final listData = _userLists[index];
+        final listData = userLists[index];
         final itemCount = (listData['restaurantIds'] as List?)?.length ?? 0;
         return GestureDetector(
           onTap: () {

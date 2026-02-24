@@ -160,159 +160,133 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Lottie.asset('assets/animations/loading.json'))
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         if (userData?["emailVerified"] == false)
                           Container(
-                            color: Colors.orangeAccent,
-                            padding: EdgeInsets.all(10),
-                            margin: EdgeInsets.all(10),
+                            margin: const EdgeInsets.only(bottom: 24),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .errorContainer
+                                  .withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
                                   child: Text(
-                                    "Bitte bestätige deine E-Mail-Adresse!",
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold),
+                                    "E-Mail-Adresse unbestätigt",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onErrorContainer,
+                                            fontWeight: FontWeight.w600),
                                   ),
                                 ),
-                                TextButton(
-                                  onPressed: _sendVerificationEmail,
-                                  child: Text("Erneut senden",
-                                      style: TextStyle(color: Colors.white)),
+                                GestureDetector(
+                                  onTap: _sendVerificationEmail,
+                                  child: Text(
+                                    "Senden",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                            fontWeight: FontWeight.bold),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                        CircleAvatar(
-                          radius: 60,
-                          backgroundImage: userData?['photoUrl'] != null &&
-                                  userData?['photoUrl'] != ""
-                              ? ResizeImage(NetworkImage(userData?['photoUrl']),
-                                  height: 420, policy: ResizeImagePolicy.fit)
-                              : ResizeImage(
-                                  AssetImage("assets/icons/default_avatar.png"),
-                                  height: 420,
-                                  policy:
-                                      ResizeImagePolicy.fit) as ImageProvider,
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outline
+                                  .withValues(alpha: 0.2),
+                              width: 1,
+                            ),
+                            image: DecorationImage(
+                              fit: BoxFit.cover,
+                              image: userData?['photoUrl'] != null &&
+                                      userData?['photoUrl'] != ""
+                                  ? NetworkImage(userData?['photoUrl'])
+                                  : AssetImage(
+                                          "assets/icons/default_avatar.png")
+                                      as ImageProvider,
+                            ),
+                          ),
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 24),
                         Text(
                           userData?['name'] ?? "Unbekannter Nutzer",
                           key: ValueKey(userData?["name"]),
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Text(
                           userData?['email'] ?? "Keine E-Mail vorhanden",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.6),
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.5),
+                                  ),
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 32),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Column(
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            FollowerListScreen(
-                                                userId: user!.uid,
-                                                isFollowing: false),
-                                      ),
-                                    );
-                                  },
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        followerCount.toString(),
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                        ),
-                                      ),
-                                      Text(
-                                        "Follower",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              ],
+                            _buildStatItem(
+                              count: followerCount,
+                              label: "Follower",
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FollowerListScreen(
+                                      userId: user!.uid, isFollowing: false),
+                                ),
+                              ),
                             ),
-                            SizedBox(width: 20),
-                            Column(
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            FollowerListScreen(
-                                                userId: user!.uid,
-                                                isFollowing: true),
-                                      ),
-                                    );
-                                  },
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        followingCount.toString(),
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                        ),
-                                      ),
-                                      Text(
-                                        "Folgt",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              ],
+                            const SizedBox(width: 40),
+                            _buildStatItem(
+                              count: followingCount,
+                              label: "Folgt",
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FollowerListScreen(
+                                      userId: user!.uid, isFollowing: true),
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        SizedBox(height: 30),
+                        const SizedBox(height: 40),
                         if (userLists.isNotEmpty) ...[
                           _buildUserListsSection(),
-                          SizedBox(height: 30),
+                          const SizedBox(height: 30),
                         ],
-                        SizedBox(height: 120),
+                        const SizedBox(height: 120), // Bottom nav padding
                       ],
                     ),
             ),
@@ -322,64 +296,106 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildStatItem({
+    required int count,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Text(
+            count.toString(),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildUserListsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Öffentliche Listen",
-          style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary),
+          "Meine Listen",
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
         ),
-        Divider(color: Theme.of(context).colorScheme.primary),
-        SizedBox(height: 8),
+        const SizedBox(height: 16),
         SizedBox(
-          height: 120, // Height for horizontal list
+          height: 140, // Height for horizontal list
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
             itemCount: userLists.length,
+            clipBehavior: Clip.none,
             itemBuilder: (context, index) {
               final list = userLists[index];
-              return GestureDetector(
-                onTap: () {
-                  context.push('/lists/${list['id']}', extra: list);
-                },
-                child: Container(
-                  width: 140,
-                  margin: EdgeInsets.only(right: 12),
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color:
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: Theme.of(context).colorScheme.outlineVariant),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.format_list_bulleted,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 32),
-                      SizedBox(height: 8),
-                      Text(
-                        list['name'] ?? 'Unbenannte Liste',
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              return _buildListCard(list);
             },
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildListCard(Map<String, dynamic> list) {
+    return GestureDetector(
+      onTap: () {
+        context.push('/lists/${list['id']}', extra: list);
+      },
+      child: Container(
+        width: 130,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(
+                Icons.bookmark_border,
+                color: Theme.of(context).colorScheme.primary,
+                size: 28,
+              ),
+              Text(
+                list['name'] ?? 'Unbenannte Liste',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
