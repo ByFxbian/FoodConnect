@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:foodconnect/screens/home_screen.dart';
 import 'package:foodconnect/screens/lists_screen.dart';
+import 'package:foodconnect/screens/list_detail_screen.dart';
 import 'package:foodconnect/screens/profile_screen.dart';
 import 'package:foodconnect/screens/login_screen.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
@@ -64,7 +65,19 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: '/lists',
-                builder: (context, state) => ListsScreen(),
+                builder: (context, state) => const ListsScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) {
+                      final listData = state.extra as Map<String, dynamic>?;
+                      return ListDetailScreen(
+                        listId: state.pathParameters['id']!,
+                        listData: listData,
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),

@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/follower_list_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:foodconnect/screens/settings_screen.dart';
-import 'package:foodconnect/screens/taste_profile_screen.dart';
+
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:intl/intl.dart';
@@ -34,6 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int followingCount = 0;
   int reviewCount = 0;
   List<Map<String, dynamic>> userReviews = [];
+  List<Map<String, dynamic>> userLists = [];
   bool showAllReviews = false;
   final FirestoreService _firestoreService = FirestoreService();
   final DatabaseService _databaseService = DatabaseService();
@@ -45,7 +46,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadFollowCounts();
     _loadUserReviews();
     _loadReviewCount();
+    _loadUserLists();
     FirestoreService().updateEmailVerificationStatus();
+  }
+
+  Future<void> _loadUserLists() async {
+    if (user != null) {
+      List<Map<String, dynamic>> lists =
+          await _firestoreService.getUserLists(user!.uid);
+      if (mounted) {
+        setState(() {
+          userLists = lists;
+        });
+      }
+    }
   }
 
   Future<void> _loadReviewCount() async {
@@ -354,8 +368,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                         SizedBox(height: 30),
-                        _buildTasteProfileSection(userData?['tasteProfile']),
-                        SizedBox(height: 20),
+                        if (userLists.isNotEmpty) ...[
+                          _buildUserListsSection(),
+                          SizedBox(height: 30),
+                        ],
                         _buildUserReviewsSection(),
                         SizedBox(height: 100),
                       ],
@@ -421,127 +437,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ]);
   }
 
-  Widget _buildTasteProfileSection(Map<String, dynamic>? tasteProfile) {
-    bool isIOS = Theme.of(context).platform == TargetPlatform.iOS;
-
-    void navigateToEditProfile() async {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TasteProfileScreen(
-            userId: user!.uid,
-            initialProfileData: tasteProfile,
-          ),
-        ),
-      );
-
-      _loadUserData();
-    }
-
+  Widget _buildUserListsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment:
-              MainAxisAlignment.spaceBetween, // Verteilt Elemente
-          children: [
-            Text(
-              "🍽️ Geschmacksprofil",
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary),
-            ),
-            IconButton(
-              icon: Icon(Platform.isIOS ? CupertinoIcons.pencil : Icons.edit,
-                  size: 20),
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.7),
-              onPressed: navigateToEditProfile,
-              tooltip: 'Geschmacksprofil bearbeiten',
-            )
-            // -----------------------
-          ],
+        Text(
+          "Öffentliche Listen",
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary),
         ),
-        isIOS
-            ? Divider(color: Theme.of(context).colorScheme.primary)
-            : Divider(color: Theme.of(context).colorScheme.primary),
-        if (tasteProfile == null || tasteProfile.isEmpty)
-          Padding(
-            // Padding für Konsistenz
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Text(
-              "Keine Informationen vorhanden.",
-              style: TextStyle(
-                  fontSize: 16,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6)),
-            ),
-          )
-        else
-          ...tasteProfile.entries
-              // Nur Einträge anzeigen, die einen Wert haben (optional, für Sauberkeit)
-              .where((entry) =>
-                  entry.value != null && entry.value.toString().isNotEmpty)
-              .map((entry) {
-            return _buildTasteProfileRow(
-                _mapKeyToLabel(entry.key), entry.value);
-            // ignore: unnecessary_to_list_in_spreads
-          }).toList(), // .toList() kann hier weg, wenn spread (...) verwendet wird
+        Divider(color: Theme.of(context).colorScheme.primary),
+        SizedBox(height: 8),
+        SizedBox(
+          height: 120, // Height for horizontal list
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: userLists.length,
+            itemBuilder: (context, index) {
+              final list = userLists[index];
+              return GestureDetector(
+                onTap: () {
+                  context.push('/lists/${list['id']}', extra: list);
+                },
+                child: Container(
+                  width: 140,
+                  margin: EdgeInsets.only(right: 12),
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.format_list_bulleted,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 32),
+                      SizedBox(height: 8),
+                      Text(
+                        list['name'] ?? 'Unbenannte Liste',
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ],
     );
-  }
-
-  Widget _buildTasteProfileRow(String title, dynamic value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurface),
-          ),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              value ?? "Nicht angegeben",
-              style: TextStyle(
-                  fontSize: 16,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.7)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _mapKeyToLabel(String key) {
-    switch (key) {
-      case "favoriteCuisine":
-        return "🌎 Lieblingsküche:";
-      case "dietType":
-        return "🥗 Ernährung:";
-      case "spiceLevel":
-        return "🌶️ Schärfe-Level:";
-      case "allergies":
-        return "🚫 Allergien:";
-      case "favoriteTaste":
-        return "😋 Lieblingsgeschmack:";
-      case "dislikedFoods":
-        return "🚫 Mag nicht:";
-      default:
-        return key;
-    }
   }
 }
 

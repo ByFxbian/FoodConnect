@@ -334,6 +334,56 @@ class FirestoreService {
   Future<void> setRestaurantRating(String restaurantId, double rating) async {
     await dbService.setRestaurantRating(restaurantId, rating);
   }
+
+  // --- List Management ---
+
+  Future<List<Map<String, dynamic>>> getUserLists(String userId) async {
+    QuerySnapshot querySnapshot = await _db
+        .collection('users')
+        .doc(userId)
+        .collection('lists')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    return querySnapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+  }
+
+  Future<void> createList(String userId, String listName,
+      {List<String> restaurantIds = const []}) async {
+    await _db.collection('users').doc(userId).collection('lists').add({
+      'name': listName,
+      'restaurantIds': restaurantIds,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> addRestaurantToList(
+      String userId, String listId, String restaurantId) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('lists')
+        .doc(listId)
+        .update({
+      'restaurantIds': FieldValue.arrayUnion([restaurantId]),
+    });
+  }
+
+  Future<void> removeRestaurantFromList(
+      String userId, String listId, String restaurantId) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('lists')
+        .doc(listId)
+        .update({
+      'restaurantIds': FieldValue.arrayRemove([restaurantId]),
+    });
+  }
 }
 
 class FollowButton extends StatefulWidget {

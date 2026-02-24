@@ -1,19 +1,176 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:foodconnect/services/firestore_service.dart';
+import 'package:go_router/go_router.dart';
 
-class ListsScreen extends StatelessWidget {
+class ListsScreen extends StatefulWidget {
   const ListsScreen({super.key});
+
+  @override
+  State<ListsScreen> createState() => _ListsScreenState();
+}
+
+class _ListsScreenState extends State<ListsScreen> {
+  final FirestoreService _firestoreService = FirestoreService();
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _userLists = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLists();
+  }
+
+  Future<void> _fetchLists() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
+    try {
+      final lists = await _firestoreService.getUserLists(user.uid);
+      if (mounted) {
+        setState(() {
+          _userLists = lists;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching lists: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Saved Lists'),
-        backgroundColor: Colors.transparent,
+        title:
+            Text("Meine Listen", style: Theme.of(context).textTheme.titleLarge),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
       ),
-      body: const Center(
-        child: Text('Here are your saved lists.'),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator.adaptive())
+          : _userLists.isEmpty
+              ? _buildEmptyState()
+              : _buildListsGrid(),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.bookmark_border,
+              size: 64, color: Theme.of(context).colorScheme.outline),
+          const SizedBox(height: 16),
+          Text(
+            "Keine Listen vorhanden",
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Speichere Restaurants, um sie hier zu finden.",
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.5),
+                ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildListsGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.85,
+      ),
+      itemCount: _userLists.length,
+      itemBuilder: (context, index) {
+        final listData = _userLists[index];
+        final itemCount = (listData['restaurantIds'] as List?)?.length ?? 0;
+        return GestureDetector(
+          onTap: () {
+            context.push('/lists/${listData['id']}', extra: listData);
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outline
+                      .withValues(alpha: 0.5)),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.bookmark,
+                        size: 32,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  listData['name'] ?? 'Unbenannte Liste',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "$itemCount Orte",
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.6),
+                      ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

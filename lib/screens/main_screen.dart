@@ -29,24 +29,23 @@ class _MainScreenState extends State<MainScreen> {
       body: widget.navigationShell,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          height: 65,
-          margin: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-          decoration: BoxDecoration(
-            color:
-                Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.5)),
+      bottomNavigationBar: Container(
+        height: 80, // Taller for native edge feel
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+          border: Border(
+            top: BorderSide(
+              color:
+                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+              width: 1.0,
+            ),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(40),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        ),
+        child: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: SafeArea(
+              top: false,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [

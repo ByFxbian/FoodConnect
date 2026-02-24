@@ -3,6 +3,7 @@
 import 'dart:ui' as ui;
 // Import hinzugefügt
 import 'package:flutter/services.dart';
+
 // Import hinzugefügt
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -434,116 +435,185 @@ class __MarkerPanelContentState extends State<_MarkerPanelContent> {
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.5,
+      initialChildSize: 0.6,
       minChildSize: 0.4,
-      maxChildSize: 0.9,
+      maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollContainer) {
-        if(_isLoading) {
-          return Center(child: CircularProgressIndicator());
+        if (_isLoading) {
+          return Center(child: CircularProgressIndicator.adaptive());
         } else {
-          // ignore: sized_box_for_whitespace
+          final imageUrl = widget.restaurantData['photoUrl'] as String?;
           return Container(
             width: double.infinity,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5), width: 1.0)),
+            ),
             child: SingleChildScrollView(
               controller: scrollContainer,
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.restaurantData['name'] ?? "Unbekannt",
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8,),
-                    Text(
-                      _address ?? "Adresse nicht verfügbar",
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                    ),
-                    SizedBox(height: 16,),
-                    if (_details?['priceLevel'] != null) ...[
-                      Text("💰 Preisniveau", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text(_details?['priceLevel'] ?? "", style: TextStyle(fontSize: 16)),
-                      SizedBox(height: 8,),
-                    ],
-                    if (_details?['description'] != null) ...[
-                      Text("📌 Beschreibung", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text(_details?['description'] ?? "", style: TextStyle(fontSize: 16)),
-                      SizedBox(height: 16,),
-                    ],
-                    if (_details?['openingHours'] != null) ...[
-                      Text("🕒 Öffnungszeiten", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: _formatOpeningHours(_details?['openingHours'])),
-                      SizedBox(height: 16,),
-                    ],
-                    if (_details?['cuisines'] is List && (_details?['cuisines'] as List).isNotEmpty) ...[
-                      Text("🍽️ Küche", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: _formatLists(_details?["cuisines"])),
-                      SizedBox(height: 8,),
-                    ],
-                    if (_details?['dietaryRestrictions'] is List && (_details?['dietaryRestrictions'] as List).isNotEmpty) ...[
-                      Text("🥦 Ernährungsweisen", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: _formatLists(_details?["dietaryRestrictions"])),
-                      SizedBox(height: 8,),
-                    ],
-                    if (_details?['mealTypes'] is List && (_details?['mealTypes'] as List).isNotEmpty) ...[
-                      Text("🍽️ Mahlzeiten", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: _formatLists(_details?["mealTypes"])),
-                      SizedBox(height: 8,),
-                    ],
-                    if (widget.restaurantData['rating'] != null) ...[
-                      Text(
-                        "⭐ Bewertung",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Hero Image Area
+                  if (imageUrl != null && imageUrl.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                      child: Image.network(
+                        imageUrl,
+                        width: double.infinity,
+                        height: 250,
+                        fit: BoxFit.cover,
                       ),
-                      Text("${_finalRating.toStringAsFixed(1)} / 5.0", style: TextStyle(fontSize: 16)),
-                      ElevatedButton(
-                        onPressed: _showRatingDialogHelper,
-                        child: Text("Bewerten"),
+                    )
+                  else
+                    Container(
+                      width: double.infinity,
+                      height: 250,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                       ),
-                      SizedBox(height: 16),
-
-                      if(_reviews.isNotEmpty) ...[
-                        Text(
-                            "Bewertungen:",
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: _reviews.map((review) {
-                              Timestamp? timestamp = review['timestamp'];
-                              String timeAgoString = "";
-                              if (timestamp != null) {
-                                try {
-                                    timeAgoString = timeago.format(timestamp.toDate(), locale: 'de_short');
-                                } catch(e) {
-                                    print("Error formatting timeago in marker panel: $e");
-                                    timeAgoString = DateFormat('dd.MM.yy').format(timestamp.toDate());
-                                }
-                              }
-
-                              return ListTile(
-                                leading: CircleAvatar(
-                                  backgroundImage: review['userProfileUrl'] != null && review['userProfileUrl'].isNotEmpty
-                                    ? NetworkImage(review['userProfileUrl'])
-                                    : null,
-                                  child: (review['userProfileUrl'] == null || review['userProfileUrl'].isEmpty)
-                                    ? Icon(Icons.person)
-                                    : null,
+                      child: Icon(Icons.restaurant, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                  
+                  Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title and Save Action Row
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.restaurantData['name'] ?? "Unbekannt",
+                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.1,
                                 ),
-                                title: Text(review['userName'] ?? 'Unbekannt'),
-                                subtitle: Text("${review['rating']} ⭐: ${review['comment']}"),
-                                onTap: () => _navigateToUserProfileHelper(review['userId']),
+                              ),
+                            ),
+                            SizedBox(width: 16),
+                            IconButton(
+                              onPressed: () {
+                                if (widget.restaurantData['id'] != null) {
+                                  SaveToListSheet.show(context, widget.restaurantData['id']);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("ID nicht gefunden")));
+                                }
+                              },
+                              icon: Icon(CupertinoIcons.bookmark),
+                              color: Theme.of(context).primaryColor,
+                              iconSize: 28,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+
+                        // Subinfo Row (Rating, Distance, etc.)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(Icons.star_rounded, size: 20, color: Theme.of(context).primaryColor),
+                            SizedBox(width: 4),
+                            Text(
+                              "${_finalRating.toStringAsFixed(1)}",
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            if (_details?['priceLevel'] != null) ...[
+                              SizedBox(width: 12),
+                              Text("•", style: TextStyle(color: Theme.of(context).colorScheme.outline)),
+                              SizedBox(width: 12),
+                              Text(_details!['priceLevel'], style: Theme.of(context).textTheme.bodyMedium),
+                            ],
+                          ]
+                        ),
+                        SizedBox(height: 16),
+
+                        Text(
+                          _address ?? "Adresse nicht verfügbar",
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                        ),
+                        SizedBox(height: 24),
+
+                        if (_details?['description'] != null) ...[
+                          Text("Beschreibung", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          SizedBox(height: 8),
+                          Text(_details!['description'], style: Theme.of(context).textTheme.bodyMedium),
+                          SizedBox(height: 24),
+                        ],
+
+                        // Ratings Section
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("Bewertungen", style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                            TextButton(
+                              onPressed: _showRatingDialogHelper,
+                              child: Text("Bewerten", style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        
+                        if (_reviews.isNotEmpty) ...[
+                          Column(
+                            children: _reviews.map((review) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => _navigateToUserProfileHelper(review['userId']),
+                                      child: CircleAvatar(
+                                        radius: 20,
+                                        backgroundImage: review['userProfileUrl'] != null && review['userProfileUrl'].isNotEmpty
+                                          ? NetworkImage(review['userProfileUrl'])
+                                          : null,
+                                        child: (review['userProfileUrl'] == null || review['userProfileUrl'].isEmpty)
+                                          ? Icon(Icons.person, size: 20)
+                                          : null,
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(review['userName'] ?? 'Unbekannt', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.star_rounded, size: 16, color: Theme.of(context).primaryColor),
+                                                  SizedBox(width: 2),
+                                                  Text("${review['rating']}", style: Theme.of(context).textTheme.labelSmall),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(review['comment'] ?? '', style: Theme.of(context).textTheme.bodyMedium),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               );
                             }).toList(),
                           ),
-                        ] else if (!_isLoading) ...[
-                          Text("Noch keine Bewertungen vorhanden.", style: TextStyle(fontSize: 16, color: Colors.grey[600])),
-                        ]
-                    ],
-                  ],
-                ),
+                        ] else ...[
+                          Text("Noch keine Bewertungen vorhanden.", style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.outline)),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           );

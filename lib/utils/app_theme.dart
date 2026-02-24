@@ -6,46 +6,46 @@ class AppTheme {
   static TextTheme _buildTextTheme(Color primaryColor, Color secondaryColor) {
     return TextTheme(
       displayLarge: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
+          fontSize: 34,
+          fontWeight: FontWeight.w800,
           color: primaryColor,
-          letterSpacing: -0.5,
+          letterSpacing: -0.8,
           height: 1.2),
       displayMedium: TextStyle(
           fontSize: 28,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
           color: primaryColor,
-          letterSpacing: -0.5,
+          letterSpacing: -0.6,
           height: 1.2),
       titleLarge: TextStyle(
-          fontSize: 22,
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: primaryColor,
+          letterSpacing: -0.4,
+          height: 1.3),
+      titleMedium: TextStyle(
+          fontSize: 20,
           fontWeight: FontWeight.w600,
           color: primaryColor,
           letterSpacing: -0.3,
           height: 1.3),
-      titleMedium: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: primaryColor,
-          letterSpacing: -0.2,
-          height: 1.3),
       bodyLarge: TextStyle(
           fontSize: 16,
           color: primaryColor,
-          height: 1.5,
-          fontWeight: FontWeight.normal),
+          height: 1.6,
+          fontWeight: FontWeight.w400),
       bodyMedium: TextStyle(
           fontSize: 14,
           color: secondaryColor,
-          height: 1.4,
-          fontWeight: FontWeight.normal),
+          height: 1.5,
+          fontWeight: FontWeight.w400),
       labelLarge: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: primaryColor,
           letterSpacing: 0),
       labelSmall: TextStyle(
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: FontWeight.w500,
           color: secondaryColor,
           letterSpacing: 0.2),
