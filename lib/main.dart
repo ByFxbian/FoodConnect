@@ -15,10 +15,19 @@ import 'package:foodconnect/services/firestore_service.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+late SharedPreferences prefs;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print("Handling a background message: ${message.messageId}");
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +48,7 @@ void main() async {
   timeago.setLocaleMessages('de', timeago.DeMessages());
   timeago.setLocaleMessages('de_short', timeago.DeShortMessages());
 
+  prefs = await SharedPreferences.getInstance();
   await initializeAppData();
 
   ConnectivityService().init();
@@ -112,6 +122,7 @@ Future<void> initializeAppData() async {
   if (FirebaseAuth.instance.currentUser != null) {
     print("⏳ Initialisiere FCM Notification Service...");
     try {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
       await NotificationService.init();
       print("✅ FCM Notification Service initialisiert.");
     } catch (e) {

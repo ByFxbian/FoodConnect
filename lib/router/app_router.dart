@@ -9,6 +9,8 @@ import 'package:foodconnect/screens/profile_screen.dart';
 import 'package:foodconnect/screens/login_screen.dart';
 import 'package:foodconnect/screens/signup_screen.dart';
 import 'package:foodconnect/screens/main_screen.dart';
+import 'package:foodconnect/screens/onboarding_screen.dart';
+import 'package:foodconnect/main.dart'; // To access prefs
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -28,12 +30,22 @@ class AppRouter {
       final bool loggedIn = FirebaseAuth.instance.currentUser != null;
       final bool isAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/signup';
+      final bool isOnboarding = state.matchedLocation == '/onboarding';
 
       if (!loggedIn) {
-        return isAuthRoute ? null : '/login';
+        return (isAuthRoute || isOnboarding) ? null : '/login';
       }
 
-      if (loggedIn && isAuthRoute) {
+      // If logged in
+      final bool hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+
+      // Force onboarding if they haven't seen it and they are not already there
+      if (!hasSeenOnboarding && !isOnboarding) {
+        return '/onboarding';
+      }
+
+      // If they HAVE seen onboarding and they are on an auth route or onboarding route, go to explore
+      if (hasSeenOnboarding && (isAuthRoute || isOnboarding)) {
         return '/explore';
       }
 
@@ -47,6 +59,10 @@ class AppRouter {
       GoRoute(
         path: '/signup',
         builder: (context, state) => SignUpScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

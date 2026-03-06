@@ -13,11 +13,23 @@ import 'package:foodconnect/services/firestore_service.dart';
 
 import 'package:foodconnect/utils/marker_manager.dart';
 import 'package:foodconnect/utils/match_calculator.dart';
+import 'package:foodconnect/utils/snackbar_helper.dart';
 import 'package:foodconnect/widgets/restaurant_detail_sheet.dart';
 import 'package:foodconnect/widgets/skeleton_card.dart';
+import 'package:foodconnect/widgets/match_badge.dart';
 import 'package:foodconnect/widgets/taste_profile_sheet.dart';
-import 'package:foodconnect/utils/snackbar_helper.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_cluster_manager/google_maps_cluster_manager.dart' as cm;
+
+class RestaurantItem with cm.ClusterItem {
+  final Map<String, dynamic> restaurant;
+
+  RestaurantItem({required this.restaurant});
+
+  @override
+  LatLng get location =>
+      LatLng(restaurant['latitude'] ?? 48.0, restaurant['longitude'] ?? 16.0);
+}
 
 class HomeScreen extends StatefulWidget {
   final LatLng? targetLocation;
@@ -39,6 +51,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _allRestaurants = [];
   List<Map<String, dynamic>> _visibleRestaurants = [];
   Map<String, dynamic> _userProfile = {};
+
+  late cm.ClusterManager<RestaurantItem> _manager;
+  List<RestaurantItem> _items = [];
+  GoogleMapController? _mapController;
 
   bool _isLoading = true;
   bool _showMap = false;
@@ -69,6 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: 0.9);
+    _manager = _initClusterManager();
     _loadMapStyle();
     _initData();
   }
@@ -77,7 +94,49 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _mapController?.dispose();
     super.dispose();
+  }
+
+  cm.ClusterManager<RestaurantItem> _initClusterManager() {
+    return cm.ClusterManager<RestaurantItem>(
+      _items,
+      _updateMarkers,
+      markerBuilder: (dynamic cluster) => _markerBuilder(cluster as cm.Cluster<RestaurantItem>),
+      stopClusteringZoom: 17.0,
+    );
+  }
+
+  void _updateMarkers(Set<Marker> markers) {
+    if (mounted) {
+      setState(() {
+        _markers = markers;
+      });
+    }
+  }
+
+  Future<Marker> _markerBuilder(cm.Cluster<RestaurantItem> cluster) async {
+    return Marker(
+      markerId: MarkerId(cluster.getId()),
+      position: cluster.location,
+      onTap: () {
+        if (cluster.isMultiple) {
+          _mapController?.animateCamera(CameraUpdate.newLatLngZoom(
+              cluster.location, 15.0));
+        } else {
+          final rest = cluster.items.first.restaurant;
+          final index = _visibleRestaurants.indexOf(rest);
+          if (index != -1 && _pageController.hasClients) {
+            _pageController.animateToPage(index,
+                duration: 500.ms, curve: Curves.easeOutExpo);
+          }
+        }
+      },
+      icon: cluster.isMultiple
+          ? await MarkerManager().getClusterIcon(cluster.count, Theme.of(context).primaryColor)
+          : (MarkerManager().customIcon ??
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange)),
+    );
   }
 
   Future<void> _loadMapStyle() async {
@@ -201,22 +260,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _generateMarkers() {
-    _markers = _visibleRestaurants.take(200).map((rest) {
-      return Marker(
-        markerId: MarkerId(rest['id']),
-        position: LatLng(rest['latitude'] ?? 48.0, rest['longitude'] ?? 16.0),
-        // Wir nutzen hier Standard-Marker eingefärbt, bis MarkerManager 100% steht
-        icon: MarkerManager().customIcon ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-        onTap: () {
-          final index = _visibleRestaurants.indexOf(rest);
-          if (index != -1 && _pageController.hasClients) {
-            _pageController.animateToPage(index,
-                duration: 500.ms, curve: Curves.easeOutExpo);
-          }
-        },
-      );
-    }).toSet();
+    _items = _visibleRestaurants.map((r) => RestaurantItem(restaurant: r)).toList();
+    _manager.setItems(_items);
   }
 
   @override
@@ -448,15 +493,19 @@ class _HomeScreenState extends State<HomeScreen> {
           myLocationButtonEnabled: false,
           compassEnabled: false,
           mapToolbarEnabled: false,
-          onMapCreated: (controller) {
+          onMapCreated: (GoogleMapController c) {
             if (!_controller.isCompleted) {
-              _controller.complete(controller);
+              _controller.complete(c);
               if (widget.targetLocation != null) {
-                controller.animateCamera(
+                c.animateCamera(
                     CameraUpdate.newLatLngZoom(widget.targetLocation!, 16));
               }
             }
+            _mapController = c;
+            _manager.setMapId(c.mapId);
           },
+          onCameraMove: _manager.onCameraMove,
+          onCameraIdle: _manager.updateMap,
         ),
         if (!_isLoading && _visibleRestaurants.isNotEmpty)
           Positioned(
@@ -555,33 +604,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Positioned(
                       top: 8,
                       right: 8,
-                      child: Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                            color: Colors.black87,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                color: matchScore > 80
-                                    ? Colors.green
-                                    : Theme.of(context).primaryColor)),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text("$matchScore%",
-                                style: TextStyle(
-                                    color: matchScore > 80
-                                        ? Colors.green
-                                        : Theme.of(context).primaryColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12)),
-                            SizedBox(width: 4),
-                            Text("Match",
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
-                      ),
+                      child: MatchBadge(matchScore: matchScore),
                     ),
                   ],
                 ),

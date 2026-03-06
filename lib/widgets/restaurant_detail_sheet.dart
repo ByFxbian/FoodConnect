@@ -3,7 +3,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/widgets/save_to_list_sheet.dart';
 import 'package:foodconnect/utils/snackbar_helper.dart';
+import 'package:foodconnect/utils/match_calculator.dart';
+import 'package:foodconnect/widgets/match_badge.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RestaurantDetailSheet extends StatefulWidget {
   final Map<String, dynamic> restaurantData;
@@ -27,6 +31,7 @@ class RestaurantDetailSheet extends StatefulWidget {
 class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
   bool _isLoading = true;
   Map<String, dynamic>? _details;
+  Map<String, dynamic>? _userData;
   String? _address;
   double _finalRating = 0.0;
 
@@ -54,6 +59,12 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
 
   Future<void> _loadData() async {
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      DocumentSnapshot? userDoc;
+      if (user != null) {
+        userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      }
+
       final detailsFuture =
           firestoreService.fetchRestaurantDetails(widget.restaurantData['id']);
       final addressFuture = _getAddressFromLatLng(
@@ -62,6 +73,9 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
 
       _details = await detailsFuture;
       _address = await addressFuture;
+      if (userDoc != null && userDoc.exists) {
+        _userData = userDoc.data() as Map<String, dynamic>;
+      }
       _finalRating = double.tryParse(
               widget.restaurantData['rating']?.toString() ?? '0.0') ??
           0.0;
@@ -116,31 +130,45 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Hero Image Area
-                if (imageUrl != null && imageUrl.isNotEmpty)
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(24)),
-                    child: Image.network(
-                      imageUrl,
-                      width: double.infinity,
-                      height: 250,
-                      fit: BoxFit.cover,
+                Stack(
+                  children: [
+                    if (imageUrl != null && imageUrl.isNotEmpty)
+                      ClipRRect(
+                        borderRadius:
+                            const BorderRadius.vertical(top: Radius.circular(24)),
+                        child: Image.network(
+                          imageUrl,
+                          width: double.infinity,
+                          height: 250,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    else
+                      Container(
+                        width: double.infinity,
+                        height: 250,
+                        decoration: BoxDecoration(
+                          color:
+                              Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius:
+                              const BorderRadius.vertical(top: Radius.circular(24)),
+                        ),
+                        child: Icon(Icons.restaurant,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      child: MatchBadge(
+                        matchScore: _userData != null ? MatchCalculator.calculate(
+                          _userData!,
+                          widget.restaurantData,
+                        ) : 0,
+                      ),
                     ),
-                  )
-                else
-                  Container(
-                    width: double.infinity,
-                    height: 250,
-                    decoration: BoxDecoration(
-                      color:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(24)),
-                    ),
-                    child: Icon(Icons.restaurant,
-                        size: 64,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  ),
+                  ],
+                ),
 
                 Padding(
                   padding: const EdgeInsets.all(24),

@@ -237,6 +237,7 @@ class _ListsScreenState extends State<ListsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SizedBox(height: 40),
           Icon(Icons.bookmark_border,
               size: 64, color: Theme.of(context).colorScheme.outline),
           const SizedBox(height: 16),
@@ -260,6 +261,19 @@ class _ListsScreenState extends State<ListsScreen> {
                       .withValues(alpha: 0.5),
                 ),
           ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: _showCreateListDialog,
+            icon: const Icon(CupertinoIcons.plus, size: 18),
+            label: const Text('Neue Liste erstellen'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+          const SizedBox(height: 40),
         ],
       ),
     );

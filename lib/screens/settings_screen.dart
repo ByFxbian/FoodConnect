@@ -14,6 +14,7 @@ import 'package:foodconnect/utils/snackbar_helper.dart';
 import 'package:foodconnect/services/app_logger.dart';
 import 'package:foodconnect/widgets/taste_profile_sheet.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:foodconnect/screens/legal_screens.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -530,6 +531,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               },
             ),
+            const Divider(height: 32),
+            ListTile(
+              title: Text("Impressum",
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface)),
+              trailing: Icon(Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.onSurface),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => LegalScreen(
+                          title: "Impressum",
+                          content: impressumText,
+                        )),
+              ),
+            ),
+            ListTile(
+              title: Text("Datenschutz",
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface)),
+              trailing: Icon(Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.onSurface),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => LegalScreen(
+                          title: "Datenschutz",
+                          content: datenschutzText,
+                        )),
+              ),
+            ),
+            ListTile(
+              title: Text("AGB",
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface)),
+              trailing: Icon(Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.onSurface),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => LegalScreen(
+                          title: "AGB",
+                          content: agbText,
+                        )),
+              ),
+            ),
+            const Divider(height: 32),
             ListTile(
               title:
                   Text("Abmelden", style: TextStyle(color: Colors.redAccent)),

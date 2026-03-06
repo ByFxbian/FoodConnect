@@ -10,9 +10,9 @@ import 'package:foodconnect/utils/snackbar_helper.dart';
 import 'package:foodconnect/widgets/restaurant_detail_sheet.dart';
 import 'package:foodconnect/widgets/share_list_sheet.dart';
 import 'package:foodconnect/widgets/skeleton_card.dart';
-import 'package:foodconnect/widgets/add_restaurant_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 
 class ListDetailScreen extends StatefulWidget {
   final String listId;
@@ -315,13 +315,9 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     );
   }
 
-  void _openAddRestaurant() async {
-    final existingIds = _restaurants.map((r) => r['id'] as String).toList();
-    final didAdd =
-        await AddRestaurantSheet.show(context, widget.listId, existingIds);
-    if (didAdd == true) {
-      _fetchRestaurants();
-    }
+  void _openAddRestaurant() {
+    // Navigate back to the Explore screen (Hauptbildschirm)
+    context.go('/explore');
   }
 
   @override
