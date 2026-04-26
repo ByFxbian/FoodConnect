@@ -483,10 +483,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildMapStack() {
     return Stack(
+      fit: StackFit.expand, // 🔥 Fix: Zwingt alle Kind-Elemente (wie die Karte), den ganzen Platz einzunehmen!
       children: [
-        GoogleMap(
-          initialCameraPosition: _initialPositin,
-          markers: _markers,
+        Positioned.fill(
+          child: GoogleMap(
+            initialCameraPosition: _initialPositin,
+            markers: _markers,
           style: _mapStyleString,
           zoomControlsEnabled: false,
           myLocationEnabled: true,
@@ -506,7 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           onCameraMove: _manager.onCameraMove,
           onCameraIdle: _manager.updateMap,
-        ),
+        )), // 🔥 Fix: Positioned.fill geschlossen
         if (!_isLoading && _visibleRestaurants.isNotEmpty)
           Positioned(
             bottom: 110,
@@ -592,20 +594,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(
-                          color: Theme.of(context).colorScheme.outline),
-                      errorWidget: (_, __, ___) => Container(
-                          color: Theme.of(context).colorScheme.outline,
-                          child: Icon(Icons.restaurant)),
+                    Hero(
+                      tag: 'restaurant_image_${rest['id'] ?? imageUrl}',
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(15)), // 🔥 Fix: Verhindert weiße Ränder beim Bild am Rand der Karte
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(
+                              color: Theme.of(context).colorScheme.outline),
+                          errorWidget: (_, __, ___) => Container(
+                              color: Theme.of(context).colorScheme.outline,
+                              child: Icon(Icons.error,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant)),
+                        ),
+                      ),
                     ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: MatchBadge(matchScore: matchScore),
-                    ),
+                    if (matchScore > 0)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: MatchBadge(matchScore: matchScore),
+                      ),
                   ],
                 ),
               ),

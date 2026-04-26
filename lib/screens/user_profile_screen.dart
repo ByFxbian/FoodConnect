@@ -129,7 +129,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               fit: BoxFit.cover,
                               image: userData?['photoUrl'] != null &&
                                       userData?['photoUrl'] != ""
-                                  ? NetworkImage(userData?['photoUrl'])
+                                  ? CachedNetworkImageProvider(userData?['photoUrl']) as ImageProvider
                                   : const AssetImage(
                                           "assets/icons/default_avatar.png")
                                       as ImageProvider,

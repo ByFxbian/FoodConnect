@@ -1,13 +1,14 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:foodconnect/services/firestore_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:foodconnect/utils/snackbar_helper.dart';
+import 'package:foodconnect/widgets/skeleton_card.dart'; // 🔥 Fix: Added Skeleton
 
 class ListsScreen extends StatefulWidget {
   const ListsScreen({super.key});
@@ -112,10 +113,25 @@ class _ListsScreenState extends State<ListsScreen> {
                     stream: _firestoreService.streamUserLists(user!.uid),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const SizedBox(
-                          height: 200,
-                          child: Center(
-                              child: CircularProgressIndicator.adaptive()),
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.85,
+                            ),
+                            itemCount: 4,
+                            itemBuilder: (context, index) {
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: const SkeletonBox(width: double.infinity, height: double.infinity),
+                              );
+                            },
+                          ),
                         );
                       }
                       final userLists = snapshot.data ?? [];
@@ -202,7 +218,7 @@ class _ListsScreenState extends State<ListsScreen> {
         leading: CircleAvatar(
           radius: 22,
           backgroundImage: ownerPhoto != null && ownerPhoto.isNotEmpty
-              ? NetworkImage(ownerPhoto)
+              ? CachedNetworkImageProvider(ownerPhoto)
               : null,
           child: ownerPhoto == null || ownerPhoto.isEmpty
               ? const Icon(Icons.person, size: 20)
@@ -233,47 +249,56 @@ class _ListsScreenState extends State<ListsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 40),
-          Icon(Icons.bookmark_border,
-              size: 64, color: Theme.of(context).colorScheme.outline),
-          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.bookmark_border_rounded,
+              size: 64, 
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 24),
           Text(
-            "Keine Listen vorhanden",
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.7),
+            "Noch keine Listen",
+            style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            "Speichere Restaurants, um sie hier zu finden.",
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.5),
+            "Speichere deine Lieblingsrestaurants in verschiedenen Listen, um sie später schnell wiederzufinden.",
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  height: 1.5,
                 ),
           ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _showCreateListDialog,
-            icon: const Icon(CupertinoIcons.plus, size: 18),
-            label: const Text('Neue Liste erstellen'),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () => context.go('/explore'),
+            icon: const Icon(Icons.search_rounded),
+            label: const Text("Restaurants entdecken"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
             ),
           ),
-          const SizedBox(height: 40),
         ],
       ),
     );
@@ -435,8 +460,14 @@ class _ListsScreenState extends State<ListsScreen> {
               children: [
                 // ─── Spotify-style cover ───
                 Expanded(
-                  child: _buildCoverArt(
-                      coverUrl, restaurantIds, Theme.of(context)),
+                  child: Hero(
+                    tag: 'list_cover_${listData['id']}',
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(19)), // 🔥 Fix: Verhindert weiße Ränder beim Cover-Bild
+                      child: _buildCoverArt(
+                          coverUrl, restaurantIds, Theme.of(context)),
+                    ),
+                  ),
                 ),
                 // ─── Footer ───
                 Padding(

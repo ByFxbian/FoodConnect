@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:foodconnect/services/database_service.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/utils/snackbar_helper.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Bottom sheet to search and add restaurants to a specific list.
 class AddRestaurantSheet extends StatefulWidget {

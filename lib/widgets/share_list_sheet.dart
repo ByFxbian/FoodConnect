@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -202,7 +203,7 @@ class _ShareListSheetState extends State<ShareListSheet> {
                               radius: 22,
                               backgroundImage: mutual['photoUrl'] != null &&
                                       mutual['photoUrl'].toString().isNotEmpty
-                                  ? NetworkImage(mutual['photoUrl'])
+                                  ? CachedNetworkImageProvider(mutual['photoUrl'])
                                   : null,
                               child: mutual['photoUrl'] == null ||
                                       mutual['photoUrl'].toString().isEmpty

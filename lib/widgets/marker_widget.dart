@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, unnecessary_null_comparison
 import 'dart:ui' as ui;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -97,11 +98,14 @@ class MarkerWidget {
                     Center(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(iconPath, height: 100,
-                            errorBuilder: (context, error, stackTrace) {
-                          return Image.asset("assets/icons/mapicon.png",
-                              height: 100);
-                        }),
+                        child: CachedNetworkImage(
+                          imageUrl: iconPath, 
+                          height: 100,
+                          errorWidget: (context, error, stackTrace) {
+                            return Image.asset("assets/icons/mapicon.png",
+                                height: 100);
+                          }
+                        ),
                       ),
                     ),
                     SizedBox(height: 16),

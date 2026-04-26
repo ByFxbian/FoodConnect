@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // ignore: unused_import
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -441,8 +442,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     radius: 60,
                     backgroundImage:
                         _profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                            ? ResizeImage(NetworkImage(_profileImageUrl!),
-                                height: 420, policy: ResizeImagePolicy.fit)
+                            ? ResizeImage(CachedNetworkImageProvider(_profileImageUrl!),
+                                height: 420, policy: ResizeImagePolicy.fit) as ImageProvider
                             : ResizeImage(
                                 AssetImage("assets/icons/default_avatar.png"),
                                 height: 420,

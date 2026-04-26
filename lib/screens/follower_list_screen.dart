@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
@@ -117,7 +118,7 @@ class FollowerListScreen extends StatelessWidget {
                           fit: BoxFit.cover,
                           image: userData?['photoUrl'] != null &&
                                   (userData?['photoUrl'] as String).isNotEmpty
-                              ? NetworkImage(userData!['photoUrl'])
+                              ? CachedNetworkImageProvider(userData!['photoUrl']) as ImageProvider
                               : const AssetImage(
                                       'assets/icons/default_avatar.png')
                                   as ImageProvider,

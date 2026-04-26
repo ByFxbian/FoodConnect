@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
 import 'package:go_router/go_router.dart';
+import 'package:foodconnect/widgets/skeleton_card.dart'; // 🔥 Fix: Added Skeleton
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -172,25 +174,35 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildContent(ThemeData theme) {
     // Empty state
     if (_query.isEmpty) {
-      return Center(
+      return Padding(
+        padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(CupertinoIcons.person_2,
-                size: 56,
-                color: theme.colorScheme.outline.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(CupertinoIcons.person_2_fill,
+                  size: 56, color: theme.colorScheme.primary),
+            ),
+            const SizedBox(height: 24),
             Text(
               'Suche nach Nutzern',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
-              'Gib einen Namen ein um loszulegen.',
+              'Gib einen Namen ein, um deine Freunde zu finden und ihre Restaurantlisten zu sehen.',
+              textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                height: 1.5,
               ),
             ),
           ],
@@ -200,23 +212,59 @@ class _SearchScreenState extends State<SearchScreen> {
 
     // Loading
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
+      return ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        itemCount: 6,
+        separatorBuilder: (_, __) => Divider(
+          height: 1,
+          indent: 76,
+          color: theme.colorScheme.outline.withValues(alpha: 0.12),
+        ),
+        itemBuilder: (context, index) {
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            leading: const ClipOval(child: SkeletonBox(width: 48, height: 48)),
+            title: const SkeletonBox(width: 120, height: 14),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: const SkeletonBox(width: 80, height: 12),
+            ),
+          );
+        },
+      );
     }
 
     // No results
     if (_results.isEmpty) {
-      return Center(
+      return Padding(
+        padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(CupertinoIcons.search,
-                size: 48,
-                color: theme.colorScheme.outline.withValues(alpha: 0.4)),
-            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(CupertinoIcons.search,
+                  size: 48, color: theme.colorScheme.error),
+            ),
+            const SizedBox(height: 24),
             Text(
-              'Keine Nutzer gefunden.',
-              style: theme.textTheme.titleMedium?.copyWith(
+              'Keine Nutzer gefunden',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Wir konnten leider niemanden unter dem Namen "$_query" finden. Versuche es doch einmal mit einem anderen Namen.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                height: 1.5,
               ),
             ),
           ],
@@ -253,7 +301,7 @@ class _SearchScreenState extends State<SearchScreen> {
               image: DecorationImage(
                 fit: BoxFit.cover,
                 image: (photoUrl != null && photoUrl.isNotEmpty)
-                    ? NetworkImage(photoUrl)
+                    ? CachedNetworkImageProvider(photoUrl)
                     : const AssetImage('assets/icons/default_avatar.png')
                         as ImageProvider,
               ),

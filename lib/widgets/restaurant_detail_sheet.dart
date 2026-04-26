@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:foodconnect/services/firestore_service.dart';
 import 'package:foodconnect/widgets/save_to_list_sheet.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // 🔥 Fix: Added CachedNetworkImage
 import 'package:foodconnect/utils/snackbar_helper.dart';
 import 'package:foodconnect/utils/match_calculator.dart';
 import 'package:foodconnect/widgets/match_badge.dart';
@@ -34,8 +35,19 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
   Map<String, dynamic>? _userData;
   String? _address;
   double _finalRating = 0.0;
+  
+  // ─── Notes State ───
+  String? _personalNote;
+  bool _isEditingNote = false;
+  final TextEditingController _noteController = TextEditingController();
 
   final FirestoreService firestoreService = FirestoreService();
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -75,6 +87,13 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
       _address = await addressFuture;
       if (userDoc != null && userDoc.exists) {
         _userData = userDoc.data() as Map<String, dynamic>;
+        
+        // Fetch personal note
+        _personalNote = await firestoreService.getRestaurantNote(
+          user!.uid, 
+          widget.restaurantData['id']
+        );
+        _noteController.text = _personalNote ?? '';
       }
       _finalRating = double.tryParse(
               widget.restaurantData['rating']?.toString() ?? '0.0') ??
@@ -88,6 +107,23 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
         });
       }
     }
+  }
+
+  Future<void> _saveNote() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    
+    final newNote = _noteController.text.trim();
+    setState(() {
+      _isEditingNote = false;
+      _personalNote = newNote.isEmpty ? null : newNote;
+    });
+    
+    await firestoreService.saveRestaurantNote(
+      user.uid, 
+      widget.restaurantData['id'], 
+      newNote,
+    );
   }
 
   @override
@@ -133,14 +169,22 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
                 Stack(
                   children: [
                     if (imageUrl != null && imageUrl.isNotEmpty)
-                      ClipRRect(
-                        borderRadius:
-                            const BorderRadius.vertical(top: Radius.circular(24)),
-                        child: Image.network(
-                          imageUrl,
-                          width: double.infinity,
-                          height: 250,
-                          fit: BoxFit.cover,
+                      Hero(
+                        tag: 'restaurant_image_${widget.restaurantData['id'] ?? imageUrl}',
+                        child: ClipRRect(
+                          borderRadius:
+                              const BorderRadius.vertical(top: Radius.circular(24)),
+                          child: CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            width: double.infinity,
+                            height: 250,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest),
+                            errorWidget: (_, __, ___) => Container(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                child: const Icon(Icons.restaurant, size: 64)),
+                          ),
                         ),
                       )
                     else
@@ -198,8 +242,7 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
                                 SaveToListSheet.show(
                                     context, widget.restaurantData['id']);
                               } else {
-                                AppSnackBar.error(
-                                    context, 'Restaurant-ID nicht gefunden.');
+                                AppSnackBar.error(context, "Kann nicht gespeichert werden (ID fehlt)");
                               }
                             },
                             icon: const Icon(CupertinoIcons.bookmark),
@@ -248,6 +291,97 @@ class _RestaurantDetailSheetState extends State<RestaurantDetailSheet> {
                                 .onSurface
                                 .withValues(alpha: 0.6)),
                       ),
+                      const SizedBox(height: 24),
+
+                      // ─── Personal Note Section ───
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Persönliche Notiz",
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                          if (!_isEditingNote)
+                            IconButton(
+                              icon: Icon(Icons.edit, size: 20, color: Theme.of(context).primaryColor),
+                              onPressed: () => setState(() => _isEditingNote = true),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (_isEditingNote)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              TextField(
+                                controller: _noteController,
+                                maxLines: 3,
+                                autofocus: true,
+                                decoration: const InputDecoration(
+                                  hintText: "Z.B. 'Unbedingt die Trüffel-Pasta probieren!'",
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.all(16),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8, bottom: 8),
+                                child: TextButton(
+                                  onPressed: _saveNote,
+                                  child: const Text("Speichern"),
+                                ),
+                              )
+                            ],
+                          ),
+                        )
+                      else if (_personalNote != null && _personalNote!.isNotEmpty)
+                        GestureDetector(
+                          onTap: () => setState(() => _isEditingNote = true),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              _personalNote!,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        GestureDetector(
+                          onTap: () => setState(() => _isEditingNote = true),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                                style: BorderStyle.solid,
+                              ),
+                            ),
+                            child: Text(
+                              "Notiz hinzufügen...",
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 24),
 
                       if (_details?['description'] != null) ...[

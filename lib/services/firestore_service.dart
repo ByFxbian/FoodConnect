@@ -221,7 +221,7 @@ class FirestoreService {
   Future<void> fetchAndStoreRestaurants() async {
     print("⚡ Lade Daten aus Firestore und speichere sie in SQLite...");
     QuerySnapshot querySnapshot =
-        await _db.collection('restaurantDetails').get();
+        await _db.collection('restaurantDetails').limit(200).get(); // 🔥 Add a limit so we do not crash Firestore reads for large datasets
 
     await dbService.clearDatabase();
 
@@ -255,6 +255,30 @@ class FirestoreService {
       return doc.data() as Map<String, dynamic>;
     }
     return null;
+  }
+
+  // --- Restaurant Notes ---
+  Future<String?> getRestaurantNote(String userId, String restaurantId) async {
+    try {
+      final doc = await _db.collection('users').doc(userId).collection('restaurant_notes').doc(restaurantId).get();
+      if (doc.exists) {
+        return doc.data()?['note'] as String?;
+      }
+    } catch (e) {
+      print("Error fetching note: $e");
+    }
+    return null;
+  }
+
+  Future<void> saveRestaurantNote(String userId, String restaurantId, String note) async {
+    try {
+      await _db.collection('users').doc(userId).collection('restaurant_notes').doc(restaurantId).set({
+        'note': note,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print("Error saving note: $e");
+    }
   }
 
   Future<bool> hasUserReviewed(String restaurantId, String userId) async {

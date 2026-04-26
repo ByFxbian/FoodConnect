@@ -1,68 +1,5 @@
 import 'package:flutter/material.dart';
-
-/// A reusable shimmer loading effect widget.
-/// Use [SkeletonCard] for restaurant card placeholders
-/// and [SkeletonBox] for generic rectangular shapes.
-class Shimmer extends StatefulWidget {
-  final Widget child;
-
-  const Shimmer({super.key, required this.child});
-
-  @override
-  State<Shimmer> createState() => _ShimmerState();
-}
-
-class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return ShaderMask(
-          shaderCallback: (bounds) {
-            return LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                Theme.of(context).colorScheme.surfaceContainerHighest,
-                Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest
-                    .withValues(alpha: 0.4),
-                Theme.of(context).colorScheme.surfaceContainerHighest,
-              ],
-              stops: [
-                (_controller.value - 0.3).clamp(0.0, 1.0),
-                _controller.value,
-                (_controller.value + 0.3).clamp(0.0, 1.0),
-              ],
-            ).createShader(bounds);
-          },
-          blendMode: BlendMode.srcATop,
-          child: child!,
-        );
-      },
-      child: widget.child,
-    );
-  }
-}
+import 'package:shimmer/shimmer.dart';
 
 /// Generic shimmer box placeholder
 class SkeletonBox extends StatelessWidget {
@@ -96,7 +33,10 @@ class SkeletonRestaurantCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer(
+    final theme = Theme.of(context);
+    return Shimmer.fromColors(
+      baseColor: theme.colorScheme.surfaceContainerHighest,
+      highlightColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
@@ -144,7 +84,10 @@ class SkeletonListItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer(
+    final theme = Theme.of(context);
+    return Shimmer.fromColors(
+      baseColor: theme.colorScheme.surfaceContainerHighest,
+      highlightColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
         height: 100,

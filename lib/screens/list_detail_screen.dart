@@ -13,6 +13,7 @@ import 'package:foodconnect/widgets/skeleton_card.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ListDetailScreen extends StatefulWidget {
   final String listId;
@@ -352,6 +353,17 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
         scrolledUnderElevation: 0,
         actions: [
           IconButton(
+            icon: Icon(Platform.isIOS ? CupertinoIcons.share : Icons.share),
+            onPressed: () {
+              SharePlus.instance.share(
+                ShareParams(
+                  text: "Schau dir meine Lieblingsliste '$_listName' auf FoodConnect an! ✨\n\nhttps://foodconnect.app/lists/${widget.listId}",
+                  subject: 'Empfehlung aus FoodConnect',
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: Icon(Platform.isIOS
                 ? CupertinoIcons.ellipsis_circle
                 : Icons.more_vert),
@@ -479,14 +491,20 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
             children: [
               SizedBox(
                 width: 130,
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) =>
-                      Container(color: Theme.of(context).colorScheme.outline),
-                  errorWidget: (_, __, ___) => Container(
-                      color: Theme.of(context).colorScheme.outline,
-                      child: const Icon(Icons.restaurant)),
+                child: Hero(
+                  tag: 'restaurant_image_${rest['id'] ?? imageUrl}',
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(15)), // 🔥 Fix: Verhindert weiße Ränder beim Bild am Rand der Karte
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) =>
+                          Container(color: Theme.of(context).colorScheme.outline),
+                      errorWidget: (_, __, ___) => Container(
+                          color: Theme.of(context).colorScheme.outline,
+                          child: const Icon(Icons.restaurant)),
+                    ),
+                  ),
                 ),
               ),
               Expanded(

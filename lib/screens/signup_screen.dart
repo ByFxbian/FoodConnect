@@ -41,6 +41,8 @@ class _SignUpScreenState extends State<SignUpScreen>
     "1 Zahl": false,
     "1 Sonderzeichen": false,
   };
+  
+  bool acceptedTerms = false; // 🔥 ADDED: Toggle for TOS/Privacy
 
   @override
   void initState() {
@@ -129,6 +131,11 @@ class _SignUpScreenState extends State<SignUpScreen>
     }
     if (!isPasswordValid) {
       _showError("Das Passwort erfüllt nicht alle Kriterien.");
+      return;
+    }
+    
+    if (!acceptedTerms) { // 🔥 Fix: Checks for Terms of Service 
+      _showError("Bitte akzeptiere die AGB und Datenschutzrichtlinien.");
       return;
     }
 
@@ -252,6 +259,47 @@ class _SignUpScreenState extends State<SignUpScreen>
 
                   // ─── Password criteria ───
                   _buildPasswordCriteria(),
+                  const SizedBox(height: 24),
+
+                  // ─── Legal Checkbox (Terms & Privacy) ───
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: acceptedTerms,
+                        onChanged: (val) {
+                          setState(() {
+                            acceptedTerms = val ?? false;
+                          });
+                        },
+                        activeColor: theme.primaryColor,
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            context.push('/legal'); // Assuming you have a legal or terms route later
+                          },
+                          child: Text.rich(
+                            TextSpan(
+                              text: "Ich bin damit einverstanden ",
+                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                              children: [
+                                TextSpan(
+                                  text: "AGB",
+                                  style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
+                                ),
+                                const TextSpan(text: " und "),
+                                TextSpan(
+                                  text: "Datenschutz",
+                                  style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
+                                ),
+                                const TextSpan(text: " zu akzeptieren.*"),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 24),
 
                   // ─── Register button ───

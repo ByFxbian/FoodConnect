@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:foodconnect/screens/follower_list_screen.dart';
 import 'package:foodconnect/screens/user_profile_screen.dart';
@@ -18,7 +19,6 @@ import 'package:foodconnect/utils/snackbar_helper.dart';
 import 'package:foodconnect/services/app_logger.dart';
 import 'package:foodconnect/widgets/follow_button.dart';
 import 'package:lottie/lottie.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class ProfileScreen extends StatefulWidget {
@@ -131,6 +131,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             },
           ),
+          IconButton(
+            icon: Icon(
+                Platform.isIOS ? CupertinoIcons.star_fill : Icons.workspace_premium,
+                color: Colors.amber.shade600,
+                size: 26),
+            tooltip: 'Premium',
+            onPressed: () {
+              context.push('/premium');
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton(
@@ -226,7 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               fit: BoxFit.cover,
                               image: userData?['photoUrl'] != null &&
                                       userData?['photoUrl'] != ""
-                                  ? NetworkImage(userData?['photoUrl'])
+                                  ? CachedNetworkImageProvider(userData?['photoUrl']) as ImageProvider
                                   : AssetImage(
                                           "assets/icons/default_avatar.png")
                                       as ImageProvider,
@@ -584,8 +594,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             radius: 24,
                             backgroundImage: (actorImageUrl != null &&
                                     actorImageUrl.isNotEmpty)
-                                ? ResizeImage(NetworkImage(actorImageUrl),
-                                    height: 420, policy: ResizeImagePolicy.fit)
+                                ? ResizeImage(CachedNetworkImageProvider(actorImageUrl),
+                                    height: 420, policy: ResizeImagePolicy.fit) as ImageProvider
                                 : ResizeImage(
                                         AssetImage(
                                             "assets/icons/default_avatar.png"),
@@ -680,7 +690,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           radius: 24,
                           backgroundImage: (actorImageUrl != null &&
                                   actorImageUrl.isNotEmpty)
-                              ? NetworkImage(actorImageUrl)
+                              ? CachedNetworkImageProvider(actorImageUrl) as ImageProvider
                               : null,
                           child: actorImageUrl == null || actorImageUrl.isEmpty
                               ? const Icon(Icons.person)

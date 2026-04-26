@@ -39,11 +39,11 @@ class _MainScreenState extends State<MainScreen> {
         height: 85, // Taller for native edge feel
         padding: const EdgeInsets.only(top: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.85), // 🔥 Fix: Halbdurchsichtig, damit der Blur-Filter (BackdropFilter) wirken kann!
           border: Border(
             top: BorderSide(
               color:
-                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.2), // 🔥 Fix: Subtilerer Rand
               width: 1.0,
             ),
           ),
