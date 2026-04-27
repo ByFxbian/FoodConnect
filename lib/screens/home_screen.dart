@@ -19,7 +19,7 @@ import 'package:foodconnect/widgets/skeleton_card.dart';
 import 'package:foodconnect/widgets/match_badge.dart';
 import 'package:foodconnect/widgets/taste_profile_sheet.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_maps_cluster_manager/google_maps_cluster_manager.dart' as cm;
+import 'package:google_maps_cluster_manager_2/google_maps_cluster_manager_2.dart' as cm;
 
 class RestaurantItem with cm.ClusterItem {
   final Map<String, dynamic> restaurant;
